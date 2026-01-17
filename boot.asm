@@ -10,15 +10,29 @@ boot:
     cli ; no interrupts
     cld ; all that we need to init
     
-    ; set up segments
-    mov ax, cs
-    mov ds, ax
+    mov ax, 0x50
+
+    ; setting up the buffer
     mov es, ax
-    
-    ; print hello world
-    mov si, msg
-    call _print 
+    xor bx, bx
+
+    ;read remaining 29 sectors of the floppy disk
+    mov ah, 0x02 ; read sectors from disk
+    mov al, 1 ; read 1 sector 
+    mov ch, 0 ; track 0
+    mov cl, 2 ; sector to read
+    mov dh, 0 ; head number
+    mov dl, 0 ; drive number
+    int 0x13 ; BIOS interrupt
+    jc disk_error ; the interrupt failed so jump to error state
+    jmp 0x50:0x0 ; jump to execute sector
+
     hlt ; halt
+
+disk_error:
+    hlt
+    jmp disk_error
+
 
 ; Purpose: Move a cursor to a specific location on screen and rember this location
 
