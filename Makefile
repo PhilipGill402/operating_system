@@ -1,5 +1,5 @@
 BUILD_DIR=build
-BOOTLOADER=$(BUILD_DIR)/bootloader/bootloader.o
+BOOTLOADER=$(BUILD_DIR)/bootloader/boot.o
 OS=$(BUILD_DIR)/os/sample.o
 DISK_IMG=disk.img
 
@@ -18,8 +18,12 @@ bootdisk: bootloader os
 	dd conv=notrunc if=$(BOOTLOADER) of=$(DISK_IMG) bs=512 count=1 seek=0
 	dd conv=notrunc if=$(OS) of=$(DISK_IMG) bs=512 count=1 seek=1
 
+qemu-debug:
+	qemu-system-i386 -machine q35 -fda $(DISK_IMG) -gdb tcp::26000 -S
+
 qemu:
-	qemu-system-i386 -machine q35 -fd $(DISK_IMG) -gdb tcp::26000 -S
+	qemu-system-i386 -machine q35 -fda $(DISK_IMG)
+
 
 clean:
 	make -C bootloader clean

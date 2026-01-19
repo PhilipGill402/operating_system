@@ -1,7 +1,7 @@
 BUILD_DIR=../build/os
 
 OS_SRCS := $(wildcard *.asm)
-OS_OBJS := $(patsubst %.asm, $(BUILD_DIR)/%.0, $(OS_SRCS))
+OS_OBJS := $(patsubst %.asm, $(BUILD_DIR)/%.o, $(OS_SRCS))
 
 all: $(OS_OBJS)
 

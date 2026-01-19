@@ -5,28 +5,32 @@ bits 16
 start: jmp boot
 
 msg db "Hello World!", 0ah, 0dh, 0h
+boot_drive db 0
 
 boot:
     cli ; no interrupts
     cld ; all that we need to init
     
-    mov ax, 0x50
+    mov [boot_drive], dl ; save BIOS boot drive
+    
+    mov ax, 0x0050
 
     ; setting up the buffer
     mov es, ax
     xor bx, bx
-
+    
+    
     ;read remaining 29 sectors of the floppy disk
-    mov ah, 0x02 ; read sectors from disk
+    mov ah, 02h ; read sectors from disk
     mov al, 1 ; read 1 sector 
     mov ch, 0 ; track 0
     mov cl, 2 ; sector to read
     mov dh, 0 ; head number
-    mov dl, 0 ; drive number
-    int 0x13 ; BIOS interrupt
+    mov dl, [boot_drive] ; drive number
+    int 13h ; BIOS interrupt
     jc disk_error ; the interrupt failed so jump to error state
     jmp 0x50:0x0 ; jump to execute sector
-
+    
     hlt ; halt
 
 disk_error:
