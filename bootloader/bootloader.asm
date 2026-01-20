@@ -9,6 +9,13 @@ boot_drive db 0
 
 boot:
     cli ; no interrupts
+    
+    ;stack initialization
+    xor ax, ax
+    mov ss, ax
+    mov sp, 0x7c00
+    sti
+
     cld ; all that we need to init
     
     mov [boot_drive], dl ; save BIOS boot drive
@@ -19,7 +26,8 @@ boot:
     mov es, ax
     xor bx, bx
     
-    
+     
+
     ;read remaining 29 sectors of the floppy disk
     mov ah, 0x02 ; read sectors from disk
     mov al, 2 ; read 2 sector 

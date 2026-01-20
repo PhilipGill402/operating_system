@@ -13,8 +13,6 @@ $(BUILD_DIR)/%.o: %.c
 
 $(OS): $(OS_OBJS)
 	ld -m elf_i386 -nmagic -Tos.lds $(OS_OBJS) -o $@
-	# objcopy --only-keep-debug $(OS) $(OS).dbg
-	# strip -g $(OS)
 
 clean:
 	rm $(BUILD_DIR)/*
