@@ -1,6 +1,6 @@
 ; SAMPLE BOOTLOADER
 
-org 0x7c00
+;org 0x7c00
 bits 16
 start: jmp boot
 
@@ -21,15 +21,15 @@ boot:
     
     
     ;read remaining 29 sectors of the floppy disk
-    mov ah, 02h ; read sectors from disk
-    mov al, 1 ; read 1 sector 
+    mov ah, 0x02 ; read sectors from disk
+    mov al, 2 ; read 2 sector 
     mov ch, 0 ; track 0
     mov cl, 2 ; sector to read
     mov dh, 0 ; head number
     mov dl, [boot_drive] ; drive number
-    int 13h ; BIOS interrupt
+    int 0x13 ; BIOS interrupt
     jc disk_error ; the interrupt failed so jump to error state
-    jmp 0x50:0x0 ; jump to execute sector
+    jmp [0x500 + 0x18] ; jump to execute sector
     
     hlt ; halt
 
