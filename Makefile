@@ -1,4 +1,6 @@
 BUILD_DIR=build
+BOOT_OBJS=$(wildcard $(BUILD_DIR)/bootloader/*.o)
+KERNEL_OBJS=$(wildcard $(BUILD_DIR)/os/*.o)
 BOOTLOADER=$(BUILD_DIR)/bootloader/bootloader.o
 KERNEL=$(BUILD_DIR)/os/kernel.o
 LINKER=linker.ld
@@ -15,7 +17,7 @@ os:
 	make -C os
 
 bootdisk:  bootloader os
-	ld -m elf_i386 -T $(LINKER) -o kernel.elf $(BOOTLOADER) $(KERNEL) 
+	ld -m elf_i386 -T $(LINKER) -o kernel.elf $(BOOT_OBJS) $(KERNEL_OBJS) 
 	
 	#dd if=/dev/zero of=$(DISK_IMG) bs=512 count=2880
 	#dd conv=notrunc if=$(BOOTLOADER) of=$(DISK_IMG) bs=512 count=1 seek=0
