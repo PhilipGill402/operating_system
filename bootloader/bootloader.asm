@@ -1,108 +1,97 @@
-; SAMPLE BOOTLOADER
 
-;org 0x7c00
+section .boot
 bits 16
-start: jmp boot
-
-msg db "Hello World!", 0ah, 0dh, 0h
-boot_drive db 0
-
+global boot
 boot:
-    cli ; no interrupts
+	mov ax, 0x2401
+	int 0x15
+	
+    mov ax, 0x3
+	int 0x10
+	
+    mov [disk], dl 
     
-    ;stack initialization
-    xor ax, ax
-    mov ss, ax
-    mov sp, 0x7c00
-    sti
+    mov ah, 0x2 ; read sectors
+    mov al, 6 ; sector to read
+    mov ch, 0 ; cylinder index
+    mov dh, 0 ; head index
+    mov cl, 2 ; sector index
+    mov dl, [disk] ; disk index
+    mov bx, copy_target ; target pointer
+    int 0x13 ; load sectors 
 
-    cld ; all that we need to init
+    cli
+	
+    lgdt [gdt_pointer]
+	mov eax, cr0
+	or eax,0x1
+	
+    mov cr0, eax
     
-    mov [boot_drive], dl ; save BIOS boot drive
-    
-    mov ax, 0x0050
+    mov ax, DATA_SEG
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
 
-    ; setting up the buffer
-    mov es, ax
-    xor bx, bx
-    
-     
+    jmp CODE_SEG:boot2
 
-    ;read remaining 29 sectors of the floppy disk
-    mov ah, 0x02 ; read sectors from disk
-    mov al, 2 ; read 2 sector 
-    mov ch, 0 ; track 0
-    mov cl, 2 ; sector to read
-    mov dh, 0 ; head number
-    mov dl, [boot_drive] ; drive number
-    int 0x13 ; BIOS interrupt
-    jc disk_error ; the interrupt failed so jump to error state
-    jmp [0x500 + 0x18] ; jump to execute sector
-    
-    hlt ; halt
+gdt_start:
+	dq 0x0
+gdt_code:
+	dw 0xFFFF
+	dw 0x0
+	db 0x0
+	db 10011010b
+	db 11001111b
+	db 0x0
+gdt_data:
+	dw 0xFFFF
+	dw 0x0
+	db 0x0
+	db 10010010b
+	db 11001111b
+	db 0x0
+gdt_end:
+gdt_pointer:
+	dw gdt_end - gdt_start
+	dd gdt_start
 
-disk_error:
-    hlt
-    jmp disk_error
+disk: db 0x0
 
-
-; Purpose: Move a cursor to a specific location on screen and rember this location
-
-; Parameter:
-; bh = y coordinate
-; bl = x coordinate
-
-; Return:
-; None
-
-_mov_cursor:
-    mov ah, 02h ; BIOS: set cursor position 
-    mov dh, bh ; row
-    mov dl, bl ; col
-    xor bh, bh 
-    int 10h ; BIOS interrupt
-    ret
-
-; Purpose: print a character on screen, at the cursor position previously set by _mov_cursor
-
-; Parameters:
-; al = character to print
-; bl = text color (ignore)
-; cx = number of times the character is repeated (ignore)
-
-; Return:
-; None
-
-_put_char:
-    mov ah, 0eh ; BIOS: write character and attribute at cursor
-    xor bh, bh ; page number : 0
-    mov bl, 07h ; text attribute
-    int 10h ; BIOS interrupt
-    ret
-
-; Purpose: print a string
-
-; Parameters:
-; ds:si = zero terminated string
-
-; Return:
-; None
-
-_print:
-.loop:
-    lodsb ; sets al to [ds:si] and increments si
-    test al, al ; checks if al is equal to null terminator
-    jz .done ; if we found the null terminator then return
-    call _put_char ; prints the current character
-    jmp .loop ; jump back to start of loop
-
-.done:
-    ret
-
-
-
-
+CODE_SEG equ gdt_code - gdt_start
+DATA_SEG equ gdt_data - gdt_start
 
 
 times 510 - ($-$$) db 0
-dw 0xAA55
+dw 0xaa55
+
+copy_target:
+bits 32
+
+hello: db "Hello more than 512 bytes world!",0
+
+boot2:
+	mov esi,hello
+	mov ebx,0xb8000
+.loop:
+	lodsb
+	or al,al
+	jz halt
+	or eax,0x0F00
+	mov word [ebx], ax
+	add ebx, 2
+	jmp .loop
+halt:
+    mov esp, kernel_stack_top
+    extern kmain
+    call kmain
+	cli
+	hlt
+
+section .bss
+align 4
+kernel_stack_bottom: equ $
+    resb 16384 ; 16 KB
+kernel_stack_top:
