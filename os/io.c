@@ -17,6 +17,26 @@ void move_cursor() {
     outportb(0x3D5, temp);
 }
 
+//scrolls the screen down
+void scroll() {
+    //will hold the characters in each line while copying
+    unsigned temp[CHARS_PER_LINE];
+    short* vga = (short*)0xb8000;
+    
+    //clear first line
+    for (int i = 0; i < CHARS_PER_LINE; i++) {
+        vga[i] = ' ';
+    }
+
+    for (int i = 1; i < MAX_LINES-1; i++) {
+        for (int j = 0; j < CHARS_PER_LINE; j++) {
+            int curr_pos = (i * 80) + j;
+            int new_pos = ((i - 1) * 80) + j;
+            vga[new_pos] = vga[curr_pos];
+        }
+    }
+}
+
 //writes a character to vga output
 void put_char(unsigned char c) {
     short* vga = (short*)0xb8000;
@@ -43,6 +63,11 @@ void put_char(unsigned char c) {
             cur_x = 0;
             cur_y++;
         }
+
+        if (cur_y > MAX_LINES) {
+            scroll();
+            cur_y--;
+        }
     }
 
     move_cursor();
@@ -55,3 +80,6 @@ void print(const char* str) {
         str++;
     }
 }
+
+
+
