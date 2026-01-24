@@ -3,6 +3,6 @@
 
 extern void kmain() {
     print("hello world\n");
-
-    gdt_flush();
+    
+    gdt_install();
 }

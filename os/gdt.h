@@ -18,6 +18,8 @@ struct gdt_ptr {
 extern struct gdt_entry gdt[3];
 extern struct gdt_ptr gp;
 
+void gdt_set_gate(int name, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran);
+void gdt_install();
 void gdt_flush();
 
 
