@@ -81,5 +81,36 @@ void print(const char* str) {
     }
 }
 
+void printi(int num) {
+    //TODO: replace with (int)((ceil(log10(num))+1)*sizeof(char)) to guarantee that the array is large enough
+    char str[30];
+    int_to_str(num, str);
+    print(str);
+}
 
+void int_to_str(int num, char* str) {
+    int sign = num;
+
+    if (num < 0) {
+        num *= -1;
+    }
+    
+    int i = 0;
+    while (num > 0) {
+        str[i++] = num % 10 + '0';
+        num /= 10;
+    }
+
+    if (sign < 0) {
+        str[i++] = '-';
+    }
+
+    str[i] = '\0';
+    
+    for (int j = 0, k = i - 1; j < k; j++, k--) {
+        char temp = str[j];
+        str[j] = str[k];
+        str[k] = temp;
+    }
+}
 
