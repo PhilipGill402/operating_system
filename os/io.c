@@ -89,6 +89,12 @@ void printi(int num) {
 }
 
 void int_to_str(int num, char* str) {
+    if (num == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+
     int sign = num;
 
     if (num < 0) {

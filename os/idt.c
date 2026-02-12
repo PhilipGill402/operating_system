@@ -73,18 +73,8 @@ void idt_install() {
     idt_create_stubs(); 
     
     unsigned int addr = ((unsigned int)idt[3].base_hi << 16) | idt[3].base_low;
-    printi(idt[3].base_hi);
-    print("\n");
-    printi(idt[3].base_low);
-    print("\n");
-    //printi(idt[3].seg);
-    //print("\n");
-    //printi(idt[3].flags);
-    //print("\n");
 
     idt_load();
-    idt_debug_dump_idtr(); 
-    //__asm__ __volatile__ ("sti");
 }
 
 void idt_load() {
@@ -93,6 +83,12 @@ void idt_load() {
 
 void isr_handler(regs_t* reg) {
     print("EXCEPTION: ");
+    printi(reg->int_no);
+    print("\nerr = ");
+    printi(reg->err_code);
+    print("\neip = ");
+    printi(reg->eip);
+    print("\n");
     
     //infinite wait
     while (1) {
