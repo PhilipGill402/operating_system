@@ -7,9 +7,10 @@ extern void kmain() {
     __asm__ __volatile__("cli");
 
     print("hello world\n");
+    print("whats up\n");
 
-    gdt_install();
-    idt_install();
+    //gdt_install();
+    //idt_install();
 
     
     /*
