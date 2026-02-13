@@ -120,3 +120,17 @@ void int_to_str(int num, char* str) {
     }
 }
 
+void clear_scr(){
+    short* vga = (short*)0xb8000;
+
+    for (int i = 0; i < MAX_LINES; i++) {
+        for (int j = 0; j < CHARS_PER_LINE; j++) {
+            int position = (i * 80) + j;
+            vga[position] = ' ';
+        }
+    }
+
+    cur_x = 0;
+    cur_y = 0;
+}
+

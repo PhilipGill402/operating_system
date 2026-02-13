@@ -82,6 +82,7 @@ void idt_load() {
 }
 
 void isr_handler(regs_t* reg) {
+    clear_scr(); 
     print("EXCEPTION: ");
     printi(reg->int_no);
     print("\nerr = ");
