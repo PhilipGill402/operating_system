@@ -133,4 +133,3 @@ void clear_scr(){
     cur_x = 0;
     cur_y = 0;
 }
-
