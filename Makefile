@@ -1,39 +1,71 @@
-BUILD_DIR=build
-BOOT_OBJS=$(wildcard $(BUILD_DIR)/bootloader/*.o)
-KERNEL_OBJS=$(wildcard $(BUILD_DIR)/os/*.o)
-BOOTLOADER=$(BUILD_DIR)/bootloader/bootloader.o
-KERNEL=$(BUILD_DIR)/os/kernel.o
-LINKER=linker.ld
-KERNEL_LINKER=kernel.ld
-DISK_IMG=$(BUILD_DIR)/disk.img
+# Bare Bones style Makefile adapted to:
+# - kernel/   -> source files (.c and .s)
+# - build/    -> object files
+# - linker.ld -> linker script in project root
+#
+# Intended workflow:
+#   make        -> build kernel binary
+#   make run    -> run kernel directly in QEMU (no grub-mkrescue)
+#   make iso    -> build bootable ISO (inside Docker/container)
 
-KERNEL_ELF=$(BUILD_DIR)/os/kernel.elf
-BOOT_BIN=$(BUILD_DIR)/bootloader/bootloader.bin
-KERNEL_BIN=$(BUILD_DIR)/os/kernel.bin
+ARCH := i686
+TARGET := $(ARCH)-elf
 
-all: bootdisk
+CC := $(TARGET)-gcc
+AS := $(TARGET)-as
+LD := $(TARGET)-gcc
 
-.PHONY: bootloader os
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+ASFLAGS :=
+LDFLAGS := -T linker.ld -ffreestanding -O2 -nostdlib
+LIBS := -lgcc
 
-$(BOOT_BIN):
-	make -C bootloader
+KERNEL_BIN := myos.bin
+ISO := myos.iso
 
-$(KERNEL_BIN):
-	make -C os
+SRC_DIR := kernel
+BUILD_DIR := build
+ISO_DIR := isodir
 
-bootdisk: $(BOOT_BIN) $(KERNEL_BIN) 
-	dd if=/dev/zero of=$(DISK_IMG) bs=512 count=2880
-	dd conv=notrunc if=$(BOOT_BIN) of=$(DISK_IMG) bs=512 count=1 seek=0
-	dd conv=notrunc if=$(KERNEL_BIN) of=$(DISK_IMG) bs=512 seek=1
+C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
+ASM_SOURCES := $(wildcard $(SRC_DIR)/*.s)
 
-qemu-debug:
-	qemu-system-i386 -machine q35 -fda $(DISK_IMG) -gdb tcp::26000 -S
+C_OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
 
-qemu:
-	qemu-system-i386 -fda $(DISK_IMG)
+OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
+.PHONY: all clean iso run dirs
+
+all: $(KERNEL_BIN)
+
+dirs:
+	mkdir -p $(BUILD_DIR)
+
+# Link kernel
+$(KERNEL_BIN): linker.ld $(OBJECTS)
+	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBS)
+	grub-file --is-x86-multiboot $@
+
+# Compile C sources into build/
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | dirs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Assemble .s sources into build/
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s | dirs
+	$(AS) $(ASFLAGS) $< -o $@
+
+# Build bootable ISO
+# Only use this inside the Docker container where grub-mkrescue works
+iso: $(KERNEL_BIN)
+	mkdir -p $(ISO_DIR)/boot/grub
+	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
+	printf 'menuentry "myos" {\n\tmultiboot /boot/$(KERNEL_BIN)\n}\n' > $(ISO_DIR)/boot/grub/grub.cfg
+	grub-mkrescue -o $(ISO) $(ISO_DIR)
+
+# Run directly in QEMU without generating an ISO
+run: $(KERNEL_BIN)
+	qemu-system-i386 -kernel $(KERNEL_BIN)
 
 clean:
-	make -C bootloader clean
-	make -C os clean
-	rm $(DISK_IMG)
+	rm -rf $(BUILD_DIR) $(KERNEL_BIN) $(ISO) $(ISO_DIR)
