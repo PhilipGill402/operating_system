@@ -1,0 +1,5 @@
+#ifndef KERNEL_MEMORY_PAGING_H_
+#define KERNEL_MEMORY_PAGING_H_
+
+
+#endif // !KERNEL_MEMORY_PAGING_H_
