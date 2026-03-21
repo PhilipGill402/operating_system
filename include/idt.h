@@ -49,6 +49,17 @@ struct idt_ptr {
     unsigned int base;
 } __attribute__((packed));
 
+static const char* exc_names[32] = {
+    "Divide Error", "Debug", "NMI", "Breakpoint",
+    "Overflow", "BOUND Range", "Invalid Opcode", "Device Not Available",
+    "Double Fault", "Coprocessor Segment Overrun", "Invalid TSS", "Segment Not Present",
+    "Stack-Segment Fault", "General Protection Fault", "Page Fault", "Reserved",
+    "x87 FP Exception", "Alignment Check", "Machine Check", "SIMD FP Exception",
+    "Virtualization", "Control Protection", "Reserved", "Reserved",
+    "Reserved", "Reserved", "Reserved", "Reserved",
+    "Hypervisor Injection", "VMM Communication", "Security", "Reserved"
+};
+
 typedef struct regs {
     unsigned int ds;
     unsigned int edi;

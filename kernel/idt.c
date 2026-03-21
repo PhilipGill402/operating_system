@@ -69,8 +69,6 @@ void idt_install() {
     idt_create_stubs(); 
     
     unsigned int addr = ((unsigned int)idt[3].base_hi << 16) | idt[3].base_low;
-    printf("%d\n", idt[3].base_hi);
-    printf("%d\n", idt[3].base_low);
 
     idt_load();
     idt_debug_dump_idtr(); 
@@ -82,7 +80,7 @@ void idt_load() {
 }
 
 void isr_handler(regs_t* reg) {
-    printf("EXCEPTION: ");
+    printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[reg->err_code]);
     
     //infinite wait
     while (1) {

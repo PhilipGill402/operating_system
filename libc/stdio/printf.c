@@ -13,24 +13,34 @@ static bool print(const char* data, size_t length) {
 }
 
 void int_to_str(int num, char* str) {
-    int sign = num;
+    unsigned int value;
+    int i = 0;
+    int negative = 0;
+
+    if (num == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
 
     if (num < 0) {
-        num *= -1;
-    }
-    
-    int i = 0;
-    while (num > 0) {
-        str[i++] = num % 10 + '0';
-        num /= 10;
+        negative = 1;
+        value = (unsigned int)(-(num + 1)) + 1;
+    } else {
+        value = (unsigned int)num;
     }
 
-    if (sign < 0) {
+    while (value > 0) {
+        str[i++] = (value % 10) + '0';
+        value /= 10;
+    }
+
+    if (negative) {
         str[i++] = '-';
     }
 
     str[i] = '\0';
-    
+
     for (int j = 0, k = i - 1; j < k; j++, k--) {
         char temp = str[j];
         str[j] = str[k];
@@ -90,7 +100,7 @@ int printf(const char* restrict format, ...) {
 		} else if (*format == 'd') {
             format++;
             int num = va_arg(parameters, int);
-            char* str;
+            char str[12];
             int_to_str(num, str);
             size_t len = strlen(str); 
             if (maxrem < len) {
