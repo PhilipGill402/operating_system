@@ -33,11 +33,11 @@ ASFLAGS :=
 LDFLAGS := -T linker.ld -ffreestanding -O2 -nostdlib
 LIBS := -lgcc
 
-C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
-ASM_SOURCES := $(wildcard $(SRC_DIR)/*.s)
+C_SOURCES := $(shell find $(SRC_DIR) -type f -name '*.c')
+ASM_SOURCES := $(shell find $(SRC_DIR) -type f -name '*.s')
 
-C_OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/kernel_%.o,$(C_SOURCES))
-ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/kernel_%.o,$(ASM_SOURCES))
+C_OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
 OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
 .PHONY: all kernel libc run iso clean dirs
@@ -61,10 +61,12 @@ $(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)
 $(LIBK):
 	$(MAKE) -C $(LIBC_DIR)
 
-$(BUILD_DIR)/kernel_%.o: $(SRC_DIR)/%.c | dirs
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel_%.o: $(SRC_DIR)/%.s | dirs
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
+	mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) $< -o $@
 
 # Only build ISO when explicitly requested

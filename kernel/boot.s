@@ -16,11 +16,17 @@ stack_bottom:
 stack_top:
 
 .section .bss, "aw", @nobits
+.global boot_page_directory
+.global boot_page_table1
+
 .align 4096
 boot_page_directory:
     .skip 4096
 boot_page_table1:
     .skip 4096
+.align 4
+multiboot_info_ptr:
+    .skip 4
 
 .section .multiboot.text, "a"
 .global _start
@@ -30,6 +36,8 @@ boot_page_table1:
 .extern _kernel_end
 
 _start:
+    movl %ebx, multiboot_info_ptr - 0xC0000000
+
     movl $(boot_page_table1 - 0xC0000000), %edi
     movl $0, %esi
     movl $1023, %ecx
@@ -74,6 +82,7 @@ _start:
 
     movl $stack_top, %esp
 
+    pushl multiboot_info_ptr
     call kernel_main
 
     cli

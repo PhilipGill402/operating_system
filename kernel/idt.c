@@ -60,19 +60,13 @@ void idt_install() {
     ip.limit = sizeof(struct idt_entry) * 256 - 1;
     ip.base = (unsigned int)idt;
 
-    //zero out the idt
     for (int i = 0; i < 256; i++) {
         idt_set_gate(i,0,0,0);
     }
 
-    //add all entries here 
     idt_create_stubs(); 
-    
-    unsigned int addr = ((unsigned int)idt[3].base_hi << 16) | idt[3].base_low;
-
     idt_load();
     idt_debug_dump_idtr(); 
-    //__asm__ __volatile__ ("sti");
 }
 
 void idt_load() {
@@ -80,7 +74,7 @@ void idt_load() {
 }
 
 void isr_handler(regs_t* reg) {
-    printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[reg->err_code]);
+    printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[(int)reg->int_no]);
     
     //infinite wait
     while (1) {
