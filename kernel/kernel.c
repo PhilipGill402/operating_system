@@ -31,5 +31,15 @@ void kernel_main(unsigned long mbi_phys) {
     idt_install();
     pmm_init(mbi);
 
+    uint32_t* addr = (uint32_t*)pmm_alloc_frame();
+
+    printf("%d\n", (int)addr);
+
+    *addr = 10;
+
+    printf("%d\n", *addr);
+
+    pmm_free_frame((uint32_t)addr);
+
     printf("Hello world\n");
 }

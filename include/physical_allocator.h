@@ -28,9 +28,6 @@ typedef struct {
 void pmm_init(multiboot_info_t* mbi);
 uint32_t pmm_alloc_frame(void);          // returns physical address
 void pmm_free_frame(uint32_t phys_addr);
-bool pmm_is_used(uint32_t frame_index);
-void pmm_mark_used(uint32_t phys_addr);
-void pmm_mark_free(uint32_t phys_addr);
 
 #endif // !INCLUDE_PHYSICAL_ALLOCATOR_H_
 

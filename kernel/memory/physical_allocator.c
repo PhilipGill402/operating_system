@@ -15,6 +15,15 @@ static inline bool bitmap_test(uint64_t frame) {
     return (pmm.bitmap[frame / 32] >> (frame % 32)) & 1;
 }
 
+void reserve_phys_range(uint32_t phys_start, uint32_t size) {
+    uint32_t page_start = phys_start & ~(PAGE_SIZE - 1);
+    uint32_t page_end = (phys_start + size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+    for (uint32_t page = page_start; page < page_end; page += PAGE_SIZE) {
+        bitmap_set(page / PAGE_SIZE);
+    }
+}
+
 void pmm_init(multiboot_info_t* mbi) {
     // 1. verify mbi has a memory map
     // 2. find top of physical memory
@@ -92,29 +101,57 @@ void pmm_init(multiboot_info_t* mbi) {
         
         mmap = (multiboot_mmap_entry_t*) ((uint32_t)mmap + mmap->size + sizeof(uint32_t));
     }
-    
+/*    
+    [0, 1 MiB)                         reserve for now
+    [_kernel_start, _kernel_end)       reserve
+    [boot_page_directory, +4096)       reserve
+    [boot_page_table1, +4096)          reserve
+    [bitmap_phys, bitmap_phys+size)    reserve
+    [mbi_phys page(s)]                 reserve until copied
+    [mmap_phys page(s)]                reserve until copied
+*/
+
     // setting used memory as used
     bitmap_set(0);
     
     // set kernel to be used
     uint32_t kernel_start = (uint32_t)&_kernel_start - KERNEL_BASE;
     uint32_t kernel_end = (uint32_t)&_kernel_end - KERNEL_BASE;
-    
-    uint32_t kernel_start_frame = kernel_start / PAGE_SIZE;
-    uint32_t kernel_end_frame = (kernel_end + PAGE_SIZE - 1) / PAGE_SIZE;
-
-    for (uint32_t frame = kernel_start_frame; frame < kernel_end_frame; frame++) {
-        bitmap_set(frame);
-    } 
+    reserve_phys_range(kernel_start, kernel_end - kernel_start); 
 
     // set boot page directory to used
     uint32_t boot_page_directory_phys = (uint32_t)&boot_page_directory;
-    bitmap_set(boot_page_directory_phys / PAGE_SIZE); 
+    reserve_phys_range(boot_page_directory_phys, PAGE_SIZE); 
 
+    // set boot page table 1 to used
+    uint32_t boot_page_table1_phys = (uint32_t)&boot_page_table1;
+    reserve_phys_range(boot_page_table1_phys, PAGE_SIZE);
+
+    // set the bitmap to used
+    reserve_phys_range(bitmap_phys, bitmap_pages * PAGE_SIZE); 
+    
+    // set multiboot info to used
+    reserve_phys_range((uint32_t)mbi, sizeof(multiboot_info_t));
+
+    // set multiboot mmap entries to used
+    reserve_phys_range(mbi->mmap_addr + KERNEL_BASE, mbi->mmap_length); 
 }
 
-uint32_t pmm_alloc_frame(void);          // returns physical address
-void pmm_free_frame(uint32_t phys_addr);
-bool pmm_is_used(uint32_t frame_index);
-void pmm_mark_used(uint32_t phys_addr);
-void pmm_mark_free(uint32_t phys_addr);
+uint32_t pmm_alloc_frame(void)  {          // returns physical address
+    for (uint32_t frame = 0; frame < pmm.total_frames; frame++) {
+        // frame is free
+        if (!bitmap_test(frame)) {
+            bitmap_set(frame);
+            return frame * PAGE_SIZE;
+        } 
+    }
+
+    return 0;
+}
+
+void pmm_free_frame(uint32_t phys_addr) {
+    uint32_t frame = (phys_addr & ~(PAGE_SIZE - 1)) / PAGE_SIZE;
+    bitmap_clear(frame);
+}
+
+
