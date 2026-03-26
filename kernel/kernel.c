@@ -30,16 +30,12 @@ void kernel_main(unsigned long mbi_phys) {
     gdt_install();
     idt_install();
     pmm_init(mbi);
+    transition_page_directory();
 
-    uint32_t* addr = (uint32_t*)pmm_alloc_frame();
+    uint32_t phys = pmm_alloc_frame();
+    uint32_t virt = 0xC0500000;
+    map_page(virt, phys, PAGE_WRITE);
 
-    printf("%d\n", (int)addr);
-
-    *addr = 10;
-
-    printf("%d\n", *addr);
-
-    pmm_free_frame((uint32_t)addr);
 
     printf("Hello world\n");
 }
