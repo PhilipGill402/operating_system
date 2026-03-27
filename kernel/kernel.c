@@ -9,8 +9,9 @@
 #include "multiboot.h"
 #include "physical_allocator.h"
 #include "paging.h"
+#include "heap.h"
 
-void kernel_main(unsigned long mbi_phys) {
+void kernel_main(uint32_t mbi_phys) {
     terminal_initialize();
 
     // mapping mbi into virtual memory
@@ -31,11 +32,6 @@ void kernel_main(unsigned long mbi_phys) {
     idt_install();
     pmm_init(mbi);
     transition_page_directory();
-
-    uint32_t phys = pmm_alloc_frame();
-    uint32_t virt = 0xC0500000;
-    map_page(virt, phys, PAGE_WRITE);
-
 
     printf("Hello world\n");
 }

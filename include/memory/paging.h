@@ -13,6 +13,11 @@
 #define TEMP_PT_VIRT 0xC0400000
 #define TEMP_PD_INDEX 769
 
+#define KERNEL_VIRT_START 0xC1000000
+#define KERNEL_VIRT_END   0xE0000000
+
+static uint32_t next_free_virt = KERNEL_VIRT_START;
+
 extern uint32_t* temp_page_table;
 
 extern uint32_t boot_page_directory[1024];
@@ -32,4 +37,7 @@ static inline void load_cr3(uint32_t phys) {
 void map_boot_page(uint32_t phys_addr);
 void transition_page_directory();
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags);
+uint32_t unmap_page(uint32_t virt);
+void* alloc_kernel_page(uint32_t flags);
+void free_kernel_page(uint32_t virt);
 #endif // !INCLUDE_PAGING_H_

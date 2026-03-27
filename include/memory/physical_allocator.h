@@ -19,9 +19,6 @@ extern uint32_t boot_page_table1[1024];
 typedef struct {
     uint32_t* bitmap;          // 1 bit per 4 KiB frame
     uint32_t total_frames;
-    uint32_t free_frames;
-    uint32_t first_usable_frame;
-    uint32_t last_usable_frame;
     uint32_t search_hint;      // where to resume scanning
 } pmm_t;
 

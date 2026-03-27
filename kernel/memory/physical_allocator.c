@@ -71,6 +71,7 @@ void pmm_init(multiboot_info_t* mbi) {
 
     pmm.total_frames = total_frames;
     pmm.bitmap = (uint32_t*)bitmap_virt;
+    pmm.search_hint = 0;
 
     bitmap_phys = bitmap_phys & 0xFFFFF000;
     map_boot_page(bitmap_phys);
@@ -101,15 +102,6 @@ void pmm_init(multiboot_info_t* mbi) {
         
         mmap = (multiboot_mmap_entry_t*) ((uint32_t)mmap + mmap->size + sizeof(uint32_t));
     }
-/*    
-    [0, 1 MiB)                         reserve for now
-    [_kernel_start, _kernel_end)       reserve
-    [boot_page_directory, +4096)       reserve
-    [boot_page_table1, +4096)          reserve
-    [bitmap_phys, bitmap_phys+size)    reserve
-    [mbi_phys page(s)]                 reserve until copied
-    [mmap_phys page(s)]                reserve until copied
-*/
 
     // setting used memory as used
     bitmap_set(0);
@@ -138,10 +130,11 @@ void pmm_init(multiboot_info_t* mbi) {
 }
 
 uint32_t pmm_alloc_frame(void)  {          // returns physical address
-    for (uint32_t frame = 0; frame < pmm.total_frames; frame++) {
+    for (uint32_t frame = pmm.search_hint, total = 0; total < pmm.total_frames; (frame++) % pmm.total_frames, total++) {
         // frame is free
         if (!bitmap_test(frame)) {
             bitmap_set(frame);
+            pmm.search_hint = frame;
             return frame * PAGE_SIZE;
         } 
     }

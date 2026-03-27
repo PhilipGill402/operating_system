@@ -81,7 +81,7 @@ uint32_t* create_page_table(uint32_t pd_idx) {
 
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
-    uint32_t pt_idx = (uint32_t) virt >> 12 & 0x03FF;
+    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
 
     if (!(kernel_page_directory[pd_idx] & PAGE_PRESENT)) {
         if (!create_page_table(pd_idx)) {
@@ -95,4 +95,55 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF) | PAGE_PRESENT;
 
     invlpg((void*)virt);
+}
+
+uint32_t unmap_page(uint32_t virt) {
+    uint32_t pd_idx = (uint32_t) virt >> 22;
+    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
+    
+    // page table doesnt exist
+    if (!(kernel_page_directory[pd_idx] & PAGE_PRESENT)) {
+        return 0;
+    }
+
+    uint32_t pt_phys = kernel_page_directory[pd_idx] & 0xFFFFF000;
+    uint32_t* pt = temp_map_phys(pt_phys);
+    
+    // page table entry doesnt exist
+    if (!(pt[pt_idx] & PAGE_PRESENT)) {
+        return 0;
+    }
+
+    uint32_t phys = pt[pt_idx] & 0xFFFFF000;
+    pt[pt_idx] = 0;
+
+    invlpg((void*)virt);
+
+    return phys;
+}
+
+void* alloc_kernel_page(uint32_t flags) {
+    if (next_free_virt + PAGE_SIZE > KERNEL_VIRT_END) {
+        return NULL;
+    }
+
+    uint32_t frame = pmm_alloc_frame();
+    if (!frame) {
+        return 0;
+    }
+
+    uint32_t virt = next_free_virt;
+    next_free_virt += PAGE_SIZE;
+
+    map_page(virt, frame, flags);
+
+    return (void*)virt;
+}
+
+void free_kernel_page(uint32_t virt) {
+    uint32_t phys = unmap_page(virt);
+
+    if (phys) {
+        pmm_free_frame(phys);
+    }
 }
