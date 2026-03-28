@@ -6,6 +6,7 @@
 #include "interrupts/idt.h"
 #include "interrupts/pic.h"
 #include "interrupts/keyboard.h"
+#include "timer.h"
 
 typedef void(*irq_handler_t)(regs_t* r);
 

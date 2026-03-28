@@ -91,7 +91,6 @@ void idt_install() {
     idt_create_isr_stubs();
     idt_create_irq_stubs();
     idt_load();
-    idt_debug_dump_idtr(); 
 }
 
 void idt_load() {

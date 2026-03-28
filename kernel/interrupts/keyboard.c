@@ -28,7 +28,14 @@ void keyboard_callback(regs_t* r) {
 
     char c = scancode_set1[scancode];
 
-    if (c) {
+    if (c == '\n') {
         putchar(c);
+        input_buffer_submit();
+    } else if (c == '\b') {
+        putchar(c);
+        input_buffer_pop();
+    } else {
+        putchar(c);
+        input_buffer_push(c);
     }
 }

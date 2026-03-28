@@ -1,9 +1,9 @@
 #include "vga.h"
 
-size_t terminal_row = 0;
-size_t terminal_column = 0;
-uint8_t terminal_color;
-uint16_t* terminal_buffer = (uint16_t*)VGA_MEMORY;
+static size_t terminal_row = 0;
+static size_t terminal_column = 0;
+static uint8_t terminal_color;
+static uint16_t* terminal_buffer = (uint16_t*)VGA_MEMORY;
 
 uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) {
     return fg | bg << 4;
@@ -25,6 +25,8 @@ void vga_move_cursor(uint16_t row, uint16_t col) {
 
 void terminal_initialize() {
     terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    terminal_row = 0;
+    terminal_column = 0;
 
     for (int y = 0; y < VGA_HEIGHT; y++) {
         for (int x = 0; x < VGA_WIDTH; x++) {
@@ -41,8 +43,9 @@ void terminal_putchar_at(char c, uint8_t color, size_t x, size_t y) {
 }
 
 void terminal_putchar(char c) {
-    if (c == 0x08 && terminal_row != 0) { // backspace
+    if (c == 0x08 && terminal_column != 0) { // backspace
         terminal_column--;
+        terminal_putchar_at(' ', terminal_color, terminal_column, terminal_row);
     } else if (c == '\t') { // tab
         terminal_column = (terminal_column + 8) & ~(8 - 1);
     } else if (c == '\r') { // carriage return

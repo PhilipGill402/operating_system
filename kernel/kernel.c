@@ -12,8 +12,9 @@
 #include "interrupts/idt.h"
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
+#include "tty.h"
 
-void kernel_main(uint32_t mbi_phys) {
+void kernel_init(uint32_t mbi_phys) {
     terminal_initialize();
 
     // mapping mbi into virtual memory
@@ -44,10 +45,10 @@ void kernel_main(uint32_t mbi_phys) {
     transition_page_directory();
 
     __asm__ __volatile__("sti");
-    
-    printf("Hello world\n");
+}
 
-    for (;;) {
-        __asm__ __volatile__("hlt");
-    }
+void kernel_main(uint32_t mbi_phys) {
+    kernel_init(mbi_phys); 
+    
+    tty(); 
 }

@@ -1,13 +1,29 @@
 #include "memory/physical_allocator.h"
 
-static pmm_t pmm;
+pmm_t pmm;
 
 static inline void bitmap_set(uint64_t frame) {
-    pmm.bitmap[frame / 32] |= (1 << (frame % 32));
+    uint32_t idx = frame / 32;
+    uint32_t bit = frame % 32;
+    uint32_t mask = 1u << bit;
+
+    if (!(pmm.bitmap[idx] & mask)) {
+        pmm.bitmap[idx] |= mask;
+        pmm.used_frames++;
+        pmm.free_frames--;
+    }
 }
 
 static inline void bitmap_clear(uint64_t frame) {
-    pmm.bitmap[frame / 32] &= (1 << (frame % 32));
+    uint32_t idx = frame / 32;
+    uint32_t bit = frame % 32;
+    uint32_t mask = 1u << bit;
+
+    if (pmm.bitmap[idx] & mask) {
+        pmm.bitmap[idx] &= ~mask;
+        pmm.used_frames--;
+        pmm.free_frames++;
+    } 
 }
 
 static inline bool bitmap_test(uint64_t frame) {
@@ -71,6 +87,8 @@ void pmm_init(multiboot_info_t* mbi) {
     pmm.total_frames = total_frames;
     pmm.bitmap = (uint32_t*)bitmap_virt;
     pmm.search_hint = 0;
+    pmm.bitmap_bytes = bitmap_bytes;
+    
 
     bitmap_phys = bitmap_phys & 0xFFFFF000;
     map_boot_page(bitmap_phys);
@@ -102,6 +120,9 @@ void pmm_init(multiboot_info_t* mbi) {
         mmap = (multiboot_mmap_entry_t*) ((uint32_t)mmap + mmap->size + sizeof(uint32_t));
     }
 
+    pmm.used_frames = 0;
+    pmm.free_frames = total_frames;
+
     // setting used memory as used
     bitmap_set(0);
     
@@ -129,7 +150,7 @@ void pmm_init(multiboot_info_t* mbi) {
 }
 
 uint32_t pmm_alloc_frame(void)  {          // returns physical address
-    for (uint32_t frame = pmm.search_hint, total = 0; total < pmm.total_frames; (frame++) % pmm.total_frames, total++) {
+    for (uint32_t frame = pmm.search_hint, total = 0; total < pmm.total_frames; frame = (frame + 1) % pmm.total_frames, total++) {
         // frame is free
         if (!bitmap_test(frame)) {
             bitmap_set(frame);

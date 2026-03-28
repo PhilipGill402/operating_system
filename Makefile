@@ -82,4 +82,4 @@ run:
 
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean
-	rm -rf $(BUILD_DIR)/kernel_*.o $(KERNEL_BIN) $(ISO) $(ISO_DIR)
+	rm -rf $(BUILD_DIR)

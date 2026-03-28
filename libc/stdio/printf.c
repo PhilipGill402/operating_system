@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,6 +47,20 @@ void int_to_str(int num, char* str) {
         str[j] = str[k];
         str[k] = temp;
     }
+}
+
+void uint32_to_hex(uint32_t num, char* str) {
+    const char hex_digits[] = "0123456789ABCDEF";
+
+    str[0] = '0';
+    str[1] = 'x';
+
+    for (int i = 0; i < 8; i++) {
+        uint8_t digit = (num >> (28 - 4 * i)) & 0xF;
+        str[2 + i] = hex_digits[digit];
+    }
+
+    str[10] = '\0';
 }
 
 int printf(const char* restrict format, ...) {
@@ -111,17 +126,19 @@ int printf(const char* restrict format, ...) {
             if (!print(str, len))
                 return -1;
             written += len;
-        } else if (*format == 'c') {
+        } else if (*format == 'x') {
             format++;
-            int ch = va_arg(parameters, int);
-            if (maxrem < 1) {
-                // TODO: Set errno to EOVERFLOW.
+            uint32_t hex = va_arg(parameters, uint32_t);
+            char str[11];
+            uint32_to_hex(hex, str);
+            size_t len = strlen(str);
+            if (maxrem < len) {
                 return -1;
             }
-
-            if (!putchar(ch))
+            if (!print(str, len)) {
                 return -1;
-            written += 1;
+            }
+            written += len; 
         } else {
 			format = format_begun_at;
 			size_t len = strlen(format);
