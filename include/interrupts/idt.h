@@ -1,7 +1,8 @@
-#ifndef INCLUDE_IDT_H_
-#define INCLUDE_IDT_H_
+#ifndef INCLUDE_INTERRUPTS_IDT_H_
+#define INCLUDE_INTERRUPTS_IDT_H_
 
 #include <stdio.h>
+#include <stdint.h>
 
 extern void isr0(void);
 extern void isr1(void);
@@ -35,6 +36,23 @@ extern void isr28(void);
 extern void isr29(void);
 extern void isr30(void);
 extern void isr31(void);
+
+extern void irq0(void);
+extern void irq1(void);
+extern void irq2(void);
+extern void irq3(void);
+extern void irq4(void);
+extern void irq5(void);
+extern void irq6(void);
+extern void irq7(void);
+extern void irq8(void);
+extern void irq9(void);
+extern void irq10(void);
+extern void irq11(void);
+extern void irq12(void);
+extern void irq13(void);
+extern void irq14(void);
+extern void irq15(void);
 
 struct idt_entry {
     unsigned short base_low;
@@ -83,9 +101,10 @@ extern struct idt_entry idt[256];
 extern struct idt_ptr ip;
 
 void idt_set_gate(unsigned char num, unsigned long base, unsigned short seg, unsigned char flags);
-void idt_create_stubs();
+void idt_create_isr_stubs();
+void idt_create_irq_stubs();
 void idt_install();
 void idt_load();
 void isr_handler(regs_t* reg);
 
-#endif // !INCLUDE_IDT_H_
+#endif

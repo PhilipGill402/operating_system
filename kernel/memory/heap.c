@@ -1,4 +1,4 @@
-#include "heap.h"
+#include "memory/heap.h"
 
 static uint32_t heap_curr = KHEAP_START;
 static uint32_t heap_end = KHEAP_START;

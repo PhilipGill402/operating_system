@@ -1,5 +1,4 @@
-#include "physical_allocator.h"
-#include <stdio.h>
+#include "memory/physical_allocator.h"
 
 static pmm_t pmm;
 

@@ -2,8 +2,8 @@
 #define INCLUDE_VGA_H_
 
 #include <stdint.h>
-
-#include "string.h"
+#include <string.h>
+#include "interrupts/port.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -30,6 +30,7 @@ enum vga_color {
 
 uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg);
 uint16_t vga_entry(unsigned char c, uint8_t color);
+void vga_move_cursor(uint16_t row, uint16_t col);
 void terminal_initialize();
 void terminal_putchar_at(char c, uint8_t color, size_t x, size_t y);
 void terminal_putchar(char c);

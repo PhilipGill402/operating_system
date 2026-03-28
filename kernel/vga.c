@@ -13,6 +13,16 @@ uint16_t vga_entry(unsigned char c, uint8_t color) {
     return (uint16_t) c | (uint16_t) color << 8;
 }
 
+void vga_move_cursor(uint16_t row, uint16_t col) {
+    uint16_t pos = row * 80 + col;
+
+    outb(0x3D4, 14);
+    outb(0x3D5, (uint8_t)(pos >> 8));
+
+    outb(0x3D4, 15);
+    outb(0x3D5, (uint8_t)(pos & 0xFF));
+}
+
 void terminal_initialize() {
     terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
@@ -21,6 +31,8 @@ void terminal_initialize() {
             terminal_putchar_at(' ', terminal_color, x, y); 
         }
     }
+
+    vga_move_cursor(0,0);
 }
 
 void terminal_putchar_at(char c, uint8_t color, size_t x, size_t y) {
@@ -53,7 +65,7 @@ void terminal_putchar(char c) {
         }
     }
 
-    
+    vga_move_cursor(terminal_row, terminal_column);
 }
 
 void terminal_write(const char* str, size_t size) {

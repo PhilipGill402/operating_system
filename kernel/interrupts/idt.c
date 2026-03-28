@@ -1,4 +1,4 @@
-#include "idt.h"
+#include "interrupts/idt.h"
 
 struct idt_entry idt[256];
 struct idt_ptr ip;
@@ -18,9 +18,9 @@ void idt_set_gate(unsigned char num, unsigned long base, unsigned short seg, uns
     idt[num].flags = flags;
 }
 
-void idt_create_stubs() {
-    unsigned short cs = 0x08;
-    unsigned char flags = 0x8E;
+void idt_create_isr_stubs() {
+    uint8_t cs = 0x08;
+    uint8_t flags = 0x8E;
 
     idt_set_gate(0,  (unsigned int)isr0,  cs, flags);
     idt_set_gate(1,  (unsigned int)isr1,  cs, flags);
@@ -54,6 +54,30 @@ void idt_create_stubs() {
     idt_set_gate(29, (unsigned int)isr29, cs, flags);
     idt_set_gate(30, (unsigned int)isr30, cs, flags);
     idt_set_gate(31, (unsigned int)isr31, cs, flags);
+
+    
+}
+
+void idt_create_irq_stubs() {
+    uint8_t cs = 0x08;
+    uint8_t flags = 0x8E;
+    
+    idt_set_gate(32, (unsigned int)irq0,  cs, flags);
+    idt_set_gate(33, (unsigned int)irq1,  cs, flags);
+    idt_set_gate(34, (unsigned int)irq2,  cs, flags);
+    idt_set_gate(35, (unsigned int)irq3,  cs, flags);
+    idt_set_gate(36, (unsigned int)irq4,  cs, flags);
+    idt_set_gate(37, (unsigned int)irq5,  cs, flags);
+    idt_set_gate(38, (unsigned int)irq6,  cs, flags);
+    idt_set_gate(39, (unsigned int)irq7,  cs, flags);
+    idt_set_gate(40, (unsigned int)irq8,  cs, flags);
+    idt_set_gate(41, (unsigned int)irq9,  cs, flags);
+    idt_set_gate(42, (unsigned int)irq10, cs, flags);
+    idt_set_gate(43, (unsigned int)irq11, cs, flags);
+    idt_set_gate(44, (unsigned int)irq12, cs, flags);
+    idt_set_gate(45, (unsigned int)irq13, cs, flags);
+    idt_set_gate(46, (unsigned int)irq14, cs, flags);
+    idt_set_gate(47, (unsigned int)irq15, cs, flags);
 }
 
 void idt_install() {
@@ -64,7 +88,8 @@ void idt_install() {
         idt_set_gate(i,0,0,0);
     }
 
-    idt_create_stubs(); 
+    idt_create_isr_stubs();
+    idt_create_irq_stubs();
     idt_load();
     idt_debug_dump_idtr(); 
 }

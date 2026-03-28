@@ -1,4 +1,4 @@
-#include "paging.h"
+#include "memory/paging.h"
 
 uint32_t* temp_page_table;
 uint32_t* kernel_page_directory = (uint32_t*)&boot_page_directory;

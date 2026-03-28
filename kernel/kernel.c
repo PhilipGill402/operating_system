@@ -1,15 +1,17 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include <stdio.h>
+
 #include "vga.h"
-#include "idt.h"
 #include "gdt.h"
 #include "multiboot.h"
-#include "physical_allocator.h"
-#include "paging.h"
-#include "heap.h"
+#include "memory/physical_allocator.h"
+#include "memory/paging.h"
+#include "memory/heap.h"
+#include "interrupts/idt.h"
+#include "interrupts/irq.h"
+#include "interrupts/pit.h"
 
 void kernel_main(uint32_t mbi_phys) {
     terminal_initialize();
@@ -30,8 +32,22 @@ void kernel_main(uint32_t mbi_phys) {
 
     gdt_install();
     idt_install();
+    
+    pic_remap(0x20, 0x28);
+    irq_init_handlers();
+    
+    pic_clear_mask(0);
+    pic_clear_mask(1);
+    pit_init(100);
+
     pmm_init(mbi);
     transition_page_directory();
 
+    __asm__ __volatile__("sti");
+    
     printf("Hello world\n");
+
+    for (;;) {
+        __asm__ __volatile__("hlt");
+    }
 }
