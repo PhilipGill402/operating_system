@@ -1,9 +1,10 @@
-#ifndef INCLUDE_TTY_H_
-#define INCLUDE_TTY_H_
+#ifndef INCLUDE_TTY_TTY_H_
+#define INCLUDE_TTY_TTY_H_
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "tty/commands.h"
 #include "memory/heap.h"
 #include "memory/physical_allocator.h"
 #include "vga.h"

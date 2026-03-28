@@ -16,7 +16,7 @@
 #define KERNEL_VIRT_START 0xC1000000
 #define KERNEL_VIRT_END   0xE0000000
 
-static uint32_t next_free_virt = KERNEL_VIRT_START;
+extern uint32_t next_free_virt; 
 
 extern uint32_t* temp_page_table;
 

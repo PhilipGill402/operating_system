@@ -1,7 +1,7 @@
 #include "memory/heap.h"
 
-uint32_t heap_curr;
-uint32_t heap_end;
+uint32_t heap_curr = KHEAP_START;
+uint32_t heap_end = KHEAP_END;
 
 static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);

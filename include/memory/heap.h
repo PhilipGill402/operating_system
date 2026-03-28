@@ -13,6 +13,9 @@
 #define KHEAP_END   0xE0000000
 #define HEAP_ALIGN 8
 
+extern uint32_t heap_curr;
+extern uint32_t heap_end;
+
 void kheap_init();
 void* kmalloc(size_t size);
 void* kzmalloc(size_t size);

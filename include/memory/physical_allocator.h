@@ -25,6 +25,8 @@ typedef struct {
     uint32_t search_hint;      // where to resume scanning
 } pmm_t;
 
+extern pmm_t pmm;
+
 void pmm_init(multiboot_info_t* mbi);
 uint32_t pmm_alloc_frame(void);          // returns physical address
 void pmm_free_frame(uint32_t phys_addr);

@@ -12,7 +12,7 @@
 #include "interrupts/idt.h"
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
-#include "tty.h"
+#include "tty/tty.h"
 
 void kernel_init(uint32_t mbi_phys) {
     terminal_initialize();

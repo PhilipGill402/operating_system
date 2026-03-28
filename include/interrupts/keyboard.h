@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "interrupts/idt.h"
 #include "interrupts/port.h"
-#include "tty.h"
+#include "tty/tty.h"
 
 static volatile uint8_t last_scancode = 0;
 

@@ -3,6 +3,7 @@
 uint32_t* temp_page_table;
 uint32_t* kernel_page_directory = (uint32_t*)&boot_page_directory;
 uint32_t kernel_page_directory_phys = (uint32_t)&boot_page_directory - KERNEL_BASE;
+uint32_t next_free_virt = KERNEL_VIRT_START;
 
 void map_boot_page(uint32_t phys_addr) {
     uint32_t virt_addr = phys_addr + KERNEL_BASE;

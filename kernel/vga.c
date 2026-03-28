@@ -43,7 +43,7 @@ void terminal_putchar_at(char c, uint8_t color, size_t x, size_t y) {
 }
 
 void terminal_putchar(char c) {
-    if (c == 0x08 && terminal_column != 0) { // backspace
+    if (c == 0x08 && terminal_column > 3) { // backspace
         terminal_column--;
         terminal_putchar_at(' ', terminal_color, terminal_column, terminal_row);
     } else if (c == '\t') { // tab
