@@ -13,6 +13,8 @@
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
 #include "tty/tty.h"
+#include "fs/initrd.h"
+#include "fs/fs.h"
 
 void kernel_init(uint32_t mbi_phys) {
     terminal_initialize();
@@ -43,12 +45,14 @@ void kernel_init(uint32_t mbi_phys) {
 
     pmm_init(mbi);
     transition_page_directory();
+    
+    fs_init(mbi, initrd_init); 
 
     __asm__ __volatile__("sti");
 }
 
 void kernel_main(uint32_t mbi_phys) {
-    kernel_init(mbi_phys); 
-    
+    kernel_init(mbi_phys);
+
     tty(); 
 }

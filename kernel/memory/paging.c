@@ -6,6 +6,11 @@ uint32_t kernel_page_directory_phys = (uint32_t)&boot_page_directory - KERNEL_BA
 uint32_t next_free_virt = KERNEL_VIRT_START;
 
 void map_boot_page(uint32_t phys_addr) {
+    if (phys_addr >= 0x400000) {
+        printf("map_boot_page phys too high: %x\n", phys_addr);
+        for (;;);
+    }
+
     uint32_t virt_addr = phys_addr + KERNEL_BASE;
     uint32_t pt_idx = (virt_addr >> 12) & 0x3FF;
 

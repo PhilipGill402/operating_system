@@ -25,8 +25,10 @@ LIBC_DIR := libc
 LIBK := $(BUILD_DIR)/libk.a
 LIBC_INC := $(LIBC_DIR)/include
 
-KERNEL_BIN := myos.bin
+KERNEL_BIN := kernel.bin
 ISO := myos.iso
+
+FS := initrd.img
 
 CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBC_INC)
 ASFLAGS :=
@@ -71,14 +73,16 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 
 # Only build ISO when explicitly requested
 iso: kernel
+	rm -rf $(ISO_DIR)	
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
-	printf 'menuentry "myos" {\n\tmultiboot /boot/$(KERNEL_BIN)\n}\n' > $(ISO_DIR)/boot/grub/grub.cfg
+	cp grub.cfg $(ISO_DIR)/boot/grub
+	cp $(FS) $(ISO_DIR)/boot
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
 # Run only; assumes kernel was already built earlier
 run:
-	qemu-system-i386 -kernel $(KERNEL_BIN)
+	qemu-system-i386 -cdrom $(ISO)
 
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean

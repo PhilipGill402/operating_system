@@ -125,6 +125,11 @@ void pmm_init(multiboot_info_t* mbi) {
 
     // setting used memory as used
     bitmap_set(0);
+
+    // set multiboot module to used
+    multiboot_module_t* mods = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
+    multiboot_module_t initrd_mod = mods[0];
+    reserve_phys_range(initrd_mod.mod_start, initrd_mod.mod_end - initrd_mod.mod_start); 
     
     // set kernel to be used
     uint32_t kernel_start = (uint32_t)&_kernel_start - KERNEL_BASE;

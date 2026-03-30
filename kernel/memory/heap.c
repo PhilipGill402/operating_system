@@ -1,7 +1,7 @@
 #include "memory/heap.h"
 
 uint32_t heap_curr = KHEAP_START;
-uint32_t heap_end = KHEAP_END;
+uint32_t heap_end = KHEAP_START;
 
 static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
@@ -17,11 +17,6 @@ uint8_t grow_heap() {
     heap_end += PAGE_SIZE;
 
     return 1;
-}
-
-void kheap_init() {
-    heap_curr = KHEAP_START;
-    heap_end = KHEAP_START;
 }
 
 void* kmalloc(size_t size) {
