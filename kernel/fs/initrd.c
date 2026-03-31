@@ -62,9 +62,6 @@ fs_node_t* initrd_init(uint32_t addr) {
     
     files = kmalloc(sizeof(fs_node_t) * initrd_header->num_files);
     
-    uint8_t* raw = (uint8_t*)(addr);
-    printf("initrd raw after kmalloc: %x %x %x %x\n", raw[0], raw[1], raw[2], raw[3]);
-
     for (uint32_t i = 0; i < initrd_header->num_files; i++) {
         initrd_file_header_t file_header = initrd_file_headers[i];
 
@@ -75,10 +72,9 @@ fs_node_t* initrd_init(uint32_t addr) {
         file.size = file_header.size;
         file.read = initrd_read;
         file.inode = i;
-        //printf("%d\n", i);
         files[i] = file;
     }
-    printf("made it\n");
+    
     return &root;
 }
 

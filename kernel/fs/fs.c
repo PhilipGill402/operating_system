@@ -50,8 +50,6 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
     }
 
     multiboot_module_t* modules = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
-    printf("mod_start = %x\n", modules[0].mod_start);
-    printf("mod_end   = %x\n", modules[0].mod_end);
     multiboot_module_t* initrd_mod = &modules[0];
     
     uint32_t mod_start = initrd_mod->mod_start;
@@ -66,9 +64,6 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
 
     uint32_t initrd_location = mod_start + KERNEL_BASE;
     
-    uint8_t* raw = (uint8_t*)(mod_start + KERNEL_BASE);
-    printf("initrd raw before init: %x %x %x %x\n", raw[0], raw[1], raw[2], raw[3]);
-
     fs_root = initrd_init(initrd_location);
 
     if (!fs_root) {

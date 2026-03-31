@@ -42,10 +42,10 @@ void kernel_init(uint32_t mbi_phys) {
     pic_clear_mask(0);
     pic_clear_mask(1);
     pit_init(100);
-
+    
     pmm_init(mbi);
     transition_page_directory();
-    
+
     fs_init(mbi, initrd_init); 
 
     __asm__ __volatile__("sti");
@@ -53,6 +53,8 @@ void kernel_init(uint32_t mbi_phys) {
 
 void kernel_main(uint32_t mbi_phys) {
     kernel_init(mbi_phys);
+
+    uint32_t* ptr = kmalloc(sizeof(uint32_t)*PAGE_SIZE);
 
     tty(); 
 }

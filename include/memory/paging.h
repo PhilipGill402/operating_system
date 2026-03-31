@@ -13,7 +13,7 @@
 #define TEMP_PT_VIRT 0xC0400000
 #define TEMP_PD_INDEX 769
 
-#define KERNEL_VIRT_START 0xC1000000
+#define KERNEL_VIRT_START 0xC2000000
 #define KERNEL_VIRT_END   0xE0000000
 
 extern uint32_t next_free_virt; 

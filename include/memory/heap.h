@@ -6,11 +6,10 @@
 #include <string.h>
 
 #include "paging.h"
-#include "physical_allocator.h"
 
 // same as KERNEL_VIRT_MEM
 #define KHEAP_START 0xC1000000
-#define KHEAP_END   0xE0000000
+#define KHEAP_END   0xC2000000
 #define HEAP_ALIGN 8
 
 extern uint32_t heap_curr;

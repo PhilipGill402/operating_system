@@ -75,6 +75,36 @@ void pmm_init(multiboot_info_t* mbi) {
     
     uintptr_t kernel_end_phys = (uintptr_t)&_kernel_end - KERNEL_BASE;
     uintptr_t bitmap_phys = ALIGN_UP(kernel_end_phys, PAGE_SIZE);
+
+    // Keep bitmap above multiboot info
+    uintptr_t mbi_phys = (uintptr_t)mbi - KERNEL_BASE;
+    uintptr_t mbi_end  = ALIGN_UP(mbi_phys + sizeof(multiboot_info_t), PAGE_SIZE);
+    if (bitmap_phys < mbi_end) {
+        bitmap_phys = mbi_end;
+    }
+
+    // Keep bitmap above mmap entries
+    uintptr_t mmap_end = ALIGN_UP(mbi->mmap_addr + mbi->mmap_length, PAGE_SIZE);
+    if (bitmap_phys < mmap_end) {
+        bitmap_phys = mmap_end;
+    }
+
+    // Keep bitmap above module descriptor table
+    if (mbi->flags & (1 << 3)) {
+        uintptr_t mods_end = ALIGN_UP( mbi->mods_addr + mbi->mods_count * sizeof(multiboot_module_t), PAGE_SIZE);
+
+        if (bitmap_phys < mods_end) {
+            bitmap_phys = mods_end;
+        }
+
+        multiboot_module_t* mods = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
+        for (uint32_t i = 0; i < mbi->mods_count; i++) {
+            uintptr_t mod_end = ALIGN_UP(mods[i].mod_end, PAGE_SIZE);
+            if (bitmap_phys < mod_end) {
+                bitmap_phys = mod_end;
+            }
+        }
+    }
     
     // maps bitmap to virtual memory
     for (uint32_t page = bitmap_phys; page < bitmap_phys + bitmap_pages * PAGE_SIZE; page += PAGE_SIZE) {
@@ -126,32 +156,34 @@ void pmm_init(multiboot_info_t* mbi) {
     // setting used memory as used
     bitmap_set(0);
 
-    // set multiboot module to used
-    multiboot_module_t* mods = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
-    multiboot_module_t initrd_mod = mods[0];
-    reserve_phys_range(initrd_mod.mod_start, initrd_mod.mod_end - initrd_mod.mod_start); 
-    
     // set kernel to be used
     uint32_t kernel_start = (uint32_t)&_kernel_start - KERNEL_BASE;
     uint32_t kernel_end = (uint32_t)&_kernel_end - KERNEL_BASE;
     reserve_phys_range(kernel_start, kernel_end - kernel_start); 
 
     // set boot page directory to used
-    uint32_t boot_page_directory_phys = (uint32_t)&boot_page_directory;
-    reserve_phys_range(boot_page_directory_phys, PAGE_SIZE); 
-
     // set boot page table 1 to used
-    uint32_t boot_page_table1_phys = (uint32_t)&boot_page_table1;
+    uint32_t boot_page_directory_phys = (uint32_t)&boot_page_directory - KERNEL_BASE;
+    uint32_t boot_page_table1_phys = (uint32_t)&boot_page_table1 - KERNEL_BASE;
+    reserve_phys_range(boot_page_directory_phys, PAGE_SIZE); 
     reserve_phys_range(boot_page_table1_phys, PAGE_SIZE);
 
     // set the bitmap to used
     reserve_phys_range(bitmap_phys, bitmap_pages * PAGE_SIZE); 
     
     // set multiboot info to used
-    reserve_phys_range((uint32_t)mbi, sizeof(multiboot_info_t));
+    reserve_phys_range((uint32_t)mbi - KERNEL_BASE, sizeof(multiboot_info_t));
 
     // set multiboot mmap entries to used
-    reserve_phys_range(mbi->mmap_addr + KERNEL_BASE, mbi->mmap_length); 
+    reserve_phys_range(mbi->mmap_addr, mbi->mmap_length);
+
+    // set all modules to used    
+    reserve_phys_range(mbi->mods_addr, mbi->mods_count * sizeof(multiboot_module_t));
+
+    // set multiboot module to used
+    multiboot_module_t* mods = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
+    multiboot_module_t initrd_mod = mods[0];
+    reserve_phys_range(initrd_mod.mod_start, initrd_mod.mod_end - initrd_mod.mod_start);
 }
 
 uint32_t pmm_alloc_frame(void)  {          // returns physical address

@@ -8,12 +8,16 @@ static uint32_t align_up(uint32_t value, uint32_t align) {
 }
 
 uint8_t grow_heap() {
-    uint32_t* page = alloc_kernel_page(PAGE_WRITE);
-
-    if (!page) {
+    if (heap_end + PAGE_SIZE > KHEAP_END) {
         return 0;
     }
 
+    uint32_t frame = pmm_alloc_frame();
+    if (!frame) {
+        return 0;
+    }
+
+    map_page(heap_end, frame, PAGE_WRITE);
     heap_end += PAGE_SIZE;
 
     return 1;
