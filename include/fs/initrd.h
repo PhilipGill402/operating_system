@@ -33,15 +33,6 @@ typedef struct {
     uint32_t data_offset;
 } __attribute__((packed)) initrd_node_t;
 
-typedef struct {
-    char name[64];
-    uint32_t offset;
-    uint32_t size;
-    uint32_t parent_id;
-} __attribute__((packed)) initrd_file_header_t;
-
-extern initrd_header_t* initrd_header;                    
-extern initrd_file_header_t* initrd_file_headers;
 extern initrd_superblock_t* superblock;
 extern initrd_node_t* node_table;
 extern uint32_t num_nodes;

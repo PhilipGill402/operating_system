@@ -1,6 +1,65 @@
 #include "fs/fs.h"
 
 fs_node_t* fs_root;
+fs_node_t* fs_cwd;
+
+fs_node_t* fs_resolve_from(fs_node_t* start, const char* path) {
+    if (path[0] == '/') {
+        start = fs_root; 
+    }
+    
+    char path_copy[MAX_PATH_LENGTH];
+    strncpy(path_copy, path, sizeof(path_copy) - 1);
+    path_copy[sizeof(path_copy) - 1] = '\0';
+
+    char* curr_dir = strtok(path_copy, '/');
+
+    if (!curr_dir && strcmp(path, "/") == 0) {
+        return start;
+    }
+    
+    while (curr_dir != NULL) {
+        if (strcmp(curr_dir, ".") == 0) {
+            curr_dir = strtok(NULL, '/');
+            continue;
+        } else if (strcmp(curr_dir, "..") == 0) {
+            start = fs_parent(start);
+            curr_dir = strtok(NULL, '/');
+            continue;
+        }
+        
+        fs_node_t* dir = fs_finddir(start, curr_dir);
+
+        if (!dir) {
+            return NULL;
+        } 
+
+        start = dir;
+        curr_dir = strtok(NULL, '/');
+    }
+
+    return start;
+}
+
+fs_node_t* resolve_path(const char* path) {
+    if (!path) {
+        return NULL;
+    }
+
+    if (path[0] == '/') {
+        return fs_resolve_from(fs_root, path);
+    }
+    
+    return fs_resolve_from(fs_cwd, path);
+}
+
+fs_node_t* fs_parent(fs_node_t* node) {
+    if (!node || !node->parent) {
+        return NULL;
+    } 
+
+    return node->parent(node);
+}
 
 uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->read) {
@@ -10,11 +69,9 @@ uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffe
     return node->read(node, offset, size, buffer);
 }
 
-dirent_t fs_readdir(fs_node_t* node, uint32_t index) {
+dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
     if (!node || !node->readdir) {
-        dirent_t entry;
-        entry.inode = (uint32_t)-1;
-        return entry;
+        return NULL;
     }
 
     return node->readdir(node, index);
@@ -65,6 +122,7 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
     uint32_t initrd_location = mod_start + KERNEL_BASE;
     
     fs_root = initrd_init(initrd_location);
+    fs_cwd = fs_root;
 
     if (!fs_root) {
         printf("initrd_init failed\n");

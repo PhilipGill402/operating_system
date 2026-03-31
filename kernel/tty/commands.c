@@ -73,11 +73,37 @@ void cat_handler(void* arg) {
 }
 
 void ls_handler(void* arg) {
-    for (uint32_t i = 0; i < initrd_header->num_files; i++) {
-        dirent_t entry = fs_readdir(fs_root, i);
-        printf("%s\t", entry.name);
+    char* path = strtok(NULL, ' ');
+    fs_node_t* dir;
+    
+    if (path != NULL) {
+        dir = resolve_path(path);
+    } else {
+        dir = fs_cwd;
     }
+    
+
+    dirent_t* entry = fs_readdir(dir, 0); 
+    uint32_t idx = 1;
+    
+    while (entry != NULL) {
+        printf("%s\t", entry->name);
+        entry = fs_readdir(dir, idx);
+        idx++;
+    }
+
     printf("\n");
+}
+
+void cd_handler(void* arg) {
+    char* path = strtok(NULL, ' ');
+
+    if (!path) {
+        fs_cwd = fs_root;
+        return;
+    }
+
+    fs_cwd = resolve_path(path);
 }
 
 const command_t commands[] = {
@@ -90,7 +116,8 @@ const command_t commands[] = {
     { "pagefault", pagefault_handler },
     { "cat", cat_handler },
     { "ls", ls_handler },
+    { "cd", cd_handler },
     { "exit", exit_handler }
 };
 
-const uint8_t num_commands = 10;
+const uint8_t num_commands = 11;

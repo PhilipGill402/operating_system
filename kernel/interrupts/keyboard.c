@@ -1,6 +1,6 @@
 #include "interrupts/keyboard.h"
 
-static const char scancode_set1[128] = {
+static const char scancode_set[128] = {
     [0x02] = '1', [0x03] = '2', [0x04] = '3', [0x05] = '4',
     [0x06] = '5', [0x07] = '6', [0x08] = '7', [0x09] = '8',
     [0x0A] = '9', [0x0B] = '0',
@@ -12,7 +12,8 @@ static const char scancode_set1[128] = {
     [0x26] = 'l',
     [0x2C] = 'z', [0x2D] = 'x', [0x2E] = 'c', [0x2F] = 'v',
     [0x30] = 'b', [0x31] = 'n', [0x32] = 'm',
-    [0x34] = '.', 
+    [0x34] = '.',
+    [0x35] = '/',
     [0x39] = ' ',
     [0x1C] = '\n',
     [0x0E] = '\b',
@@ -27,7 +28,7 @@ void keyboard_callback(regs_t* r) {
         return;
     }
 
-    char c = scancode_set1[scancode];
+    char c = scancode_set[scancode];
 
     if (c == '\n') {
         putchar(c);
