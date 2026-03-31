@@ -1,9 +1,10 @@
 #include "fs/initrd.h"
 
-fs_node_t root;
-fs_node_t* files;
 initrd_header_t* initrd_header;
 initrd_file_header_t* initrd_file_headers;
+initrd_superblock_t superblock;
+initrd_node_t* node_table;
+uint32_t num_nodes;
 
 uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     initrd_file_header_t header = initrd_file_headers[node->inode];
@@ -17,6 +18,7 @@ uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* b
     uint8_t* file = (uint8_t*)initrd_header + header.offset + offset;
 
     memcpy(buffer, file, bytes_to_read);
+    buffer[bytes_to_read] = '\0';
     
     return bytes_to_read;
 }
@@ -50,32 +52,42 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
 }
 
 fs_node_t* initrd_init(uint32_t addr) {
-    initrd_header = (initrd_header_t*)addr;
+    initrd_header = (initrd_superblock_t*)addr;
+    uint32_t files_added = 0;
+    node_table = kmalloc(sizeof(initrd_node_t) * (initrd_header->num_files + 1));
+
+    if (!node_table) {
+        printf("couldn't allocate space for the node table\n");
+        return NULL;
+    }
 
     initrd_file_headers = (initrd_file_header_t*)(addr + sizeof(initrd_header_t));
     
-    memset(&root, 0, sizeof(fs_node_t));
-    strcpy(root.name, "/"); 
-    root.flags = FS_DIRECTORY;
-    root.readdir = initrd_readdir;
-    root.finddir = initrd_finddir;
-    
-    files = kmalloc(sizeof(fs_node_t) * initrd_header->num_files);
+    initrd_node_t root;
+    memset(&root, 0, sizeof(initrd_node_t));
+    root.id = 0;
+    root.type = INITRD_NODE_DIR;
+    root.parent_id = INITRD_INVALID_NODE;
+    strcpy(root.name, "/");
+    node_table[files_added++] = root;
     
     for (uint32_t i = 0; i < initrd_header->num_files; i++) {
         initrd_file_header_t file_header = initrd_file_headers[i];
 
-        fs_node_t file;
-        memset(&file, 0, sizeof(fs_node_t));
-        strcpy(file.name, file_header.name);
-        file.flags = FS_FILE;
+        initrd_node_t file;
+        memset(&file, 0, sizeof(initrd_node_t));
+        file.id = files_added;
+        file.type = INITRD_NODE_FILE;
+        file.parent_id = file_header.id;
+        strncpy(file.name, file_header.name, INITRD_NAME_MAX);
         file.size = file_header.size;
-        file.read = initrd_read;
-        file.inode = i;
-        files[i] = file;
+        file.offset = file_header.offset;
+        node_table[files_added++] = file;
     }
+
+    num_nodes = files_added;
     
-    return &root;
+    return &node_table[0];
 }
 
 

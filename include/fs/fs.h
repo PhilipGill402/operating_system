@@ -6,8 +6,10 @@
 #include "multiboot.h"
 #include "memory/paging.h"
 
-#define FS_FILE       0x01
-#define FS_DIRECTORY  0x02
+typedef enum {
+    FS_FILE,
+    FS_DIR
+} fs_node_type_t;
 
 typedef struct {
     char name[128];
@@ -18,7 +20,7 @@ typedef struct fs_node_t fs_node_t;
 
 typedef struct fs_node_t {
     char name[128];
-    uint32_t flags;
+    fs_node_type_t flags;
     uint32_t inode;
     uint32_t size;
 

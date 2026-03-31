@@ -71,6 +71,5 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
         return 0;
     }
 
-    printf("Filesystem initialized\n");
     return 1;
 }

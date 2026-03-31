@@ -63,6 +63,23 @@ void exit_handler(void* arg) {
     return;
 }
 
+void cat_handler(void* arg) {
+    char* file_name = strtok(NULL, ' ');
+    
+    fs_node_t* file = fs_finddir(fs_root, file_name);
+    char buffer[file->size];
+    fs_read(file, 0, file->size, buffer);
+    printf("%s", buffer);
+}
+
+void ls_handler(void* arg) {
+    for (uint32_t i = 0; i < initrd_header->num_files; i++) {
+        dirent_t entry = fs_readdir(fs_root, i);
+        printf("%s\t", entry.name);
+    }
+    printf("\n");
+}
+
 const command_t commands[] = {
     { "help", help_handler },
     { "echo", echo_handler },
@@ -71,7 +88,9 @@ const command_t commands[] = {
     { "mem", mem_handler },
     { "allocpage", allocpage_handler },
     { "pagefault", pagefault_handler },
+    { "cat", cat_handler },
+    { "ls", ls_handler },
     { "exit", exit_handler }
 };
 
-uint8_t num_commands = 8;
+const uint8_t num_commands = 10;
