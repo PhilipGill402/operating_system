@@ -106,6 +106,24 @@ void cd_handler(void* arg) {
     fs_cwd = resolve_path(path);
 }
 
+void pwd_handler(void* arg) {
+    fs_node_t* start = fs_cwd;
+    fs_node_t* path[10] = { start };
+    uint8_t idx = 1;
+
+    while (start->inode != fs_root->inode) {
+        start = fs_parent(start);
+
+        path[idx++] = start;
+    }
+
+    for (int i = idx - 1; i >= 0; i--) {
+        printf("%s", path[i]->name);
+    }
+    
+    printf("\n");
+}
+
 const command_t commands[] = {
     { "help", help_handler },
     { "echo", echo_handler },
@@ -117,7 +135,8 @@ const command_t commands[] = {
     { "cat", cat_handler },
     { "ls", ls_handler },
     { "cd", cd_handler },
+    { "pwd", pwd_handler },
     { "exit", exit_handler }
 };
 
-const uint8_t num_commands = 11;
+const uint8_t num_commands = 12;
