@@ -17,7 +17,7 @@ fs_node_t* fs_resolve_from(fs_node_t* start, const char* path) {
     if (!curr_dir && strcmp(path, "/") == 0) {
         return start;
     }
-    
+
     while (curr_dir != NULL) {
         if (strcmp(curr_dir, ".") == 0) {
             curr_dir = strtok(NULL, '/');
@@ -28,7 +28,7 @@ fs_node_t* fs_resolve_from(fs_node_t* start, const char* path) {
             continue;
         }
         
-        fs_node_t* dir = fs_finddir(start, curr_dir);
+         fs_node_t* dir = fs_finddir(start, curr_dir);
 
         if (!dir) {
             return NULL;

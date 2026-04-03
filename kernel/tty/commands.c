@@ -34,8 +34,7 @@ void mem_handler(void* arg) {
     printf("Bitmap bytes: %d\n\n", pmm.bitmap_bytes);
 
     printf("Heap start: %x\n", KHEAP_START);
-    printf("Heap end: %x\n", heap_end);
-    printf("Heap current: %x\n", heap_curr);
+    printf("Heap end: %x\n", KHEAP_END);
 }
 
 void allocpage_handler(void* arg) {
@@ -66,7 +65,12 @@ void exit_handler(void* arg) {
 void cat_handler(void* arg) {
     char* file_name = strtok(NULL, ' ');
     
-    fs_node_t* file = fs_finddir(fs_root, file_name);
+    fs_node_t* file = fs_finddir(fs_cwd, file_name);
+    
+    if (!file) {
+        return;
+    }
+
     char buffer[file->size];
     fs_read(file, 0, file->size, buffer);
     printf("%s", buffer);
