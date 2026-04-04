@@ -64,6 +64,10 @@ void exit_handler(void* arg) {
 
 void cat_handler(void* arg) {
     char* file_name = strtok(NULL, ' ');
+
+    if (!file_name) {
+        return;
+    }
     
     fs_node_t* file = fs_finddir(fs_cwd, file_name);
     

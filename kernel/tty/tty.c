@@ -31,12 +31,24 @@ void input_buffer_submit() {
 
 void read_command(char* line) {
     char* cmd = strtok(line, ' ');
-
+    
+    //check command list
     for (uint8_t i = 0; i < num_commands; i++) {
         if (strcmp(cmd, commands[i].cmd) == 0) {
             commands[i].handler(cmd);
+            return;
         }
     }
+    
+    //check bin/ for the command
+    fs_node_t* bin = resolve_path_from(fs_root, "bin");
+    fs_node_t* elf = resolve_path_from(bin, line);
+
+    if (!elf) {
+        return;
+    } 
+    
+    elf_execute(elf); 
 }
 
 void tty() {

@@ -3,7 +3,7 @@
 fs_node_t* fs_root;
 fs_node_t* fs_cwd;
 
-fs_node_t* fs_resolve_from(fs_node_t* start, const char* path) {
+fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     if (path[0] == '/') {
         start = fs_root; 
     }
@@ -47,10 +47,10 @@ fs_node_t* resolve_path(const char* path) {
     }
 
     if (path[0] == '/') {
-        return fs_resolve_from(fs_root, path);
+        return resolve_path_from(fs_root, path);
     }
     
-    return fs_resolve_from(fs_cwd, path);
+    return resolve_path_from(fs_cwd, path);
 }
 
 fs_node_t* fs_parent(fs_node_t* node) {
