@@ -111,7 +111,12 @@ void cd_handler(void* arg) {
         return;
     }
 
-    fs_cwd = resolve_path(path);
+    fs_node_t* new_cwd = resolve_path(path);
+    if (!new_cwd) {
+        return;
+    }
+
+    fs_cwd = new_cwd;
 }
 
 void pwd_handler(void* arg) {

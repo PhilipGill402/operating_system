@@ -37,6 +37,7 @@ void init_heap();
 void* kmalloc(size_t size);
 void* kzmalloc(size_t size);
 void kfree(void* ptr);
+void* krealloc(void* ptr, size_t size);
 
 #endif // !INCLUDE_HEAP_H_
 

@@ -6,24 +6,6 @@ static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
 }
 
-/*
-uint8_t grow_heap() {
-    if (heap_end + PAGE_SIZE > KHEAP_END) {
-        return 0;
-    }
-
-    uint32_t frame = pmm_alloc_frame();
-    if (!frame) {
-        return 0;
-    }
-
-    map_page(heap_end, frame, PAGE_WRITE);
-    heap_end += PAGE_SIZE;
-
-    return 1;
-}
-*/
-
 bool is_free(block_t* block){
     return !block->allocated;
 }
@@ -86,8 +68,10 @@ void* kmalloc(size_t size){
 
     //finds the first fit block 
     block_t* block = (block_t*)heap.ptr;
+    
+
     while ((uint8_t*)block < (uint8_t*)heap.end){
-        //makes sure that the block is not allocated and has enough size
+        //makes sure that the block is not allocated and has enough size 
         if (!block->allocated && block->size >= total_size){
             size_t unneeded = block->size - total_size;
 
@@ -103,8 +87,6 @@ void* kmalloc(size_t size){
                 //sets the size of the new block and sets its allocation flag to false
                 new_block->size = unneeded;
                 new_block->allocated = false;
-                
-
             } else {
                 //if there is not enough remaining bytes then just go ahead and return the entire block
                 block->allocated = true;
@@ -131,10 +113,6 @@ void* kmalloc(size_t size){
 }
 
 void kfree(void* ptr) {
-    if (!ptr) {
-        return;
-    } 
-
     block_t* block = (block_t*)((uint8_t*)ptr - sizeof(block_t));
     block->allocated = false;
     
@@ -153,22 +131,19 @@ void* kzmalloc(size_t size) {
     return ptr;
 }
 
-/*
-void* kmalloc(size_t size) {
-    size = align_up(size, HEAP_ALIGN);
+void* krealloc(void* ptr, size_t size) {
+    void* new_ptr = kmalloc(size);
+    block_t* block = (block_t*)((uint8_t*)ptr - sizeof(block_t));
+    
+    size_t old_payload_size = block->size - sizeof(block_t);
+    size_t copy_size = old_payload_size < size ? old_payload_size : size;
+    memcpy(new_ptr, ptr, copy_size);
 
-    while (heap_curr + size > heap_end) {
-        if (!grow_heap()) {
-            return NULL;
-        }
-    }
-
-    void* ptr = (void*)heap_curr;
-    heap_curr += size;
+    kfree(ptr);
+    ptr = new_ptr;
 
     return ptr;
 }
-*/
 
 
 

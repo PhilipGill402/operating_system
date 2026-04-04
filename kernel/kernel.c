@@ -45,9 +45,9 @@ void kernel_init(uint32_t mbi_phys) {
     
     pmm_init(mbi);
     transition_page_directory();
-
+    
     init_heap();
-
+    
     fs_init(mbi, initrd_init); 
     
     __asm__ __volatile__("sti");
