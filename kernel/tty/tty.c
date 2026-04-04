@@ -70,7 +70,7 @@ void read_command(char* line) {
 void tty() {
     input_buffer_reset();
     char cmd[INPUT_BUFFER_SIZE] = "";
-
+     
     while (strcmp(cmd, "exit") != 0) {
         print_cwd(); 
         printf(" >> ");

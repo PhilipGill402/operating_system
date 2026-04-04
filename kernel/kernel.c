@@ -49,15 +49,12 @@ void kernel_init(uint32_t mbi_phys) {
     init_heap();
 
     fs_init(mbi, initrd_init); 
-
+    
     __asm__ __volatile__("sti");
 }
 
 void kernel_main(uint32_t mbi_phys) {
     kernel_init(mbi_phys);
 
-    uint32_t* ptr = kmalloc(sizeof(uint32_t)*PAGE_SIZE);
-    kfree(ptr);
-    
     tty(); 
 }

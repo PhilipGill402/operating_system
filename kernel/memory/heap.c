@@ -60,7 +60,7 @@ void init_heap(){
     for (uint32_t addr = KHEAP_START; addr < KHEAP_END; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
-            return 0;
+            return;
         }
 
         map_page(addr, frame, PAGE_WRITE);
@@ -68,7 +68,7 @@ void init_heap(){
 
     heap.ptr = (uint8_t*)KHEAP_START;
     heap.size = KHEAP_END - KHEAP_START;
-    heap.end = heap.ptr + heap.size; 
+    heap.end = KHEAP_END; 
 
     block_t* block = (block_t*)heap.ptr;
     block->size = heap.size;
@@ -86,10 +86,8 @@ void* kmalloc(size_t size){
 
     //finds the first fit block 
     block_t* block = (block_t*)heap.ptr;
-    
-
     while ((uint8_t*)block < (uint8_t*)heap.end){
-        //makes sure that the block is not allocated and has enough size 
+        //makes sure that the block is not allocated and has enough size
         if (!block->allocated && block->size >= total_size){
             size_t unneeded = block->size - total_size;
 
@@ -105,6 +103,8 @@ void* kmalloc(size_t size){
                 //sets the size of the new block and sets its allocation flag to false
                 new_block->size = unneeded;
                 new_block->allocated = false;
+                
+
             } else {
                 //if there is not enough remaining bytes then just go ahead and return the entire block
                 block->allocated = true;
@@ -131,6 +131,10 @@ void* kmalloc(size_t size){
 }
 
 void kfree(void* ptr) {
+    if (!ptr) {
+        return;
+    } 
+
     block_t* block = (block_t*)((uint8_t*)ptr - sizeof(block_t));
     block->allocated = false;
     

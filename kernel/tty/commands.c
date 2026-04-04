@@ -77,7 +77,7 @@ void cat_handler(void* arg) {
 
     char buffer[file->size];
     fs_read(file, 0, file->size, buffer);
-    printf("%s", buffer);
+    printf("%s\n", buffer);
 }
 
 void ls_handler(void* arg) {
@@ -132,6 +132,36 @@ void pwd_handler(void* arg) {
     printf("\n");
 }
 
+void mkdir_handler(void* arg) {
+    char* name = strtok(NULL, ' ');
+    if (!name) {
+        return;
+    }
+
+    fs_cwd->createdir(fs_cwd, name); 
+}
+
+void touch_handler(void* arg) {
+    char* name = strtok(NULL, ' ');
+    if (!name) {
+        return;
+    }
+
+    fs_cwd->createfile(fs_cwd, name, 10);
+}
+
+void write_handler(void* arg) {
+    char* path = strtok(NULL, ' ');
+    char* buffer = strtok(NULL, ' ');
+
+    if (!path || ! buffer) {
+        return;
+    }
+
+    fs_node_t* file = resolve_path_from(fs_cwd, path);
+    file->writefile(file, buffer, 0, strlen(buffer));
+}
+
 const command_t commands[] = {
     { "help", help_handler },
     { "echo", echo_handler },
@@ -144,7 +174,10 @@ const command_t commands[] = {
     { "ls", ls_handler },
     { "cd", cd_handler },
     { "pwd", pwd_handler },
+    { "mkdir", mkdir_handler },
+    { "touch", touch_handler },
+    { "write", write_handler },
     { "exit", exit_handler }
 };
 
-const uint8_t num_commands = 12;
+const uint8_t num_commands = 14;

@@ -2,10 +2,72 @@
 
 initrd_superblock_t* superblock;
 initrd_node_t* node_table;
+uint32_t table_capacity;
 uint32_t num_nodes;
 
 //forward declaration
 fs_node_t* initrd_parent(fs_node_t* node);
+
+void initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+    initrd_node_t* file = &node_table[node->inode];
+    
+    if (offset + size > node->size) {
+        return;
+    }
+    
+    void* dst = (void*)((uint32_t)superblock + file->data_offset + offset);
+    memcpy(dst, buffer, size);
+}
+
+void initrd_createdir(fs_node_t* node, char* name) {
+    // cant have duplicate files or directories of the same name 
+    for (uint32_t i = 0; i < num_nodes; i++) {
+        if (strcmp(name, node_table[i].name) == 0 && node->inode == node_table[i].parent_id) {
+            return;
+        }
+    }
+
+    initrd_node_t* new_dir = &node_table[num_nodes];
+    new_dir->id = num_nodes;
+    new_dir->type = INITRD_NODE_DIR;
+    new_dir->parent_id = node->inode;
+    strcpy(new_dir->name, name);
+    new_dir->size = 0;
+    new_dir->data_offset = 0;
+    
+    num_nodes++;
+    superblock->node_count++;
+}
+
+void initrd_createfile(fs_node_t* node, char* name, uint32_t size) {
+    // cant have duplicate files or directories of the same name 
+    for (uint32_t i = 0; i < num_nodes; i++) {
+        if (strcmp(name, node_table[i].name) == 0 && node->inode == node_table[i].parent_id) {
+            return;
+        }
+    }
+    
+    initrd_node_t* new_file = &node_table[num_nodes];
+    new_file->id = num_nodes;
+    new_file->type = INITRD_NODE_FILE;
+    new_file->parent_id = node->inode;
+    strcpy(new_file->name, name);
+    new_file->size = size;
+
+    uint32_t max_offset = 0;
+    for (uint32_t i = 0; i < num_nodes; i++) {
+        initrd_node_t* node = &node_table[i];
+        uint32_t offset = node->data_offset + node->size;
+        if (offset > max_offset) {
+            max_offset = offset;
+        }
+    }
+
+    new_file->data_offset = max_offset;
+
+    num_nodes++;
+    superblock->node_count++;
+}
 
 uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (offset >= node->size) {
@@ -71,6 +133,9 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->finddir = initrd_finddir;
             file->readdir = initrd_readdir;
             file->parent = initrd_parent;
+            file->createdir = initrd_createdir;
+            file->createfile = initrd_createfile;
+            file->writefile = initrd_writefile;
             
             return file;
         }
@@ -98,6 +163,9 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     fs_node->finddir = initrd_finddir;
     fs_node->readdir = initrd_readdir;
     fs_node->parent = initrd_parent;
+    fs_node->createdir = initrd_createdir;
+    fs_node->createfile = initrd_createfile;
+    fs_node->writefile = initrd_writefile;
 
     return fs_node;
 }
@@ -116,8 +184,13 @@ fs_node_t* initrd_init(uint32_t addr) {
         return NULL;
     }
     
-    // set node table
-    node_table = (initrd_node_t*)(addr + superblock->nodes_offset);
+    // set node table and transfer initial node table to a heap based one
+    initrd_node_t* init_node_table = (initrd_node_t*)(addr + superblock->nodes_offset);
+    node_table = kmalloc(100*sizeof(initrd_node_t));
+    
+    for (uint32_t i = 0; i < superblock->node_count; i++) {
+        node_table[i] = init_node_table[i];
+    }
     
     // set and validate root node
     initrd_node_t root = node_table[superblock->root_node];
@@ -144,7 +217,7 @@ fs_node_t* initrd_init(uint32_t addr) {
     
     // set number of nodes
     num_nodes = superblock->node_count;
-    
+     
     // set root node
     fs_node_t* fs_root = kmalloc(sizeof(fs_node_t));
     strcpy(fs_root->name, root.name);
@@ -155,6 +228,10 @@ fs_node_t* initrd_init(uint32_t addr) {
     fs_root->readdir = initrd_readdir;
     fs_root->finddir = initrd_finddir;
     fs_root->parent = initrd_parent;
+    fs_root->createdir = initrd_createdir;
+    fs_root->createfile = initrd_createfile;
+    fs_root->writefile = initrd_writefile;
+    
     return fs_root;
 }
 

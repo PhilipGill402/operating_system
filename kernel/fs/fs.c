@@ -61,6 +61,30 @@ fs_node_t* fs_parent(fs_node_t* node) {
     return node->parent(node);
 }
 
+void fs_createdir(fs_node_t* node, char* name) {
+    if (!node || !node->createdir) {
+        return;
+    }
+
+    return node->createdir(node, name);
+}
+
+void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
+    if (!node || !node->createfile) {
+        return;
+    }
+
+    return node->createfile(node, name, size);
+}
+
+void fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+    if (!node || !node->writefile || node->flags != FS_FILE) {
+        return;
+    } 
+
+    return node->writefile(node, buffer, offset, size);
+}
+
 uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->read) {
         return 0;
