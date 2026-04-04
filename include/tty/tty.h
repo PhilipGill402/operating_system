@@ -7,6 +7,8 @@
 #include "tty/commands.h"
 #include "memory/heap.h"
 #include "memory/physical_allocator.h"
+#include "fs/fs.h"
+#include "exec/elf.h"
 #include "vga.h"
 #include "timer.h"
 

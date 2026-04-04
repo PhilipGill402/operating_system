@@ -2,6 +2,22 @@
 
 static input_buffer_t keyboard_buffer;
 
+void print_cwd() {
+    fs_node_t* start = fs_cwd;
+    fs_node_t* path[10] = { start };
+    uint8_t idx = 1;
+
+    while (start->inode != fs_root->inode) {
+        start = fs_parent(start);
+
+        path[idx++] = start;
+    }
+
+    for (int i = idx - 1; i >= 0; i--) {
+        printf("%s", path[i]->name);
+    }
+}
+
 void input_buffer_reset() {
     keyboard_buffer.data[0] = '\0';
     keyboard_buffer.length = 0;
@@ -56,7 +72,8 @@ void tty() {
     char cmd[INPUT_BUFFER_SIZE] = "";
 
     while (strcmp(cmd, "exit") != 0) {
-        printf(">> ");
+        print_cwd(); 
+        printf(" >> ");
 
         while (!keyboard_buffer.ready) {
             __asm__ __volatile__("hlt");
