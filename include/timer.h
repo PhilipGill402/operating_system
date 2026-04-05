@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "interrupts/idt.h"
+#include "interrupts/registers.h"
 
 extern volatile uint32_t ticks;
 

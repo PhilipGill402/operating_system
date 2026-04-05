@@ -32,8 +32,9 @@
 .global isr29
 .global isr30
 .global isr31
+.global isr128
 
-.extern isr_handler
+.extern interrupt_dispatch 
 
 .macro ISR_NOERR num
 isr\num:
@@ -63,7 +64,7 @@ isr_common_stub:
     movw %ax, %gs
 
     pushl %esp
-    call isr_handler
+    call interrupt_dispatch
     addl $4, %esp
 
     popl %eax
@@ -108,3 +109,4 @@ ISR_NOERR 28
 ISR_NOERR 29
 ISR_ERR   30
 ISR_NOERR 31
+ISR_NOERR 128

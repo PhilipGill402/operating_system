@@ -54,7 +54,7 @@ void idt_create_isr_stubs() {
     idt_set_gate(29, (unsigned int)isr29, cs, flags);
     idt_set_gate(30, (unsigned int)isr30, cs, flags);
     idt_set_gate(31, (unsigned int)isr31, cs, flags);
-
+    idt_set_gate(128, (unsigned int)isr128, KERNEL_CS, 0xEE);
     
 }
 
@@ -97,7 +97,24 @@ void idt_load() {
     __asm__ __volatile__ ("lidt %0" : : "m"(ip) : "memory");
 }
 
-void isr_handler(regs_t* reg) {
+void interrupt_dispatch(regs_t* regs) {
+    if (regs->int_no == 0x80) {
+        syscall_handler(regs);
+        return;
+    }
+
+    if (regs->int_no < 32) {
+        exception_handler(regs);
+        return;
+    }
+
+    if (regs->int_no >= 32 && regs->int_no < 48) {
+        irq_handler(regs);
+        return;
+    }
+}
+
+void exception_handler(regs_t* reg) {
     printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[(int)reg->int_no]);
     
     //infinite wait
@@ -105,3 +122,5 @@ void isr_handler(regs_t* reg) {
         __asm__ __volatile__("hlt");
     }
 }
+
+

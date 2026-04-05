@@ -120,7 +120,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size) {
                 return 0;
             }
 
-            map_page(addr, frame, PAGE_WRITE);
+            map_user_page(addr, frame, PAGE_WRITE);
         }
         
         void* src = (void*)(elf + prog_header->p_offset);
@@ -185,17 +185,45 @@ uint32_t elf_init_stack() {
     // allocates 4 pages for the stack
     for (uint32_t addr = STACK_TOP - (PAGE_SIZE * 4); addr < STACK_TOP; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
-        map_page((void*)addr, frame, PAGE_WRITE);
+        map_user_page((void*)addr, frame, PAGE_WRITE);
     }
     
     // zero out the memory
     uint32_t start = STACK_TOP - (PAGE_SIZE * 4);
     memset((void*)start, 0, PAGE_SIZE * 4);
    
-    uint32_t initial_esp = STACK_TOP - 4;
-    *(uint32_t*)initial_esp = (uint32_t)elf_return_to_kernel;
+    return start;
+}
 
-    return initial_esp;
+__attribute__((noreturn))
+void enter_user_mode(uint32_t entry, uint32_t user_stack_top) {
+    __asm__ __volatile__(
+        "cli                    \n\t"
+
+        /* load user data selectors into data segment registers */
+        "mov %0, %%ax           \n\t"
+        "mov %%ax, %%ds         \n\t"
+        "mov %%ax, %%es         \n\t"
+        "mov %%ax, %%fs         \n\t"
+        "mov %%ax, %%gs         \n\t"
+
+        /* build iret frame for ring 3 */
+        "pushl %0               \n\t"  /* SS  */
+        "pushl %1               \n\t"  /* ESP */
+        "pushfl                 \n\t"  /* EFLAGS */
+        "pushl %2               \n\t"  /* CS  */
+        "pushl %3               \n\t"  /* EIP */
+
+        "iret                   \n\t"
+        :
+        : "i"(USER_DS_RING3),
+          "r"(user_stack_top),
+          "i"(USER_CS_RING3),
+          "r"(entry)
+        : "ax", "memory"
+    );
+
+    __builtin_unreachable();
 }
 
 __attribute__((noreturn))
@@ -219,27 +247,27 @@ void elf_execute(fs_node_t* elf) {
     uint8_t* buf = elf_from_file(elf, &size);
     Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     
-    uint32_t entry = header->e_entry;
-    process->entry = header->e_entry;
-
     if (!elf_validate(buf, size)) {
         return;
     }
+
+    uint32_t entry = header->e_entry;
+    process->entry = header->e_entry;
+    
 
     if (!elf_load(buf, size)) {
         return; 
     }
     
     uint32_t stack_top = elf_init_stack();
-    process->user_stack_top = STACK_TOP;
-    process->user_stack_bottom = STACK_TOP - (PAGE_SIZE * 4);
+    process->user_stack_top = stack_top;
+    process->user_stack_bottom = stack_top - (PAGE_SIZE * 4);
     process->saved_kernel_esp = 0;
     asm volatile("mov %%esp, %0" : "=r"(process->saved_kernel_esp));
     asm volatile("mov %%ebp, %0" : "=r"(process->saved_kernel_ebp));
     
     current_process = process;
-    
-    elf_enter(entry, stack_top);
+    enter_user_mode(entry, stack_top);
 }
 
 

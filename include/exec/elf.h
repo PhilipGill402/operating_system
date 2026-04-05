@@ -54,6 +54,9 @@
 #define PF_W 0x2
 #define PF_R 0x4
 
+#define USER_CS_RING3 0x1B
+#define USER_DS_RING3 0x23
+
 typedef struct {
     unsigned char e_ident[EI_NIDENT];
     uint16_t e_type;
@@ -98,5 +101,6 @@ void elf_print_info(const uint8_t* elf);
 void elf_load_segments(uint8_t* elf, size_t size);
 void elf_execute(fs_node_t* elf);
 
+extern process_t* current_process;
 
 #endif // !INCLUDE_EXEC_ELF_H_

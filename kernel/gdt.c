@@ -1,7 +1,8 @@
 #include "gdt.h"
 
-struct gdt_entry gdt[3];
+struct gdt_entry gdt[6];
 struct gdt_ptr gp;
+tss_t tss;
 
 //TODO: add gdt initialization before flushing it
 void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran) {
@@ -17,19 +18,35 @@ void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned cha
 }
 
 void gdt_install() {
-    gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
+    // zero out tss and fill it with useful data
+    memset(&tss, 0, sizeof(tss_t));
+    tss.ss0 = KERNEL_DS;
+    tss.esp0 = KERNEL_STACK_TOP;
+    tss.iomap_base = sizeof(tss_t);
+
+    gp.limit = sizeof(gdt) - 1;
     gp.base = (unsigned int) &gdt;
     
     //NULL
     gdt_set_gate(0,0,0,0,0);
 
-    //Code segment
-    gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
+    //Kernel Code segment
+    gdt_set_gate(1, 0, 0xFFFFFFFF, GDT_ACCESS_CODE_PL0, GDT_FLAGS_4K_32BIT);
 
-    //Data segment
-    gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
+    //Kernel Data segment
+    gdt_set_gate(2, 0, 0xFFFFFFFF, GDT_ACCESS_DATA_PL0, GDT_FLAGS_4K_32BIT);
+    
+    //User Code segment
+    gdt_set_gate(3, 0, 0xFFFFFFFF, GDT_ACCESS_CODE_PL3, GDT_FLAGS_4K_32BIT); 
+
+    //User Data segment
+    gdt_set_gate(4, 0, 0xFFFFFFFF, GDT_ACCESS_DATA_PL3, GDT_FLAGS_4K_32BIT);
+
+    //TSS segment
+    gdt_set_gate(5, (uint32_t)&tss, sizeof(tss)-1, GDT_ACCESS_TSS, GDT_FLAGS_TSS);
 
     gdt_flush();
+    tss_flush();
 }
 
 void gdt_flush() {
@@ -48,3 +65,5 @@ void gdt_flush() {
         : "ax", "memory"
     );
 }
+
+

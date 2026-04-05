@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "interrupts/registers.h"
+#include "syscalls.h"
+
+#define KERNEL_CS 0x08
+
 extern void isr0(void);
 extern void isr1(void);
 extern void isr2(void);
@@ -36,6 +41,7 @@ extern void isr28(void);
 extern void isr29(void);
 extern void isr30(void);
 extern void isr31(void);
+extern void isr128(void);
 
 extern void irq0(void);
 extern void irq1(void);
@@ -77,25 +83,6 @@ static const char* exc_names[32] = {
     "Reserved", "Reserved", "Reserved", "Reserved",
     "Hypervisor Injection", "VMM Communication", "Security", "Reserved"
 };
-
-typedef struct regs {
-    unsigned int ds;
-    unsigned int edi;
-    unsigned int esi;
-    unsigned int ebp;
-    unsigned int esp;
-    unsigned int ebx;
-    unsigned int edx;
-    unsigned int ecx;
-    unsigned int eax;
-    unsigned int int_no;
-    unsigned int err_code;
-    unsigned int eip;
-    unsigned int cs;
-    unsigned int eflags;
-    unsigned int useresp;
-    unsigned int ss;
-} regs_t;
 
 extern struct idt_entry idt[256];
 extern struct idt_ptr ip;

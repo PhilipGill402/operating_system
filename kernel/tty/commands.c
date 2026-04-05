@@ -78,6 +78,8 @@ void cat_handler(void* arg) {
     char buffer[file->size];
     fs_read(file, 0, file->size, buffer);
     printf("%s\n", buffer);
+
+    kfree(file);
 }
 
 void ls_handler(void* arg) {
@@ -96,6 +98,8 @@ void ls_handler(void* arg) {
     
     while (entry != NULL) {
         printf("%s\t", entry->name);
+        kfree(entry);
+        
         entry = fs_readdir(dir, idx);
         idx++;
     }
@@ -116,6 +120,7 @@ void cd_handler(void* arg) {
         return;
     }
 
+    kfree(fs_cwd);
     fs_cwd = new_cwd;
 }
 
@@ -135,6 +140,10 @@ void pwd_handler(void* arg) {
     }
     
     printf("\n");
+
+    for (uint8_t i = idx - 1; i >= 0; idx--) {
+        kfree(path[i]);
+    }
 }
 
 void mkdir_handler(void* arg) {
@@ -165,6 +174,8 @@ void write_handler(void* arg) {
 
     fs_node_t* file = resolve_path_from(fs_cwd, path);
     file->writefile(file, buffer, 0, strlen(buffer));
+
+    kfree(file);
 }
 
 const command_t commands[] = {

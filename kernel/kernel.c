@@ -16,6 +16,28 @@
 #include "fs/initrd.h"
 #include "fs/fs.h"
 
+#define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
+#define KERNEL_STACK_TOP   0xC0800000
+#define KERNEL_STACK_BOTTOM (KERNEL_STACK_TOP - KERNEL_STACK_SIZE)
+
+static multiboot_info_t* mbi;
+
+void finish_init();
+
+__attribute__((noreturn))
+void switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
+    asm volatile(
+        "mov %0, %%esp    \n\t"
+        "xor %%ebp, %%ebp \n\t"
+        "jmp *%1          \n\t"
+        :
+        : "r"(new_stack_top), "r"(next)
+        : "memory"
+    );
+
+    __builtin_unreachable();
+}
+
 void kernel_init(uint32_t mbi_phys) {
     terminal_initialize();
 
@@ -23,7 +45,7 @@ void kernel_init(uint32_t mbi_phys) {
     uint32_t mbi_page_phys = mbi_phys & 0xFFFFF000;
     map_boot_page(mbi_page_phys);
 
-    multiboot_info_t* mbi = (multiboot_info_t*) (mbi_phys + 0xC0000000);
+    mbi = (multiboot_info_t*) (mbi_phys + 0xC0000000);
     
     // mapping mmap into virtual memory
     uint32_t start = mbi->mmap_addr & 0xFFFFF000;
@@ -32,7 +54,20 @@ void kernel_init(uint32_t mbi_phys) {
     for (uint32_t page = start; page < end; page += PAGE_SIZE) {
         map_boot_page(page);
     }
+    
+    pmm_init(mbi);
+    transition_page_directory();
 
+    // set up new stack
+    for (uint32_t addr = KERNEL_STACK_BOTTOM; addr < KERNEL_STACK_TOP; addr += PAGE_SIZE) {
+        uint32_t frame = pmm_alloc_frame();
+        map_page(addr, frame, PAGE_WRITE);
+    } 
+    
+    switch_to_new_kernel_stack(KERNEL_STACK_TOP, finish_init);
+}
+
+void finish_init() {
     gdt_install();
     idt_install();
     
@@ -43,18 +78,18 @@ void kernel_init(uint32_t mbi_phys) {
     pic_clear_mask(1);
     pit_init(100);
     
-    pmm_init(mbi);
-    transition_page_directory();
+    
     
     init_heap();
     
     fs_init(mbi, initrd_init); 
     
     __asm__ __volatile__("sti");
+
+    tty(); 
 }
 
 void kernel_main(uint32_t mbi_phys) {
     kernel_init(mbi_phys);
 
-    tty(); 
 }
