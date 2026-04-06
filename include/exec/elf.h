@@ -8,6 +8,7 @@
 #include "memory/heap.h"
 #include "memory/paging.h"
 #include "memory/physical_allocator.h"
+#include "exec/process.h"
 #include "tty/tty.h"
 
 #define PAGE_SIZE 4096
@@ -85,22 +86,11 @@ typedef struct {
     uint32_t p_align;
 } __attribute__((packed)) Elf32_Phdr;
 
-typedef struct {
-    fs_node_t* file;
-    uint32_t entry;
-    uint32_t user_stack_top;
-    uint32_t user_stack_bottom;
-    uint32_t saved_kernel_esp;
-    uint32_t saved_kernel_ebp;
-} process_t;
-
 uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size);
-uint8_t elf_load(const uint8_t* elf, uint32_t size);
+uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process);
 uint8_t elf_validate(const uint8_t* elf, uint32_t size);
 void elf_print_info(const uint8_t* elf);
 void elf_load_segments(uint8_t* elf, size_t size);
 void elf_execute(fs_node_t* elf);
-
-extern process_t* current_process;
 
 #endif // !INCLUDE_EXEC_ELF_H_

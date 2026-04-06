@@ -1,7 +1,5 @@
 #include "exec/elf.h"
 
-process_t* current_process;
-
 uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size) {
     uint8_t* buffer = kmalloc(elf->size);
     fs_read(elf, 0, elf->size, buffer);
@@ -103,8 +101,9 @@ void elf_print_info(const uint8_t* elf) {
     printf("ehsize: %d\n", header->e_ehsize);
 }
 
-uint8_t elf_load(const uint8_t* elf, uint32_t size) {
+uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
+    uint8_t count = 0;
     for (uint32_t offset = header->e_phoff; offset < header->e_phoff + header->e_phentsize * header->e_phnum; offset += header->e_phentsize) {
         Elf32_Phdr* prog_header = (Elf32_Phdr*)((uint32_t)elf + offset);
         if (prog_header->p_type != PT_LOAD) {
@@ -123,62 +122,22 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size) {
             map_user_page(addr, frame, PAGE_WRITE);
         }
         
+        if (count > MAX_SEGMENTS) {
+            printf("too many segments\n");
+            return 0;
+        }
+
+        process->mem_ranges[count++] = (mem_range_t){ .start = start, .end = end }; 
+        
         void* src = (void*)(elf + prog_header->p_offset);
-        void* dst = (void*)prog_header->p_vaddr;
+        void* dst = (void*)start;
         memcpy(dst, src, prog_header->p_filesz);
         memset((void*)(prog_header->p_vaddr + prog_header->p_filesz), 0, prog_header->p_memsz - prog_header->p_filesz);
     }
 
+    process->num_ranges = count;
+
     return 1;
-}
-
-__attribute__((naked, noreturn))
-void elf_return_to_kernel(void) {
-    __asm__ __volatile__(
-        "mov current_process, %eax      \n\t"
-        "mov 16(%eax), %esp              \n\t"
-        "mov 20(%eax), %ebp              \n\t"
-        "call elf_cleanup               \n\t"
-        "cli                            \n\t"
-        "1: hlt                         \n\t"
-        "jmp 1b                         \n\t"
-    );
-}
-
-void elf_cleanup() {
-    uint32_t size;
-    uint8_t* elf = elf_from_file(current_process->file, &size);
-    Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
-    
-    // cleans up all the mapped virtual memory
-    for (uint32_t offset = header->e_phoff; offset < header->e_phoff + header->e_phentsize * header->e_phnum; offset += header->e_phentsize) {
-        Elf32_Phdr* prog_header = (Elf32_Phdr*)((uint32_t)elf + offset);
-        if (prog_header->p_type != PT_LOAD) {
-            continue;
-        }
-
-        uint32_t start = prog_header->p_vaddr & ~(PAGE_SIZE - 1);
-        uint32_t end = (prog_header->p_vaddr + prog_header->p_memsz + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-        for (uint32_t addr = start; addr < end; addr += PAGE_SIZE) {
-            uint32_t frame = unmap_page(addr);
-            if (frame) {
-                pmm_free_frame(frame);
-            }
-        }
-    }
-
-    // cleans up the stack memory
-    for (uint32_t addr = current_process->user_stack_bottom; addr < current_process->user_stack_top; addr += PAGE_SIZE) {
-        uint32_t frame = unmap_page(addr);
-        if (frame) {
-            pmm_free_frame(frame);
-        }
-    }
-
-    current_process = NULL;
-
-    tty();
 }
 
 uint32_t elf_init_stack() {
@@ -243,7 +202,7 @@ void elf_enter(uint32_t entry, uint32_t initial_esp) {
 void elf_execute(fs_node_t* elf) {
     uint32_t size;
     process_t* process = kmalloc(sizeof(process_t));
-    process->file = elf;
+    
     uint8_t* buf = elf_from_file(elf, &size);
     Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     
@@ -255,7 +214,7 @@ void elf_execute(fs_node_t* elf) {
     process->entry = header->e_entry;
     
 
-    if (!elf_load(buf, size)) {
+    if (!elf_load(buf, size, process)) {
         return; 
     }
     
