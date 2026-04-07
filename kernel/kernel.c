@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <stack.h>
+
 #include "vga.h"
 #include "gdt.h"
 #include "multiboot.h"
@@ -85,7 +87,7 @@ void finish_init() {
     fs_init(mbi, initrd_init); 
     
     __asm__ __volatile__("sti");
-
+    
     tty(); 
 }
 

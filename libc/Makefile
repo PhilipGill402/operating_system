@@ -9,7 +9,7 @@ BUILD_DIR := ../build/libc
 LIBK := ../build/libk.a
 INC_DIR := include
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libk
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libk -I../include
 
 C_SOURCES := $(shell find . -type f -name '*.c' ! -path './include/*')
 OBJECTS := $(patsubst ./%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
