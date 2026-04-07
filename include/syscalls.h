@@ -8,9 +8,11 @@
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "interrupts/registers.h"
+#include "tty/tty.h"
 
 #define PAGE_SIZE 4096
 #define SYS_EXIT 1
+#define SYS_WRITE 2
 
 void syscall_handler(regs_t* reg);
 

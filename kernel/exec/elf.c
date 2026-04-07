@@ -9,17 +9,17 @@ uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size) {
 }
 
 uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
-    Elf32_Ehdr* header = (Elf32_Ehdr*)elf; 
+    if (!elf) {
+        printf("elf data is NULL\n");
+        return 0;
+    }
 
     if (size < sizeof(Elf32_Ehdr)) {
         printf("Elf not large enough for ELF header\n"); 
         return 0;
     }
-
-    if (!elf) {
-        printf("elf data is NULL\n");
-        return 0;
-    }
+    
+    Elf32_Ehdr* header = (Elf32_Ehdr*)elf; 
 
     if (header->e_ident[0] != ELFMAG0) {
         printf("magic validation failed\n"); 
@@ -122,8 +122,18 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
             map_user_page(addr, frame, PAGE_WRITE);
         }
         
-        if (count > MAX_SEGMENTS) {
+        if (count >= MAX_SEGMENTS) {
             printf("too many segments\n");
+            return 0;
+        }
+
+        if (prog_header->p_offset > size || prog_header->p_filesz > size - prog_header->p_offset) {
+            printf("segment exceeds ELF file size\n");
+            return 0;
+        }
+
+        if (prog_header->p_memsz < prog_header->p_filesz) {
+            printf("segment memsz smaller than filesz\n");
             return 0;
         }
 
@@ -140,93 +150,74 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     return 1;
 }
 
-uint32_t elf_init_stack() {
+uint32_t elf_init_stack(process_t* process) {
     // allocates 4 pages for the stack
     for (uint32_t addr = STACK_TOP - (PAGE_SIZE * 4); addr < STACK_TOP; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
-        map_user_page((void*)addr, frame, PAGE_WRITE);
+    
+        if (!frame) {
+            return 0;
+        }
+
+        map_user_page(addr, frame, PAGE_WRITE);
     }
     
     // zero out the memory
     uint32_t start = STACK_TOP - (PAGE_SIZE * 4);
     memset((void*)start, 0, PAGE_SIZE * 4);
-   
-    return start;
+    
+    process->user_stack_top = STACK_TOP;
+    process->user_stack_bottom = STACK_TOP - (PAGE_SIZE * 4);
+
+    return 1;
 }
 
-__attribute__((noreturn))
-void enter_user_mode(uint32_t entry, uint32_t user_stack_top) {
-    __asm__ __volatile__(
-        "cli                    \n\t"
-
-        /* load user data selectors into data segment registers */
-        "mov %0, %%ax           \n\t"
-        "mov %%ax, %%ds         \n\t"
-        "mov %%ax, %%es         \n\t"
-        "mov %%ax, %%fs         \n\t"
-        "mov %%ax, %%gs         \n\t"
-
-        /* build iret frame for ring 3 */
-        "pushl %0               \n\t"  /* SS  */
-        "pushl %1               \n\t"  /* ESP */
-        "pushfl                 \n\t"  /* EFLAGS */
-        "pushl %2               \n\t"  /* CS  */
-        "pushl %3               \n\t"  /* EIP */
-
-        "iret                   \n\t"
-        :
-        : "i"(USER_DS_RING3),
-          "r"(user_stack_top),
-          "i"(USER_CS_RING3),
-          "r"(entry)
-        : "ax", "memory"
-    );
-
-    __builtin_unreachable();
-}
-
-__attribute__((noreturn))
-void elf_enter(uint32_t entry, uint32_t initial_esp) {
-    asm volatile(
-        "mov %0, %%esp    \n\t"
-        "xor %%ebp, %%ebp \n\t"
-        "jmp *%1          \n\t"
-        :
-        : "r"(initial_esp), "r"(entry)
-        : "memory"
-    );
-
-    __builtin_unreachable();
-}
-
-void elf_execute(fs_node_t* elf) {
+process_t* process_create_from_elf(fs_node_t* elf) {
     uint32_t size;
-    process_t* process = kmalloc(sizeof(process_t));
+    process_t* process = kzmalloc(sizeof(process_t));
     
     uint8_t* buf = elf_from_file(elf, &size);
-    Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     
     if (!elf_validate(buf, size)) {
-        return;
+        kfree(buf);
+        process_destroy(process); 
+        return NULL;
     }
 
+    Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     uint32_t entry = header->e_entry;
     process->entry = header->e_entry;
     
 
     if (!elf_load(buf, size, process)) {
-        return; 
+        kfree(buf);
+        process_destroy(process);
+        return NULL; 
     }
     
-    uint32_t stack_top = elf_init_stack();
-    process->user_stack_top = stack_top;
-    process->user_stack_bottom = stack_top - (PAGE_SIZE * 4);
+    if (!elf_init_stack(process)) {
+        kfree(buf);
+        process_destroy(process);
+        return NULL;
+    }
+    
     process->saved_kernel_esp = 0;
+    kfree(buf);
     asm volatile("mov %%esp, %0" : "=r"(process->saved_kernel_esp));
     asm volatile("mov %%ebp, %0" : "=r"(process->saved_kernel_ebp));
     
+    return process;
+}
+
+void elf_execute(fs_node_t* elf) {
+    process_t* process = process_create_from_elf(elf);
+
+    if (!process) {
+        return;
+    }
+
     current_process = process;
-    enter_user_mode(entry, stack_top);
+    enter_user_mode(current_process->entry, current_process->user_stack_top);
 }
 
 

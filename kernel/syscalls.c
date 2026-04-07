@@ -1,26 +1,7 @@
 #include "syscalls.h"
 
 void sys_exit() {
-    // cleans up all the mapped virtual memory
-    for (uint8_t i = 0; i < current_process->num_ranges; i++) {
-        uint32_t start = current_process->mem_ranges[i].start;
-        uint32_t end = current_process->mem_ranges[i].end;
-
-        for (uint32_t addr = start; addr < end; addr += PAGE_SIZE) {
-            uint32_t frame = unmap_page(addr);
-            if (frame) {
-                pmm_free_frame(frame);
-            }
-        }
-    }
-
-    // cleans up the stack memory
-    for (uint32_t addr = current_process->user_stack_bottom; addr < current_process->user_stack_top; addr += PAGE_SIZE) {
-        uint32_t frame = unmap_page(addr);
-        if (frame) {
-            pmm_free_frame(frame);
-        }
-    }
+    process_destroy(current_process); 
 
     current_process = NULL;
     
@@ -29,8 +10,14 @@ void sys_exit() {
     tty();
 }
 
+void sys_write(const char* str) {
+    printf("%s", str);
+}
+
 void syscall_handler(regs_t* reg) {
     if (reg->eax == SYS_EXIT) {
         sys_exit();
+    } else if (reg->eax == SYS_WRITE) {
+        sys_write(reg->ebx);
     }
 }

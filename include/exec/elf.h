@@ -55,9 +55,6 @@
 #define PF_W 0x2
 #define PF_R 0x4
 
-#define USER_CS_RING3 0x1B
-#define USER_DS_RING3 0x23
-
 typedef struct {
     unsigned char e_ident[EI_NIDENT];
     uint16_t e_type;
