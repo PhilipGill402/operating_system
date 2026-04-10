@@ -1,6 +1,6 @@
 #include <queue.h>
 
-queue_t create_queue(size_t element_size) {
+queue_t queue_create(size_t element_size) {
     queue_t queue;
     
     queue.size = 0;

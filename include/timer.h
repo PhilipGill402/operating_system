@@ -2,8 +2,10 @@
 #define INCLUDE_TIMER_H_
 
 #include <stdint.h>
+#include <stdio.h>
 #include "interrupts/idt.h"
 #include "interrupts/registers.h"
+#include "exec/process.h"
 
 extern volatile uint32_t ticks;
 

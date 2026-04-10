@@ -17,6 +17,7 @@
 #include "tty/tty.h"
 #include "fs/initrd.h"
 #include "fs/fs.h"
+#include "exec/scheduler.h"
 
 #define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
 #define KERNEL_STACK_TOP   0xC0800000
@@ -84,7 +85,9 @@ void finish_init() {
     
     init_heap();
     
-    fs_init(mbi, initrd_init); 
+    fs_init(mbi, initrd_init);
+
+    scheduler_init();
     
     __asm__ __volatile__("sti");
     

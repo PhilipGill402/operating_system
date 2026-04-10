@@ -201,10 +201,14 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
     
-    process->saved_kernel_esp = 0;
+    process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
+    process->pid = num_processes++;
+    process->ticks_left = DEFAULT_MAX_TICKS;
+    process->state = PROC_READY;
+    process_init_trapframe(process);
+    
     kfree(buf);
-    asm volatile("mov %%esp, %0" : "=r"(process->saved_kernel_esp));
-    asm volatile("mov %%ebp, %0" : "=r"(process->saved_kernel_ebp));
     
     return process;
 }
@@ -215,9 +219,9 @@ void elf_execute(fs_node_t* elf) {
     if (!process) {
         return;
     }
-
-    current_process = process;
-    enter_user_mode(current_process->entry, current_process->user_stack_top);
+    
+    if (!current_process) current_process = process;
+    else enqueue(&current_processes, process); 
 }
 
 

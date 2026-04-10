@@ -1,6 +1,6 @@
 #include <queue.h>
 
-bool resize_queue(queue_t* queue, int new_capacity){
+bool queue_resize(queue_t* queue, int new_capacity){
     void* new_array;
     new_array = malloc(queue->element_size * new_capacity);
 

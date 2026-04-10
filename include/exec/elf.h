@@ -9,6 +9,7 @@
 #include "memory/paging.h"
 #include "memory/physical_allocator.h"
 #include "exec/process.h"
+#include "exec/scheduler.h"
 #include "tty/tty.h"
 
 #define PAGE_SIZE 4096
