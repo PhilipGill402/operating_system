@@ -38,8 +38,9 @@ static inline void load_cr3(uint32_t phys) {
 void map_boot_page(uint32_t phys_addr);
 void transition_page_directory();
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags);
-void map_user_page(uint32_t virt, uint32_t phys, uint32_t flags);
+void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint32_t flags);
 uint32_t unmap_page(uint32_t virt);
 void* alloc_kernel_page(uint32_t flags);
 void free_kernel_page(uint32_t virt);
+uint32_t* temp_map_phys(uint32_t phys);
 #endif // !INCLUDE_PAGING_H_

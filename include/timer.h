@@ -6,6 +6,7 @@
 #include "interrupts/idt.h"
 #include "interrupts/registers.h"
 #include "exec/process.h"
+#include "interrupts/pic.h"
 
 extern volatile uint32_t ticks;
 

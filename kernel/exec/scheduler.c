@@ -34,3 +34,30 @@ void context_switch(process_t *old, process_t *new) {
 void scheduler_init() {
     current_processes = queue_create(sizeof(process_t*));
 }
+
+process_t* dequeue_ready() {
+    process_t* next;
+
+    for (uint32_t i = 0; i < queue_size(&current_processes); i++) {
+        next = dequeue(&current_processes);
+
+        if (next->state == PROC_READY) return next;
+
+        enqueue(&current_processes, next);
+    } 
+
+    return NULL;
+}
+
+void schedule() {
+    process_t* next = dequeue_ready();
+
+    if (!next) {
+        // TODO: made some sort of idle task 
+        return;
+    }
+
+    current_process = next;
+    current_process->state = PROC_RUNNING;
+    enter_user_mode_from_trapframe(current_process->trapframe);
+}

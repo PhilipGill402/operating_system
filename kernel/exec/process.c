@@ -20,6 +20,23 @@ void process_init_trapframe(process_t* process) {
 
 }
 
+uint32_t process_create_page_directory(uint32_t* out_phys) {
+    uint32_t pd_phys = pmm_alloc_frame();
+    
+    if (!pd_phys) {
+        return 0;
+    }
+
+    uint32_t* pd = temp_map_phys(pd_phys);
+    memset(pd, 0, PAGE_SIZE);
+
+    for (uint32_t i = 768; i < 1024; i++) {
+        pd[i] = kernel_page_directory[i];
+    }
+
+    return pd_phys;
+}
+
 void process_destroy(process_t* process) {
     // cleans up all the mapped virtual memory
     for (uint8_t i = 0; i < process->num_ranges; i++) {

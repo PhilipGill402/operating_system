@@ -71,7 +71,7 @@ uint32_t* temp_map_phys(uint32_t phys) {
     return (uint32_t*)virt;
 }
 
-uint32_t* create_page_table(uint32_t pd_idx, uint32_t flags) {
+uint32_t* create_page_table(uint32_t* page_directory, uint32_t pd_idx, uint32_t flags) {
     uint32_t pt_phys = pmm_alloc_frame();
     if (!pt_phys) {
         return 0;
@@ -80,7 +80,7 @@ uint32_t* create_page_table(uint32_t pd_idx, uint32_t flags) {
     uint32_t* new_pt = temp_map_phys(pt_phys);
     memset(new_pt, 0, PAGE_SIZE);
 
-    kernel_page_directory[pd_idx] = (pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE | flags;
+    page_directory[pd_idx] = (pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE | flags;
 
     return new_pt;
 }
@@ -90,7 +90,7 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
 
     if (!(kernel_page_directory[pd_idx] & PAGE_PRESENT)) {
-        if (!create_page_table(pd_idx, 0)) {
+        if (!create_page_table(kernel_page_directory, pd_idx, 0)) {
             return;
         }
     }
@@ -103,19 +103,19 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     invlpg((void*)virt);
 }
 
-void map_user_page(uint32_t virt, uint32_t phys, uint32_t flags) {
+void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
 
-    if (!(kernel_page_directory[pd_idx] & PAGE_PRESENT)) {
-        if (!create_page_table(pd_idx, PAGE_USER)) {
+    if (!(page_directory[pd_idx] & PAGE_PRESENT)) {
+        if (!create_page_table(page_directory, pd_idx, PAGE_USER)) {
             return;
         }
-    } else if (!(kernel_page_directory[pd_idx] & PAGE_USER)) {
+    } else if (!(page_directory[pd_idx] & PAGE_USER)) {
         return;
     }
 
-    uint32_t pt_phys = kernel_page_directory[pd_idx] & 0xFFFFF000;
+    uint32_t pt_phys = page_directory[pd_idx] & 0xFFFFF000;
     uint32_t* pt = temp_map_phys(pt_phys);
     
     pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF) | PAGE_PRESENT | PAGE_USER;

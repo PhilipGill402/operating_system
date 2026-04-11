@@ -37,10 +37,11 @@ typedef struct {
     uint32_t user_stack_bottom;
     uint32_t kernel_stack_top;
     uint32_t kernel_stack_bottom;
-    mem_range_t mem_ranges[MAX_SEGMENTS];
-    uint8_t num_ranges;
     uint32_t saved_kernel_esp;
     uint32_t saved_kernel_ebp;
+    uint32_t page_directory_phys;
+    mem_range_t mem_ranges[MAX_SEGMENTS];
+    uint8_t num_ranges;
     regs_t* trapframe;
     uint32_t ticks_left;
 } process_t;
@@ -51,5 +52,6 @@ extern uint32_t num_processes;
 __attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t *tf);
 void process_init_trapframe(process_t* process);
 void process_destroy(process_t* process);
+uint32_t process_create_page_directory();
 
 #endif // !INCLUDE_EXEC_PROCESS_H_

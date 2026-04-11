@@ -8,6 +8,7 @@
 
 __attribute__((noinline)) void context_switch(process_t *old, process_t *new);
 void scheduler_init();
+void schedule();
 
 extern queue_t current_processes;
 

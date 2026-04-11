@@ -119,7 +119,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
                 return 0;
             }
 
-            map_user_page(addr, frame, PAGE_WRITE);
+            map_user_page(process->page_directory_phys, addr, frame, PAGE_WRITE);
         }
         
         if (count >= MAX_SEGMENTS) {
@@ -159,7 +159,7 @@ uint32_t elf_init_stack(process_t* process) {
             return 0;
         }
 
-        map_user_page(addr, frame, PAGE_WRITE);
+        map_user_page(process->page_directory_phys, addr, frame, PAGE_WRITE);
     }
     
     // zero out the memory
@@ -206,6 +206,14 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
+    process->page_directory_phys = process_create_page_directory();
+
+    if (!process->page_directory_phys) {
+        kfree(buf);
+        process_destroy(process);
+        return NULL;
+    }
+
     process_init_trapframe(process);
     
     kfree(buf);
@@ -220,8 +228,7 @@ void elf_execute(fs_node_t* elf) {
         return;
     }
     
-    if (!current_process) current_process = process;
-    else enqueue(&current_processes, process); 
+    enqueue(&current_processes, process); 
 }
 
 
