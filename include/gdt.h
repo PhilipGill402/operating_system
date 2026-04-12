@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define KERNEL_STACK_TOP   0xC0800000
+#define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
+#define KERNEL_STACK_BOTTOM 0xC0C00000
+#define KERNEL_STACK_TOP (KERNEL_STACK_BOTTOM + KERNEL_STACK_SIZE)
 
 #define KERNEL_CS 0x08
 #define KERNEL_DS 0x10

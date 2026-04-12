@@ -104,70 +104,97 @@ void elf_print_info(const uint8_t* elf) {
 uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
     uint8_t count = 0;
-    for (uint32_t offset = header->e_phoff; offset < header->e_phoff + header->e_phentsize * header->e_phnum; offset += header->e_phentsize) {
-        Elf32_Phdr* prog_header = (Elf32_Phdr*)((uint32_t)elf + offset);
-        if (prog_header->p_type != PT_LOAD) {
+
+    for (uint32_t offset = header->e_phoff;
+         offset < header->e_phoff + header->e_phentsize * header->e_phnum;
+         offset += header->e_phentsize) {
+
+        Elf32_Phdr* ph = (Elf32_Phdr*)((uint32_t)elf + offset);
+
+        if (ph->p_type != PT_LOAD) {
             continue;
         }
 
-        uint32_t start = prog_header->p_vaddr & ~(PAGE_SIZE - 1);
-        uint32_t end = (prog_header->p_vaddr + prog_header->p_memsz + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-        for (uint32_t addr = start; addr < end; addr += PAGE_SIZE) {
-            uint32_t frame = pmm_alloc_frame();
-            if (!frame) {
-                return 0;
-            }
-
-            map_user_page(process->page_directory_phys, addr, frame, PAGE_WRITE);
-        }
-        
         if (count >= MAX_SEGMENTS) {
             printf("too many segments\n");
             return 0;
         }
 
-        if (prog_header->p_offset > size || prog_header->p_filesz > size - prog_header->p_offset) {
+        if (ph->p_offset > size || ph->p_filesz > size - ph->p_offset) {
             printf("segment exceeds ELF file size\n");
             return 0;
         }
 
-        if (prog_header->p_memsz < prog_header->p_filesz) {
+        if (ph->p_memsz < ph->p_filesz) {
             printf("segment memsz smaller than filesz\n");
             return 0;
         }
 
-        process->mem_ranges[count++] = (mem_range_t){ .start = start, .end = end }; 
-        
-        void* src = (void*)(elf + prog_header->p_offset);
-        void* dst = (void*)start;
-        memcpy(dst, src, prog_header->p_filesz);
-        memset((void*)(prog_header->p_vaddr + prog_header->p_filesz), 0, prog_header->p_memsz - prog_header->p_filesz);
+        uint32_t seg_start = ph->p_vaddr;
+        uint32_t seg_end   = ph->p_vaddr + ph->p_memsz;
+
+        uint32_t page_start = seg_start & ~(PAGE_SIZE - 1);
+        uint32_t page_end   = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+        uint32_t* pd = temp_map_phys0(process->page_directory_phys);
+
+        for (uint32_t vaddr = page_start; vaddr < page_end; vaddr += PAGE_SIZE) {
+            uint32_t frame = pmm_alloc_frame();
+            if (!frame) {
+                return 0;
+            }
+
+            map_user_page(pd, vaddr, frame, PAGE_WRITE);
+
+            uint8_t* page = (uint8_t*)temp_map_phys1(frame);
+            memset(page, 0, PAGE_SIZE);
+
+            uint32_t copy_start = vaddr;
+            if (copy_start < ph->p_vaddr) {
+                copy_start = ph->p_vaddr;
+            }
+
+            uint32_t copy_end = vaddr + PAGE_SIZE;
+            if (copy_end > ph->p_vaddr + ph->p_filesz) {
+                copy_end = ph->p_vaddr + ph->p_filesz;
+            }
+
+            if (copy_start < copy_end) {
+                uint32_t dst_off = copy_start - vaddr;
+                uint32_t src_off = ph->p_offset + (copy_start - ph->p_vaddr);
+                uint32_t nbytes = copy_end - copy_start;
+
+                memcpy(page + dst_off, elf + src_off, nbytes);
+            }
+        }
+
+        process->mem_ranges[count++] = (mem_range_t){ .start = page_start, .end = page_end };
     }
 
     process->num_ranges = count;
-
     return 1;
 }
 
 uint32_t elf_init_stack(process_t* process) {
-    // allocates 4 pages for the stack
-    for (uint32_t addr = STACK_TOP - (PAGE_SIZE * 4); addr < STACK_TOP; addr += PAGE_SIZE) {
+    uint32_t stack_bottom = STACK_TOP - (PAGE_SIZE * 4);
+    uint32_t stack_top = STACK_TOP;
+
+    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
+
+    for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
-    
         if (!frame) {
             return 0;
         }
 
-        map_user_page(process->page_directory_phys, addr, frame, PAGE_WRITE);
+        map_user_page(pd, addr, frame, PAGE_WRITE);
+
+        uint8_t* page = (uint8_t*)temp_map_phys1(frame);
+        memset(page, 0, PAGE_SIZE);
     }
-    
-    // zero out the memory
-    uint32_t start = STACK_TOP - (PAGE_SIZE * 4);
-    memset((void*)start, 0, PAGE_SIZE * 4);
-    
-    process->user_stack_top = STACK_TOP;
-    process->user_stack_bottom = STACK_TOP - (PAGE_SIZE * 4);
+
+    process->user_stack_top = stack_top;
+    process->user_stack_bottom = stack_bottom;
 
     return 1;
 }
@@ -188,18 +215,18 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     uint32_t entry = header->e_entry;
     process->entry = header->e_entry;
     
-
     if (!elf_load(buf, size, process)) {
         kfree(buf);
         process_destroy(process);
         return NULL; 
     }
-    
+
     if (!elf_init_stack(process)) {
         kfree(buf);
         process_destroy(process);
         return NULL;
     }
+    
     
     process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
@@ -228,7 +255,7 @@ void elf_execute(fs_node_t* elf) {
         return;
     }
     
-    enqueue(&current_processes, process); 
+    enqueue(&current_processes, process);
 }
 
 

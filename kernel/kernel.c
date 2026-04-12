@@ -20,8 +20,8 @@
 #include "exec/scheduler.h"
 
 #define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
-#define KERNEL_STACK_TOP   0xC0800000
-#define KERNEL_STACK_BOTTOM (KERNEL_STACK_TOP - KERNEL_STACK_SIZE)
+#define KERNEL_STACK_BOTTOM 0xC0C00000
+#define KERNEL_STACK_TOP (KERNEL_STACK_BOTTOM + KERNEL_STACK_SIZE)
 
 static multiboot_info_t* mbi;
 
@@ -58,15 +58,18 @@ void kernel_init(uint32_t mbi_phys) {
         map_boot_page(page);
     }
     
-    pmm_init(mbi);
-    transition_page_directory();
+    
 
+    pmm_init(mbi);
+    paging_init_temp_regions();
+    transition_page_directory();
+    
     // set up new stack
     for (uint32_t addr = KERNEL_STACK_BOTTOM; addr < KERNEL_STACK_TOP; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
         map_page(addr, frame, PAGE_WRITE);
-    } 
-    
+    }
+
     switch_to_new_kernel_stack(KERNEL_STACK_TOP, finish_init);
 }
 

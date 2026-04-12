@@ -1,6 +1,7 @@
 #include "memory/paging.h"
 
-uint32_t* temp_page_table;
+uint32_t* temp_page_table0 = NULL;
+uint32_t* temp_page_table1 = NULL;
 uint32_t* kernel_page_directory = (uint32_t*)&boot_page_directory;
 uint32_t kernel_page_directory_phys = (uint32_t)&boot_page_directory - KERNEL_BASE;
 uint32_t next_free_virt = KERNEL_VIRT_START;
@@ -18,8 +19,8 @@ void map_boot_page(uint32_t phys_addr) {
     invlpg((void*)virt_addr);
 }
 
-void create_temp_page_table(uint32_t* virt_page_directory) {
-    if (virt_page_directory[TEMP_PD_INDEX] & PAGE_PRESENT) {
+void create_temp_page_table(uint32_t* virt_page_directory, uint32_t pd_idx) {
+    if (virt_page_directory[pd_idx] & PAGE_PRESENT) {
         printf("Couldn't allocate temp page table\n");
         return;
     }
@@ -30,11 +31,20 @@ void create_temp_page_table(uint32_t* virt_page_directory) {
     }
 
     map_boot_page(temp_pt_phys);
-    temp_page_table = (uint32_t*)(temp_pt_phys + KERNEL_BASE);
-    memset(temp_page_table, 0, PAGE_SIZE);
-    virt_page_directory[TEMP_PD_INDEX] = (temp_pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    uint32_t* temp_pt = (uint32_t*)(temp_pt_phys + KERNEL_BASE);
+    memset(temp_pt, 0, PAGE_SIZE);
+    virt_page_directory[pd_idx] = (temp_pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
 
-    invlpg((void*)TEMP_PT_VIRT);
+    if (pd_idx == TEMP_PD_INDEX_0) {
+        temp_page_table0 = temp_pt;
+    } else if (pd_idx == TEMP_PD_INDEX_1) {
+        temp_page_table1 = temp_pt;
+    }
+}
+
+void paging_init_temp_regions() {
+    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_0);
+    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_1);
 }
 
 void transition_page_directory() {
@@ -50,9 +60,6 @@ void transition_page_directory() {
         virt_page_directory[entry] = kernel_page_directory[entry];
     }
 
-    // must be before the switch because its allocated on the boot directory
-    create_temp_page_table(virt_page_directory);
-    
     // switch the directory
     load_cr3(phys_page_directory);
 
@@ -61,11 +68,21 @@ void transition_page_directory() {
 
 }
 
-uint32_t* temp_map_phys(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT;
+uint32_t* temp_map_phys0(uint32_t phys) {
+    uint32_t virt = TEMP_PT_VIRT_0;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
     
-    temp_page_table[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    temp_page_table0[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    invlpg((void*)virt);
+
+    return (uint32_t*)virt;
+}
+
+uint32_t* temp_map_phys1(uint32_t phys) {
+    uint32_t virt = TEMP_PT_VIRT_1;
+    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
+    
+    temp_page_table1[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
     invlpg((void*)virt);
 
     return (uint32_t*)virt;
@@ -77,7 +94,7 @@ uint32_t* create_page_table(uint32_t* page_directory, uint32_t pd_idx, uint32_t 
         return 0;
     }
 
-    uint32_t* new_pt = temp_map_phys(pt_phys);
+    uint32_t* new_pt = temp_map_phys1(pt_phys);
     memset(new_pt, 0, PAGE_SIZE);
 
     page_directory[pd_idx] = (pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE | flags;
@@ -94,10 +111,10 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
             return;
         }
     }
-
-    uint32_t pt_phys = kernel_page_directory[pd_idx] & 0xFFFFF000;
-    uint32_t* pt = temp_map_phys(pt_phys);
     
+    uint32_t pt_phys = kernel_page_directory[pd_idx] & 0xFFFFF000;
+    uint32_t* pt = temp_map_phys0(pt_phys);
+
     pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF) | PAGE_PRESENT;
 
     invlpg((void*)virt);
@@ -116,7 +133,7 @@ void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint3
     }
 
     uint32_t pt_phys = page_directory[pd_idx] & 0xFFFFF000;
-    uint32_t* pt = temp_map_phys(pt_phys);
+    uint32_t* pt = temp_map_phys1(pt_phys);
     
     pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF) | PAGE_PRESENT | PAGE_USER;
 
@@ -133,7 +150,7 @@ uint32_t unmap_page(uint32_t virt) {
     }
 
     uint32_t pt_phys = kernel_page_directory[pd_idx] & 0xFFFFF000;
-    uint32_t* pt = temp_map_phys(pt_phys);
+    uint32_t* pt = temp_map_phys0(pt_phys);
     
     // page table entry doesnt exist
     if (!(pt[pt_idx] & PAGE_PRESENT)) {

@@ -4,7 +4,7 @@ volatile uint32_t ticks = 0;
 
 void timer_callback(regs_t* r) {
     ticks++;
-    pic_send_eoi(IRQ_TIMER);
+    //pic_send_eoi(IRQ_TIMER);
     
     if (!current_process) {
         schedule();
@@ -26,7 +26,7 @@ void timer_callback(regs_t* r) {
 
     if (current_process->state == PROC_RUNNING) {
         current_process->state = PROC_READY;
-        enqueue(current_process);
+        enqueue(&current_processes, current_process);
     }
 
     schedule();
