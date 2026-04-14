@@ -2,25 +2,10 @@
 
 initrd_superblock_t* superblock;
 initrd_node_t* node_table;
-uint32_t table_capacity;
 uint32_t num_nodes;
 
 //forward declaration
 fs_node_t* initrd_parent(fs_node_t* node);
-
-uint8_t double_table_capacity() {
-    initrd_node_t* old_table = node_table;
-    node_table = krealloc(node_table, table_capacity * 2);
-    
-    if (!node_table) {
-        node_table = old_table;
-        return 0;
-    }
-
-    table_capacity *= 2;
-
-    return 1;
-}
 
 void initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     initrd_node_t* file = &node_table[node->inode];
@@ -37,12 +22,6 @@ void initrd_createdir(fs_node_t* node, char* name) {
     // cant have duplicate files or directories of the same name 
     for (uint32_t i = 0; i < num_nodes; i++) {
         if (strcmp(name, node_table[i].name) == 0 && node->inode == node_table[i].parent_id) {
-            return;
-        }
-    }
-
-    if (num_nodes >= table_capacity) {
-        if (!double_table_capacity()) {
             return;
         }
     }
@@ -66,12 +45,6 @@ void initrd_createfile(fs_node_t* node, char* name, uint32_t size) {
             return;
         }
     }
-
-    if (num_nodes >= table_capacity) {
-        if (!double_table_capacity()) {
-            return;
-        }
-    }
     
     initrd_node_t* new_file = &node_table[num_nodes];
     new_file->id = num_nodes;
@@ -82,9 +55,9 @@ void initrd_createfile(fs_node_t* node, char* name, uint32_t size) {
 
     uint32_t max_offset = 0;
     for (uint32_t i = 0; i < num_nodes; i++) {
-        initrd_node_t* new_node = &node_table[i];
-        uint32_t offset = new_node->data_offset + new_node->size;
-        if (offset > max_offset && new_node->type == INITRD_NODE_FILE) {
+        initrd_node_t* node = &node_table[i];
+        uint32_t offset = node->data_offset + node->size;
+        if (offset > max_offset) {
             max_offset = offset;
         }
     }
@@ -161,7 +134,6 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->parent = initrd_parent;
             file->createdir = initrd_createdir;
             file->createfile = initrd_createfile;
-            file->writefile = initrd_writefile;
             
             return file;
         }
@@ -191,7 +163,6 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     fs_node->parent = initrd_parent;
     fs_node->createdir = initrd_createdir;
     fs_node->createfile = initrd_createfile;
-    fs_node->writefile = initrd_writefile;
 
     return fs_node;
 }
@@ -212,10 +183,8 @@ fs_node_t* initrd_init(uint32_t addr) {
     
     // set node table and transfer initial node table to a heap based one
     initrd_node_t* init_node_table = (initrd_node_t*)(addr + superblock->nodes_offset);
-    uint32_t init_capacity = 100;
-    node_table = kmalloc(init_capacity*sizeof(initrd_node_t));
-    table_capacity = init_capacity;
-     
+    node_table = kmalloc(100*sizeof(initrd_node_t));
+    
     for (uint32_t i = 0; i < superblock->node_count; i++) {
         node_table[i] = init_node_table[i];
     }
@@ -258,7 +227,6 @@ fs_node_t* initrd_init(uint32_t addr) {
     fs_root->parent = initrd_parent;
     fs_root->createdir = initrd_createdir;
     fs_root->createfile = initrd_createfile;
-    fs_root->writefile = initrd_writefile;
     
     return fs_root;
 }

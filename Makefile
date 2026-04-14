@@ -80,6 +80,11 @@ iso: kernel
 	cp $(FS) $(ISO_DIR)/boot
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
+img: 
+	python3 initrd.py	
+	cp $(FS) $(ISO_DIR)/boot
+
+
 # Run only; assumes kernel was already built earlier
 run:
 	qemu-system-i386 -cdrom $(ISO)

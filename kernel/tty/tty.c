@@ -56,9 +56,14 @@ void read_command(char* line) {
         }
     }
     
-    //check bin/ for the command
-    fs_node_t* bin = resolve_path_from(fs_root, "bin");
-    fs_node_t* elf = resolve_path_from(bin, line);
+    
+    fs_node_t* elf = resolve_path_from(fs_cwd, line);
+    
+    //check bin/ for the command if not found in current directory
+    if (!elf) {
+        fs_node_t* bin = resolve_path_from(fs_root, "bin");
+        elf = resolve_path_from(bin, line);
+    }
 
     if (!elf) {
         return;
