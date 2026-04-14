@@ -116,6 +116,18 @@ void interrupt_dispatch(regs_t* regs) {
 
 void exception_handler(regs_t* reg) {
     printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[(int)reg->int_no]);
+
+    if (reg->int_no == 14) {
+        uint32_t cr2;
+        __asm__ __volatile__("mov %%cr2, %0" : "=r"(cr2));
+
+        printf("PAGE FAULT\n");
+        printf("cr2 = %x\n", cr2);
+        printf("eip = %x\n", reg->eip);
+        printf("err = %x\n", reg->err_code);
+        printf("cs  = %x\n", reg->cs);
+        printf("useresp = %x\n", reg->useresp);
+    }
     
     //infinite wait
     while (1) {

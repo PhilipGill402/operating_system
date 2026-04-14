@@ -214,6 +214,12 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     uint32_t entry = header->e_entry;
     process->entry = header->e_entry;
+    process->page_directory_phys = process_create_page_directory();
+    if (!process->page_directory_phys) {
+        kfree(buf);
+        process_destroy(process);
+        return NULL;
+    }
     
     if (!elf_load(buf, size, process)) {
         kfree(buf);
@@ -233,7 +239,6 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
-    process->page_directory_phys = process_create_page_directory();
 
     if (!process->page_directory_phys) {
         kfree(buf);
@@ -255,7 +260,7 @@ void elf_execute(fs_node_t* elf) {
         return;
     }
     
-    enqueue(&current_processes, process);
+    enqueue(&current_processes, &process);
 }
 
 

@@ -2,7 +2,6 @@
 
 struct gdt_entry gdt[6];
 struct gdt_ptr gp;
-tss_t tss;
 
 //TODO: add gdt initialization before flushing it
 void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran) {

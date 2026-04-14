@@ -5,6 +5,9 @@
 
 #include "port.h"
 
+#define IRQ_TIMER    0
+#define IRQ_KEYBOARD 1
+
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA    0x21
 #define PIC2_COMMAND 0xA0

@@ -5,8 +5,9 @@
 #include <queue.h>
 
 #include "exec/process.h"
+#include "exec/tss.h"
 
-__attribute__((noinline)) void context_switch(process_t *old, process_t *new);
+process_t* dequeue_ready();
 void scheduler_init();
 void schedule();
 

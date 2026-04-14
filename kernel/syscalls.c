@@ -1,13 +1,12 @@
 #include "syscalls.h"
 
-void sys_exit() {
-    process_destroy(current_process); 
+void sys_exit(regs_t* reg) {
+    current_process->trapframe = reg;
+    current_process->saved_kernel_esp = (uint32_t)reg;
+    current_process->state = PROC_TERMINATED;
+    schedule();
 
-    current_process = NULL;
-    
-    __asm__ __volatile__("sti");
-
-    tty();
+    for (;;) {}
 }
 
 void sys_write(const char* str) {
@@ -15,9 +14,12 @@ void sys_write(const char* str) {
 }
 
 void syscall_handler(regs_t* reg) {
-    if (reg->eax == SYS_EXIT) {
-        sys_exit();
-    } else if (reg->eax == SYS_WRITE) {
-        sys_write(reg->ebx);
+    switch (reg->eax) {
+        case SYS_EXIT: 
+            sys_exit(reg);
+            break;
+        case SYS_WRITE:
+            sys_write(reg->ebx);
+            break;
     }
 }

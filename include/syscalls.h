@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "exec/process.h"
+#include "exec/scheduler.h"
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "interrupts/registers.h"
