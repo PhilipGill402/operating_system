@@ -56,6 +56,9 @@ libc:
 # Build kernel only when explicitly requested
 kernel: $(KERNEL_BIN)
 
+img: 
+	python3 initrd.py	
+
 $(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBK) $(LIBS)
 	grub-file --is-x86-multiboot $@
@@ -72,18 +75,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	$(AS) $(ASFLAGS) $< -o $@
 
 # Only build ISO when explicitly requested
-iso: kernel
+iso: kernel img
 	rm -rf $(ISO_DIR)	
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
 	cp grub.cfg $(ISO_DIR)/boot/grub
 	cp $(FS) $(ISO_DIR)/boot
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
-
-img: 
-	python3 initrd.py	
-	cp $(FS) $(ISO_DIR)/boot
-
 
 # Run only; assumes kernel was already built earlier
 run:
@@ -92,3 +90,6 @@ run:
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean
 	rm -rf $(BUILD_DIR)
+	rm initrd.img
+
+

@@ -1,6 +1,5 @@
 import os
 
-
 class File:
     def __init__(self, name, size, offset, contents):
         self.name = name
@@ -49,37 +48,71 @@ class Node:
         )
 
 
-# look for files in fs/
-os.chdir("fs/")
-files = sorted(os.listdir("."))
-print(files)
-file_info = []
-
-num_files = len(files) + 1 # add 1 for 'root'
+#globals for use inside the parsing functions
+num_files = 0
 nodes_offset = 20 # sizeof(initrd_superblock_t)
 node_size = 84 # sizeof(initrd_node_t)
 data_offset = nodes_offset + num_files * node_size 
+nodes = []
+file_info = []
+file_nodes = []
 
-# get all file info
-for idx in range(len(files)):
-    file_name = files[idx]
+def parse_file(file_name, parent_id):
+    global num_files
+    global file_info
+    global nodes
+    global data_offset
+
     with open(file_name, "rb") as file: 
         content = file.read()
         
-        if idx == 0:
-            offset = data_offset
+        file_info.append(File(file_name, len(content), None, content))
+        
+        node = Node(num_files, 1, parent_id, file_name, len(content), None)
+        nodes.append(node)
+        file_nodes.append(node)
+        num_files += 1
+
+def parse_directory(dir_name, parent_id):
+    global num_files
+    global nodes
+    
+    old_dir = os.getcwd()
+
+    os.chdir(dir_name)
+    files = sorted(os.listdir("."))
+    file_info = []
+    id = num_files
+    num_files += 1
+    
+    # since we must change to the fs folder we dont want that as the name of our root dir
+    if id == 0:
+        dir_name = "/"
+
+    nodes.append(Node(id, 2, parent_id, dir_name, 0, 0))
+
+    # get all file info
+    for idx in range(len(files)):
+        file_name = files[idx]
+        if os.path.isdir(file_name):
+            parse_directory(file_name, id)
         else:
-            offset = file_info[idx - 1].offset + file_info[idx - 1].size
+            parse_file(file_name, id)
+         
+    
+    os.chdir(old_dir)
 
-        file_info.append(File(file_name, len(content), offset, content))
+# creates the nodes and files classses
+parse_directory("fs", 0xFFFFFFFF)
 
-# create nodes
-nodes = [Node(0, 2, 0xFFFFFFFF, "/", 0, 0)] # intialize the list with the root node
+# set offsets for each file
+data_offset = nodes_offset + len(nodes) * node_size
+current_offset = data_offset
 
-node_id = 1
-for file in file_info:
-    nodes.append(Node(node_id, 1, 0, file.name, file.size, file.offset))
-    node_id += 1
+for file_obj, node_obj in zip(file_info, file_nodes):
+    file_obj.offset = current_offset
+    node_obj.data_offset = current_offset
+    current_offset += file_obj.size
 
 # create header
 header = Header(1, num_files, 0, nodes_offset)
@@ -96,6 +129,5 @@ for file in file_info:
 assert len(header.serialize()) == 20
 assert all(len(node.serialize()) == 84 for node in nodes)
 
-os.chdir("..")
 with open("initrd.img", "wb") as file:
     file.write(image)
