@@ -202,6 +202,11 @@ uint32_t elf_init_stack(process_t* process) {
 process_t* process_create_from_elf(fs_node_t* elf) {
     uint32_t size;
     process_t* process = kzmalloc(sizeof(process_t));
+
+    process_init_file_descriptors(process);
+    fs_node_t* process_cwd = kmalloc(sizeof(fs_node_t));
+    memcpy(process_cwd, fs_cwd, sizeof(fs_node_t));
+    process->cwd = process_cwd;
     
     uint8_t* buf = elf_from_file(elf, &size);
     
@@ -259,7 +264,7 @@ void elf_execute(fs_node_t* elf) {
     if (!process) {
         return;
     }
-    
+     
     enqueue(&current_processes, &process);
 }
 

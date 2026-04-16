@@ -8,6 +8,7 @@
 #include "memory/paging.h"
 
 #define MAX_PATH_LENGTH 256
+#define MAX_FDS 128
 
 typedef enum {
     FS_FILE,
@@ -21,7 +22,12 @@ typedef struct {
 
 typedef struct fs_node_t fs_node_t;
 
-typedef struct fs_node_t {
+typedef struct {
+    uint8_t in_use;
+    fs_node_t* node;
+} file_desc_t;
+
+typedef struct fs_node_t{
     char name[128];
     fs_node_type_t flags;
     uint32_t inode;

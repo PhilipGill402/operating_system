@@ -1,16 +1,18 @@
 #ifndef INCLUDE_EXEC_PROCESS_H_
 #define INCLUDE_EXEC_PROCESS_H_
 
-#define USER_CS_RING3 0x1B
-#define USER_DS_RING3 0x23
-#define MAX_SEGMENTS 8
-
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include "interrupts/registers.h"
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
+#include "memory/heap.h"
+#include "fs/fs.h"
+
+#define USER_CS_RING3 0x1B
+#define USER_DS_RING3 0x23
+#define MAX_SEGMENTS 8
 
 #define PAGE_SIZE 4096
 #define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
@@ -45,13 +47,17 @@ typedef struct {
     uint8_t num_ranges;
     regs_t* trapframe;
     uint32_t ticks_left;
+    file_desc_t fds[MAX_FDS];
+    fs_node_t* cwd;
 } process_t;
 
 extern process_t* current_process;
 extern uint32_t num_processes;
 
 __attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t *tf);
+process_t* process_clone(process_t* process);
 void process_init_trapframe(process_t* process);
+void process_init_file_descriptors(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();
 
