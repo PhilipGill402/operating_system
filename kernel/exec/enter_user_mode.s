@@ -34,5 +34,6 @@ enter_user_mode_from_trapframe:
 
     # Restore eax last, since we used it as tf pointer
     mov 32(%eax), %eax         # tf->eax
-
+    
+    
     iret

@@ -2,6 +2,8 @@
 
 fs_node_t* fs_root;
 fs_node_t* fs_cwd;
+fs_node_t* dev_dir;
+fs_node_t* console_node;
 
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     if (path[0] == '/') {
@@ -88,7 +90,7 @@ void fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size)
 uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->read) {
         return 0;
-    } 
+    }
 
     return node->read(node, offset, size, buffer);
 }
@@ -106,7 +108,85 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
         return NULL;
     }
 
+    if (node == fs_root && strcmp(name, "dev") == 0) {
+        return dev_dir; 
+    }
+
     return node->finddir(node, name);
+}
+
+dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
+    dirent_t* dirent = kmalloc(sizeof(dirent_t)); 
+    dev_dir_t* dir = (dev_dir_t*)node->device;
+    
+    if (!dir || index >= dir->child_count) return NULL;
+
+    fs_node_t* child = dir->children[index];
+    strcpy(dirent->name, child->name);
+    dirent->inode = child->inode;
+
+    return dirent;
+}
+
+fs_node_t* dev_finddir(fs_node_t* node, char* name) {
+    dev_dir_t* dir = (dev_dir_t*)node->device;
+
+    if (!dir) return NULL;
+
+    for (uint32_t i = 0; i < dir->child_count; i++) {
+        if (strcmp(dir->children[i]->name, name) == 0) {
+            return dir->children[i];
+        }
+    }
+
+    return NULL;
+}
+
+fs_node_t* dev_parent(fs_node_t* node) {
+    if (!node || !node->device) return NULL;
+    
+    dev_dir_t* dir = node->device;
+    
+    return dir->parent;
+}
+
+fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
+    fs_node_t* node = kzmalloc(sizeof(fs_node_t));
+    dev_dir_t* data = kzmalloc(sizeof(dev_dir_t));
+
+    if (!node || !data) return NULL;
+
+    strcpy(node->name, name);
+    node->flags = FS_DIR;
+    node->inode = inode;
+    node->size = 0;
+    node->device = data;
+
+    data->child_count = 0;
+    data->parent = parent;
+
+    node->read = NULL;
+    node->readdir = dev_readdir;
+    node->finddir = dev_finddir;
+    node->parent = dev_parent;
+    node->createdir = NULL;
+    node->createfile = NULL;
+    node->writefile = NULL;
+
+    return node;
+}
+
+void dev_add_child(fs_node_t* dir, fs_node_t* child) {
+    dev_dir_t* device = dir->device;
+    if (!device || device->child_count >= 16) return;
+    device->children[device->child_count++] = child;
+}
+
+void init_dev() {
+    dev_dir = create_dev_dir("dev", fs_root, num_nodes);
+    console_node = create_console_node(dev_dir);
+
+    dev_add_child(dev_dir, console_node);
 }
 
 uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
@@ -153,5 +233,11 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
         return 0;
     }
 
+    init_dev();
+
     return 1;
 }
+
+
+
+

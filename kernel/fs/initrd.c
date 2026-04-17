@@ -89,7 +89,6 @@ uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* b
 
     uint8_t* file = (uint8_t*)((uint32_t)superblock + initrd_node->data_offset + offset);
     memcpy(buffer, file, bytes_to_read);
-    buffer[bytes_to_read] = '\0';
     
     return bytes_to_read;
 }
@@ -134,6 +133,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->parent = initrd_parent;
             file->createdir = initrd_createdir;
             file->createfile = initrd_createfile;
+            file->writefile = initrd_writefile;
             
             return file;
         }

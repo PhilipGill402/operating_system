@@ -18,6 +18,9 @@
 #include "fs/initrd.h"
 #include "fs/fs.h"
 #include "exec/scheduler.h"
+#include "exec/elf.h"
+
+#include "interrupts/keyboard.h"
 
 #define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
 #define KERNEL_STACK_BOTTOM 0xC0C00000
@@ -93,7 +96,6 @@ void finish_init() {
     scheduler_init();
     
     __asm__ __volatile__("sti");
-    
     tty(); 
 }
 

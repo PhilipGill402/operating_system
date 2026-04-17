@@ -91,9 +91,13 @@ void ls_handler(void* arg) {
     } else {
         dir = fs_cwd;
     }
+
+    dirent_t* entry = fs_readdir(dir, 0);
+    if (!entry) {
+        return;
+    }
     
 
-    dirent_t* entry = fs_readdir(dir, 0); 
     uint32_t idx = 1;
     
     while (entry != NULL) {

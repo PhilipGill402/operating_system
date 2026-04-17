@@ -106,7 +106,13 @@ uint32_t process_create_page_directory() {
 }
 
 void process_init_file_descriptors(process_t* process) {
-    memset(&process->fds, 0, sizeof(file_desc_t) * MAX_FDS);
+    memset(process->fds, 0, sizeof(file_desc_t) * MAX_FDS);
+    fs_node_t* console = resolve_path("/dev/console");
+
+    for (uint8_t i = 0; i < 3; i++) {
+        process->fds[i].in_use = 1;
+        process->fds[i].node = console;
+    }
 }
 
 void process_destroy(process_t* process) {

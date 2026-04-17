@@ -1,6 +1,7 @@
 #include "interrupts/keyboard.h"
 
 static uint8_t shift_down = 0;
+static input_buffer_t keyboard_buffer;
 
 static const char scancode_set[128] = {
     [0x01] = 27,   // Escape
@@ -61,6 +62,52 @@ static uint8_t shift_released(uint8_t scancode) {
     return scancode == 0xAA || scancode == 0xB6;
 }
 
+void input_buffer_reset() {
+    keyboard_buffer.data[0] = '\0';
+    keyboard_buffer.length = 0;
+    keyboard_buffer.ready = 0;
+}
+
+void input_buffer_push(char c) {
+    if (keyboard_buffer.length + 1 >= INPUT_BUFFER_SIZE) {
+        return;
+    }
+
+    keyboard_buffer.data[keyboard_buffer.length++] = c;
+    keyboard_buffer.data[keyboard_buffer.length] = '\0';
+}
+char input_buffer_pop() {
+    if (keyboard_buffer.length == 0) {
+        return;
+    }
+    
+    char ret = keyboard_buffer.data[keyboard_buffer.length - 1];
+    keyboard_buffer.data[--keyboard_buffer.length] = '\0';
+    
+    return ret;
+}
+
+void input_buffer_submit() {
+    keyboard_buffer.data[keyboard_buffer.length] = '\0';
+    keyboard_buffer.ready = 1;
+}
+
+uint8_t input_buffer_empty() {
+    return keyboard_buffer.length == 0;
+}
+
+uint8_t input_buffer_ready() {
+    return keyboard_buffer.ready;
+}
+
+uint32_t input_buffer_length() {
+    return keyboard_buffer.length;
+}
+
+char* input_buffer_data() {
+    return keyboard_buffer.data;
+}
+
 void keyboard_callback(regs_t* r) {
     (void)r;
 
@@ -73,19 +120,19 @@ void keyboard_callback(regs_t* r) {
     if (shift_released(scancode)) {
         shift_down = 0;
     }
-
+    
     if (scancode & 0x80) {
         return;
     }
 
     char c = shift_down ? scancode_set_shift[scancode] : scancode_set[scancode];
-
+    
     if (c == '\n') {
         putchar(c);
         input_buffer_submit();
     } else if (c == '\b') {
         putchar(c);
-        input_buffer_pop();
+        input_buffer_pop(c);
     } else {
         putchar(c);
         input_buffer_push(c);

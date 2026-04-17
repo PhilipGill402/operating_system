@@ -6,13 +6,15 @@
 #include <string.h>
 #include "multiboot.h"
 #include "memory/paging.h"
+#include "memory/heap.h"
 
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128
 
 typedef enum {
     FS_FILE,
-    FS_DIR
+    FS_DIR,
+    FS_DEV
 } fs_node_type_t;
 
 typedef struct {
@@ -32,6 +34,7 @@ typedef struct fs_node_t{
     fs_node_type_t flags;
     uint32_t inode;
     uint32_t size;
+    void* device;
 
     uint32_t (*read)(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
     dirent_t* (*readdir)(fs_node_t* node, uint32_t index);
@@ -41,6 +44,12 @@ typedef struct fs_node_t{
     void (*createfile)(fs_node_t* node, char* name, uint32_t size);
     void (*writefile)(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
 } fs_node_t;
+
+typedef struct {
+    fs_node_t* children[16];
+    uint32_t child_count;
+    fs_node_t* parent;
+} dev_dir_t;
 
 uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr));
 uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
@@ -55,5 +64,8 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path);
 
 extern fs_node_t* fs_root;
 extern fs_node_t* fs_cwd;
+extern fs_node_t* console_node;
+extern fs_node_t* dev_dir;
+extern uint32_t num_nodes;
 
 #endif // !INCLUDE_FS_FS_H_

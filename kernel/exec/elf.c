@@ -238,7 +238,6 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
     
-    
     process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
     process->pid = num_processes++;
@@ -264,7 +263,7 @@ void elf_execute(fs_node_t* elf) {
     if (!process) {
         return;
     }
-     
+    
     enqueue(&current_processes, &process);
 }
 
