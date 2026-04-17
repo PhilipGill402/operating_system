@@ -48,6 +48,8 @@ OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
 LIBC_HEADERS := $(shell find $(LIBC_DIR)/include -type f -name '*.h')
 
+USER_DIR := user
+
 .PHONY: all kernel libc run iso clean dirs
 
 all: kernel
@@ -70,6 +72,9 @@ libk:
 # Build kernel only when explicitly requested
 kernel: $(KERNEL_BIN)
 
+user:
+	$(MAKE) -C $(USER_DIR)
+
 img: 
 	python3 initrd.py	
 
@@ -89,7 +94,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	$(AS) $(ASFLAGS) $< -o $@
 
 # Only build ISO when explicitly requested
-iso: kernel img
+iso: kernel img libc user
 	rm -rf $(ISO_DIR)	
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
