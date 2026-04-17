@@ -7,15 +7,18 @@ uint32_t num_nodes;
 //forward declaration
 fs_node_t* initrd_parent(fs_node_t* node);
 
-void initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+uint32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     initrd_node_t* file = &node_table[node->inode];
     
+    uint32_t write_size = offset + size > node->size ? node->size - offset : size;
     if (offset + size > node->size) {
-        return;
+        return 0;
     }
     
     void* dst = (void*)((uint32_t)superblock + file->data_offset + offset);
-    memcpy(dst, buffer, size);
+    memcpy(dst, buffer, write_size);
+
+    return write_size;
 }
 
 void initrd_createdir(fs_node_t* node, char* name) {

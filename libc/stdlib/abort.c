@@ -1,14 +1,9 @@
 #include <stdlib.h>
-#include <stdio.h>
+#include <syscalls.h>
 
 __attribute__((__noreturn__))
 void abort(void) {
-# if defined(__is_libk)
-    printf("kernel: panic: abort()\n");
-    asm volatile("hlt");
-#else
-    printf("abort()\n");
-#endif
+    exit(-1);
     while (1) { }
     __builtin_unreachable();
 }

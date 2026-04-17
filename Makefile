@@ -22,8 +22,12 @@ BUILD_DIR := build
 ISO_DIR := isodir
 
 LIBC_DIR := libc
+LIBK_DIR := libk
 LIBK := $(BUILD_DIR)/libk.a
+LIBC := $(LIBC_DIR)/build/libc.a
 LIBC_INC := $(LIBC_DIR)/include
+CRT0 := $(LIBC_DIR)/build/crt0.o
+SYSROOT := sysroot
 
 KERNEL_BIN := kernel.bin
 ISO := myos.iso
@@ -42,6 +46,8 @@ C_OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
 OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
+LIBC_HEADERS := $(shell find $(LIBC_DIR)/include -type f -name '*.h')
+
 .PHONY: all kernel libc run iso clean dirs
 
 all: kernel
@@ -52,6 +58,14 @@ dirs:
 # Build libc only when explicitly requested or when kernel is requested
 libc:
 	$(MAKE) -C $(LIBC_DIR)
+	mkdir -p $(SYSROOT)/usr/include
+	mkdir -p $(SYSROOT)/usr/lib
+	cp -R $(LIBC_INC)/* $(SYSROOT)/usr/include/
+	cp $(LIBC) $(SYSROOT)/usr/lib/
+	cp $(CRT0) $(SYSROOT)/usr/lib/
+
+libk:
+	$(MAKE) -C $(LIBK_DIR)
 
 # Build kernel only when explicitly requested
 kernel: $(KERNEL_BIN)
@@ -64,7 +78,7 @@ $(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)
 	grub-file --is-x86-multiboot $@
 
 $(LIBK):
-	$(MAKE) -C $(LIBC_DIR)
+	$(MAKE) -C $(LIBK_DIR)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(dir $@)
@@ -91,5 +105,5 @@ clean:
 	$(MAKE) -C $(LIBC_DIR) clean
 	rm -rf $(BUILD_DIR)
 	rm initrd.img
-
+	rm -rf sysroot
 

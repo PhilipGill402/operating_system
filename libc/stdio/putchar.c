@@ -1,16 +1,10 @@
 #include <stdio.h>
+#include <syscalls.h>
 
-#if defined(__is_libk)
-#include <../../include/vga.h>
-#endif
 
 int putchar(int ic) {
-#if defined(__is_libk)
-    char c = (char) ic;
-    terminal_write(&c, sizeof(c));
-#else
-    // TODO: implement system call
-#endif
+    char c = (char)ic;
+    if (write(stdout, &c, 1) != 1) return -1;
 
     return ic;
 }

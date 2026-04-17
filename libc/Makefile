@@ -4,25 +4,28 @@ TARGET := $(ARCH)-elf
 CC := $(TARGET)-gcc
 AR := $(TARGET)-ar
 
-LIBC_DIR := .
-BUILD_DIR := ../build/libc
-LIBK := ../build/libk.a
+BUILD_DIR := build
+LIBC := $(BUILD_DIR)/libc.a
+CRT := $(BUILD_DIR)/crt0.o
 INC_DIR := include
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libk -I../include
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libc -I../include
 
-C_SOURCES := $(shell find . -type f -name '*.c' ! -path './include/*')
+C_SOURCES := $(shell find . -type f -name '*.c' ! -path './include/*' ! -path './build/*')
+CRT_SOURCE := crt/crt0.s
 OBJECTS := $(patsubst ./%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
 
 .PHONY: all clean dirs
 
-all: $(LIBK)
+all: $(LIBC) $(CRT)
 
 dirs:
 	mkdir -p $(BUILD_DIR)
 
-$(LIBK): $(OBJECTS)
-	mkdir -p ../build
+$(CRT): $(CRT_SOURCE)
+	$(CC) -m32 -c $< -o $@
+
+$(LIBC): $(OBJECTS)
 	$(AR) rcs $@ $^
 
 $(BUILD_DIR)/%.o: ./%.c | dirs
@@ -30,4 +33,4 @@ $(BUILD_DIR)/%.o: ./%.c | dirs
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(LIBK)
+	rm -rf $(BUILD_DIR) $(LIBC) $(CRT)

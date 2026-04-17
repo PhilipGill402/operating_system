@@ -5,17 +5,9 @@
 #include <stdbool.h>
 #include <string.h>
 
-#ifdef __is_libk
-#include "memory/heap.h"
-#define malloc(size)        kmalloc(size)
-#define free(ptr)           kfree(ptr)
-#define realloc(ptr, size)  krealloc(ptr, size)
-#else
 void* malloc(size_t size);
 void free(void* ptr);
 void* realloc(void* ptr, size_t size);
-#endif
-
 
 typedef struct queue_t{
     int size;
