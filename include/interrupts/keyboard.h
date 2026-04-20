@@ -13,7 +13,7 @@ static volatile uint8_t last_scancode = 0;
 
 typedef struct {
     char data[INPUT_BUFFER_SIZE];
-    uint32_t length;
+    volatile uint32_t length;
     volatile uint8_t ready;
 } input_buffer_t;
 
@@ -27,5 +27,7 @@ uint8_t input_buffer_empty();
 uint8_t input_buffer_ready();
 char* input_buffer_data();
 uint32_t input_buffer_length();
+
+extern input_buffer_t keyboard_buffer;
 
 #endif // !INCLUDE_INTERRUPTS_KEYBOARD_H_

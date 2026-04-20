@@ -96,7 +96,15 @@ void finish_init() {
     scheduler_init();
     
     __asm__ __volatile__("sti");
-    tty(); 
+    fs_node_t* tty_elf = resolve_path("usr/tty.elf");
+    if (!tty_elf) {
+        printf("failed to find tty.elf\n");
+        tty();
+    } else {
+        printf("loaded tty.elf\n");
+        elf_execute(tty_elf); 
+    }
+    for (;;) {}
 }
 
 void kernel_main(uint32_t mbi_phys) {

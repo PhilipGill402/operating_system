@@ -6,11 +6,10 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
     if (!file) return 0;
-
+     
     return file->read(file, 0, count, (uint8_t*)buffer);
 }
 
-// TODO: implement stdin and stdout and rework this
 int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (fd >= MAX_FDS) return 0;
 
@@ -46,11 +45,47 @@ int32_t sys_execve(const char* file_name, const char* argv) {
     return 1;
 }
 
-void sys_exit(regs_t* reg) {
+int32_t sys_exit(regs_t* reg) {
     current_process->trapframe = reg;
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
     schedule();
+
+    return 0;
+}
+
+int32_t sys_getcwd(char* buffer, size_t size) {
+    fs_node_t* start = fs_cwd;
+    fs_node_t* path[10] = { start };
+    int8_t idx = 1;
+    int32_t bytes_written = 0;
+
+    if (!start) return -1;
+
+    while (start->inode != fs_root->inode) {
+        start = fs_parent(start);
+
+        if (!start) return -1;
+
+        path[idx++] = start;
+    }
+
+    for (int i = idx - 1; i >= 0; i--) {
+        size_t len = strlen(path[i]->name);
+        if (len > size - 1) break;
+        size -= len;
+        bytes_written += len;
+
+        strcat(buffer, path[i]->name); 
+    }
+    
+    for (int8_t i = idx - 1; i >= 0; i--) {
+        kfree(path[i]);
+    }
+
+    buffer[bytes_written++] = '\0';
+
+    return bytes_written;
 }
 
 void syscall_handler(regs_t* reg) {
@@ -71,7 +106,9 @@ void syscall_handler(regs_t* reg) {
         case SYS_EXIT:
             sys_exit(reg);
             break;
-        
+        case SYS_GETCWD:
+            sys_getcwd((char*)reg->ebx, (size_t)reg->ecx);
+            break;
     }
 
     reg->eax = ret;

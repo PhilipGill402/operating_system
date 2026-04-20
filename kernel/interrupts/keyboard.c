@@ -1,7 +1,7 @@
 #include "interrupts/keyboard.h"
 
 static uint8_t shift_down = 0;
-static input_buffer_t keyboard_buffer;
+input_buffer_t keyboard_buffer;
 
 static const char scancode_set[128] = {
     [0x01] = 27,   // Escape
@@ -78,7 +78,7 @@ void input_buffer_push(char c) {
 }
 char input_buffer_pop() {
     if (keyboard_buffer.length == 0) {
-        return;
+        return '\0';
     }
     
     char ret = keyboard_buffer.data[keyboard_buffer.length - 1];
@@ -132,7 +132,7 @@ void keyboard_callback(regs_t* r) {
         input_buffer_submit();
     } else if (c == '\b') {
         putchar(c);
-        input_buffer_pop(c);
+        input_buffer_pop();
     } else {
         putchar(c);
         input_buffer_push(c);

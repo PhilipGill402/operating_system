@@ -9,5 +9,6 @@
 int printf(const char* __restrict, ...);
 int putchar(int);
 int puts(const char*);
+int getchar();
 
 #endif // !STDIO_H_

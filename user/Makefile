@@ -15,7 +15,7 @@ LIBC := $(SYSROOT)/usr/lib/libc.a
 C_SOURCES := $(wildcard *.c)
 PROGS := $(patsubst %.c,$(OUTDIR)/%.elf,$(C_SOURCES))
 
-.PHONY: all clean dirs
+.PHONY: all clean
 
 all: $(PROGS)
 

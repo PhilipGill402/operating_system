@@ -6,19 +6,26 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
 
     if (!buffer || size == 0) return 0;
 
-    while (!input_buffer_ready()) {
-        // busy wait for now
-        asm volatile("sti; hlt");
-
-    }
-    uint32_t count = 0;
-    while (count < size && count < input_buffer_length()) {
-        buffer[count] = (uint8_t)input_buffer_data()[count];
-        count++;
+    while (!keyboard_buffer.ready) {
+        asm volatile("sti; hlt" ::: "memory");
     }
 
-    input_buffer_reset();
-    return count;
+    asm volatile("cli" ::: "memory");
+
+    uint32_t len = keyboard_buffer.length;
+    if (len > size) len = size;
+
+    for (uint32_t i = 0; i < len; i++) {
+        buffer[i] = (uint8_t)keyboard_buffer.data[i];
+    }
+
+    keyboard_buffer.data[0] = '\0';
+    keyboard_buffer.length = 0;
+    keyboard_buffer.ready = 0;
+
+    asm volatile("sti" ::: "memory");
+
+    return len;
 }
 
 void console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
