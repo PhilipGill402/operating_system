@@ -59,6 +59,7 @@ fs_node_t* fs_parent(fs_node_t* node);
 void fs_createdir(fs_node_t* node, char* name);
 void fs_createfile(fs_node_t* node, char* name, uint32_t size);
 uint32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
+
 fs_node_t* resolve_path(const char* path);
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path);
 

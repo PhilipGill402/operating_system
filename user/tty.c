@@ -4,6 +4,10 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+void ch(const char* path) {
+    if 
+}
+
 int main() {
     char cmd[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
@@ -13,7 +17,9 @@ int main() {
         printf(">> ");
         int bytes_read = read(stdin, cmd, MAX_BUFFER_LENGTH - 1);
         cmd[bytes_read] = '\0';
-        printf("%s\n", cmd);
+        int ret = chdir(cmd);
+        if (ret == 0) printf("failed! \n");
+
         cwd[0] = '\0';
     }
 

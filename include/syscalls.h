@@ -17,6 +17,7 @@
 
 #define SYS_READ    0
 #define SYS_WRITE   1
+#define SYS_CHDIR   12
 #define SYS_FORK    57
 #define SYS_EXECVE  59
 #define SYS_EXIT    60

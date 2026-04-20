@@ -19,12 +19,9 @@ PROGS := $(patsubst %.c,$(OUTDIR)/%.elf,$(C_SOURCES))
 
 all: $(PROGS)
 
-dirs:
+$(OUTDIR)/%.elf: %.c $(CRT0) $(LIBC)
 	mkdir -p $(OUTDIR)
-
-$(OUTDIR)/%.elf: %.c $(CRT0) $(LIBC) | dirs
 	$(CC) $(CFLAGS) $(LDFLAGS) $< $(CRT0) $(LIBC) -o $@
 
 clean:
 	rm -f $(OUTDIR)/*.elf
-

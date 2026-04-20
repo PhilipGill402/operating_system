@@ -6,6 +6,7 @@
 
 #define SYS_READ    0
 #define SYS_WRITE   1
+#define SYS_CHDIR   12
 #define SYS_FORK    57
 #define SYS_EXECVE  59
 #define SYS_EXIT    60
@@ -23,5 +24,6 @@ void exit(int32_t error_code);
 int32_t fork();
 int32_t execve(const char* path, const char* argv[]);
 int32_t getcwd(char* buffer, size_t size);
+int32_t chdir(const char* path);
 
 #endif

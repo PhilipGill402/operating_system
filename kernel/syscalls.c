@@ -30,17 +30,19 @@ int32_t sys_fork() {
     return 1;
 }
 
-// TODO: REWORK! THIS DOESNT WORK!
 int32_t sys_execve(const char* file_name, const char* argv) {
     fs_node_t* elf = fs_cwd->finddir(fs_cwd, file_name);
+    process_t* proc_elf = process_create_from_elf(elf);
     
-    if (!elf) {
+    if (!proc_elf) {
         kfree(elf);
+        kfree(proc_elf);
         return -1;
     }
 
-    memcpy(current_process, elf, sizeof(process_t)); 
+    memcpy(current_process, proc_elf, sizeof(process_t));
     kfree(elf);
+    kfree(proc_elf);
 
     return 1;
 }
@@ -54,8 +56,22 @@ int32_t sys_exit(regs_t* reg) {
     return 0;
 }
 
+int32_t sys_chdir(const char* path) {
+    fs_node_t* new_dir;
+    if (!path) {
+        new_dir = fs_root; 
+    } else {
+        new_dir = resolve_path_from(current_process->cwd, path);
+        if (new_dir->flags != FS_DIR) return -1;
+    }
+
+    current_process->cwd = new_dir;
+
+    return 0;
+}
+
 int32_t sys_getcwd(char* buffer, size_t size) {
-    fs_node_t* start = fs_cwd;
+    fs_node_t* start = current_process->cwd;
     fs_node_t* path[10] = { start };
     int8_t idx = 1;
     int32_t bytes_written = 0;
@@ -108,6 +124,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_GETCWD:
             sys_getcwd((char*)reg->ebx, (size_t)reg->ecx);
+            break;
+        case SYS_CHDIR:
+            sys_chdir((char*)reg->ebx);
             break;
     }
 
