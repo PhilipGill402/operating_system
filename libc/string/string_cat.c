@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 void string_cat(string_t* dst, string_t* src) {
     if (dst->capacity < src->len + dst->len) {

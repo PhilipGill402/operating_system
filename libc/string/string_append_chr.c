@@ -1,5 +1,5 @@
 #include <string.h>
-
+#include <stdio.h>
 
 void string_append_chr(string_t* string, char ch) {
     if (string->len + 1 > string->capacity) {

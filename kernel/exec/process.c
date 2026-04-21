@@ -3,6 +3,10 @@
 process_t* current_process = NULL;
 uint32_t num_processes = 0;
 
+static uint32_t align_up(uint32_t value, uint32_t align) {
+    return (value + align - 1) & ~(align - 1);
+}
+
 void process_init_trapframe(process_t* process) {
     regs_t* tf = (regs_t*)(process->kernel_stack_top - sizeof(regs_t));
     memset(tf, 0, sizeof(regs_t));
@@ -103,6 +107,52 @@ uint32_t process_create_page_directory() {
     }
 
     return pd_phys;
+}
+
+uint32_t process_init_stack(process_t* process) {
+    uint32_t stack_bottom = USER_STACK_BOTTOM; 
+    uint32_t stack_top = USER_STACK_TOP;
+
+    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
+
+    for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
+        uint32_t frame = pmm_alloc_frame();
+        if (!frame) {
+            return 0;
+        }
+
+        map_user_page(pd, addr, frame, PAGE_WRITE);
+
+        uint8_t* page = (uint8_t*)temp_map_phys1(frame);
+        memset(page, 0, PAGE_SIZE);
+    }
+
+    process->user_stack_top = stack_top;
+    process->user_stack_bottom = stack_bottom;
+
+    return 1;
+}
+
+uint32_t process_init_heap(process_t* process) {
+    uint32_t heap_start = align_up(process->image_end, PAGE_SIZE);
+    
+    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
+    uint32_t frame = pmm_alloc_frame();
+    if (!frame) {
+        return 0;
+    }
+
+    map_user_page(pd, heap_start, frame, PAGE_WRITE);
+    
+    uint8_t* page = temp_map_phys1(frame);
+    memset(page, 0, PAGE_SIZE);
+
+    process->heap_start = heap_start;
+    process->heap_break = process->heap_start;
+    process->heap_mapped_end = process->heap_start + PAGE_SIZE;
+    process->heap_max_end = heap_start + (16384 * PAGE_SIZE); // allow heap growth up to 64 MB
+                                                             
+    return 1;
 }
 
 void process_init_file_descriptors(process_t* process) {

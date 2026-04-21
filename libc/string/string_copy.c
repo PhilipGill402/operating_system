@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdio.h>
+
 
 void string_copy(string_t* dst, string_t* src) {
     if (src->len > dst->capacity) {

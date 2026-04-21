@@ -20,6 +20,12 @@
 #define KERNEL_STACK_TOP (KERNEL_STACK_BOTTOM + KERNEL_STACK_SIZE)
 #define DEFAULT_MAX_TICKS 10
 
+#define USER_NULL_GUARD      0x00000000
+#define USER_IMAGE_BASE      0x08048000
+#define USER_STACK_TOP       0xBFFFE000
+#define USER_STACK_SIZE      (PAGE_SIZE * 4)
+#define USER_STACK_BOTTOM    (USER_STACK_TOP - USER_STACK_SIZE)
+
 typedef struct {
     uint32_t start;
     uint32_t end;
@@ -36,15 +42,27 @@ typedef struct {
     uint32_t pid;
     proc_state_t state;
     uint32_t entry;
+
+    uint32_t image_base;
+    uint32_t image_end;
+    
+    uint32_t heap_start;
+    uint32_t heap_break;
+    uint32_t heap_mapped_end;
+    uint32_t heap_max_end;
+
     uint32_t user_stack_top;
     uint32_t user_stack_bottom;
+
     uint32_t kernel_stack_top;
     uint32_t kernel_stack_bottom;
     uint32_t saved_kernel_esp;
     uint32_t saved_kernel_ebp;
+    
     uint32_t page_directory_phys;
     mem_range_t mem_ranges[MAX_SEGMENTS];
     uint8_t num_ranges;
+    
     regs_t* trapframe;
     uint32_t ticks_left;
     file_desc_t fds[MAX_FDS];
@@ -58,6 +76,8 @@ __attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t *tf);
 process_t* process_clone(process_t* process);
 void process_init_trapframe(process_t* process);
 void process_init_file_descriptors(process_t* process);
+uint32_t process_init_stack(process_t* process);
+uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();
 

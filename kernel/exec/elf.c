@@ -1,5 +1,9 @@
 #include "exec/elf.h"
 
+static uint32_t align_up(uint32_t value, uint32_t align) {
+    return (value + align - 1) & ~(align - 1);
+}
+
 uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size) {
     uint8_t* buffer = kmalloc(elf->size);
     fs_read(elf, 0, elf->size, buffer);
@@ -104,12 +108,15 @@ void elf_print_info(const uint8_t* elf) {
 uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
     uint8_t count = 0;
+    uint32_t lowest_addr = 0xFFFFFFFF;
+    uint32_t highest_addr = 0;
 
     for (uint32_t offset = header->e_phoff;
          offset < header->e_phoff + header->e_phentsize * header->e_phnum;
          offset += header->e_phentsize) {
 
         Elf32_Phdr* ph = (Elf32_Phdr*)((uint32_t)elf + offset);
+
 
         if (ph->p_type != PT_LOAD) {
             continue;
@@ -131,10 +138,18 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
         }
 
         uint32_t seg_start = ph->p_vaddr;
-        uint32_t seg_end   = ph->p_vaddr + ph->p_memsz;
+        uint32_t seg_end = ph->p_vaddr + ph->p_memsz;
+
+        if (seg_end > highest_addr) {
+            highest_addr = seg_end;
+        }
+
+        if (seg_start < lowest_addr) {
+            lowest_addr = ph->p_vaddr;
+        }
 
         uint32_t page_start = seg_start & ~(PAGE_SIZE - 1);
-        uint32_t page_end   = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+        uint32_t page_end = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
         uint32_t* pd = temp_map_phys0(process->page_directory_phys);
 
@@ -172,30 +187,8 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     }
 
     process->num_ranges = count;
-    return 1;
-}
-
-uint32_t elf_init_stack(process_t* process) {
-    uint32_t stack_bottom = STACK_TOP - (PAGE_SIZE * 4);
-    uint32_t stack_top = STACK_TOP;
-
-    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
-
-    for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
-        uint32_t frame = pmm_alloc_frame();
-        if (!frame) {
-            return 0;
-        }
-
-        map_user_page(pd, addr, frame, PAGE_WRITE);
-
-        uint8_t* page = (uint8_t*)temp_map_phys1(frame);
-        memset(page, 0, PAGE_SIZE);
-    }
-
-    process->user_stack_top = stack_top;
-    process->user_stack_bottom = stack_bottom;
-
+    process->image_end = align_up(highest_addr, PAGE_SIZE);
+    process->image_base = lowest_addr;
     return 1;
 }
 
@@ -232,7 +225,13 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL; 
     }
 
-    if (!elf_init_stack(process)) {
+    if (!process_init_stack(process)) {
+        kfree(buf);
+        process_destroy(process);
+        return NULL;
+    }
+
+    if (!process_init_heap(process)) {
         kfree(buf);
         process_destroy(process);
         return NULL;
