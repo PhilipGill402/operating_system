@@ -104,6 +104,10 @@ int32_t sys_getcwd(char* buffer, size_t size) {
     return bytes_written;
 }
 
+int32_t sys_getpid() {
+    return current_process->pid;
+}
+
 void syscall_handler(regs_t* reg) {
     int32_t ret = 0;
     switch (reg->eax) {
@@ -120,13 +124,16 @@ void syscall_handler(regs_t* reg) {
             ret = sys_execve((char*)reg->ebx, (char*)reg->ecx);
             break;
         case SYS_EXIT:
-            sys_exit(reg);
+            ret = sys_exit(reg);
             break;
         case SYS_GETCWD:
-            sys_getcwd((char*)reg->ebx, (size_t)reg->ecx);
+            ret = sys_getcwd((char*)reg->ebx, (size_t)reg->ecx);
             break;
         case SYS_CHDIR:
-            sys_chdir((char*)reg->ebx);
+            ret = sys_chdir((char*)reg->ebx);
+            break;
+        case SYS_GETPID:
+            ret = sys_getpid();
             break;
     }
 

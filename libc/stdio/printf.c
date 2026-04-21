@@ -139,6 +139,13 @@ int printf(const char* restrict format, ...) {
                 return -1;
             }
             written += len; 
+        } else if (*format == 'r') {
+            format++;
+            string_t string = va_arg(parameters, string_t);
+            if (!print(string.str, string.len)) {
+                return -1;
+            }
+            written += string.len;
         } else {
 			format = format_begun_at;
 			size_t len = strlen(format);
