@@ -35,7 +35,7 @@ void schedule() {
     current_process = next;
     current_process->state = PROC_RUNNING;
     current_process->ticks_left = DEFAULT_MAX_TICKS;
-    
+
     load_cr3(current_process->page_directory_phys);
     tss_set_kernel_stack(current_process->kernel_stack_top);
     enter_user_mode_from_trapframe(current_process->trapframe);

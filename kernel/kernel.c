@@ -104,6 +104,7 @@ void finish_init() {
         printf("loaded tty.elf\n");
         elf_execute(tty_elf); 
     }
+
     for (;;) {}
 }
 
