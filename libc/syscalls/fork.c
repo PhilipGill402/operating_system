@@ -1,5 +1,5 @@
 #include <syscalls.h>
 
-int32_t fork() {
+uint32_t fork() {
     return __sys0(SYS_FORK); 
 }

@@ -1,6 +1,6 @@
 #include "syscalls.h"
 
-int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
+uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     if (fd >= MAX_FDS) return 0;
 
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
@@ -10,7 +10,7 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     return file->read(file, 0, count, (uint8_t*)buffer);
 }
 
-int32_t sys_write(uint32_t fd, char* str, size_t count) {
+uint32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (fd >= MAX_FDS) return 0;
 
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
@@ -20,7 +20,7 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     return file->writefile(file, str, 0, count);
 }
 
-int32_t sys_fork() {
+uint32_t sys_fork() {
     process_t* new = process_clone(current_process);
     
     if (!new) return 0;
@@ -30,14 +30,14 @@ int32_t sys_fork() {
     return 1;
 }
 
-int32_t sys_execve(const char* file_name, const char* argv) {
+uint32_t sys_execve(const char* file_name, const char* argv) {
     fs_node_t* elf = fs_cwd->finddir(fs_cwd, file_name);
     process_t* proc_elf = process_create_from_elf(elf);
     
     if (!proc_elf) {
         kfree(elf);
         kfree(proc_elf);
-        return -1;
+        return 0;
     }
 
     memcpy(current_process, proc_elf, sizeof(process_t));
@@ -47,41 +47,41 @@ int32_t sys_execve(const char* file_name, const char* argv) {
     return 1;
 }
 
-int32_t sys_exit(regs_t* reg) {
+uint32_t sys_exit(regs_t* reg) {
     current_process->trapframe = reg;
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
     schedule();
 
-    return 0;
+    return 1;
 }
 
-int32_t sys_chdir(const char* path) {
+uint32_t sys_chdir(const char* path) {
     fs_node_t* new_dir;
     if (!path) {
         new_dir = fs_root; 
     } else {
         new_dir = resolve_path_from(current_process->cwd, path);
-        if (new_dir->flags != FS_DIR) return -1;
+        if (new_dir->flags != FS_DIR) return 0;
     }
 
     current_process->cwd = new_dir;
 
-    return 0;
+    return 1;
 }
 
-int32_t sys_getcwd(char* buffer, size_t size) {
+uint32_t sys_getcwd(char* buffer, size_t size) {
     fs_node_t* start = current_process->cwd;
     fs_node_t* path[10] = { start };
     int8_t idx = 1;
     int32_t bytes_written = 0;
 
-    if (!start) return -1;
+    if (!start) return 0;
 
     while (start->inode != fs_root->inode) {
         start = fs_parent(start);
 
-        if (!start) return -1;
+        if (!start) return 0;
 
         path[idx++] = start;
     }
@@ -104,12 +104,12 @@ int32_t sys_getcwd(char* buffer, size_t size) {
     return bytes_written;
 }
 
-int32_t sys_getpid() {
+uint32_t sys_getpid() {
     return current_process->pid;
 }
 
 void syscall_handler(regs_t* reg) {
-    int32_t ret = 0;
+    uint32_t ret = 0;
     switch (reg->eax) {
         case SYS_READ:
             ret = sys_read(reg->ebx, (char*)reg->ecx, (size_t)reg->edx);
