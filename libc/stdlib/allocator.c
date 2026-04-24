@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+#include <stdio.h>
+
 static uint8_t* heap_head = NULL;
 static uint8_t* heap_tail = NULL;
 
@@ -42,18 +44,19 @@ void coalesce(block_t* block){
 void* malloc(size_t size){
     //align to 8 byte increments
     size_t total_size = align(size, 8);
-    
+    printf("made it malloc\n");
     // first malloc: sets the heap head to the break in the heap
     if (!heap_head) {
         heap_head = sbrk(PAGE_SIZE);
         if (!heap_head) return NULL;
-
+        printf("made it malloc\n");
         heap_tail = heap_head + PAGE_SIZE;
         block_t* first_block = (block_t*)heap_head;
         first_block->size = PAGE_SIZE - sizeof(block_t);
         first_block->allocated = 0;
     }
     
+    printf("made it malloc\n");
     //finds the first fit block 
     block_t* block = (block_t*)heap_head;
     

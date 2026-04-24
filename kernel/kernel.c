@@ -87,8 +87,6 @@ void finish_init() {
     pic_clear_mask(1);
     pit_init(100);
     
-    
-    
     init_heap();
     
     fs_init(mbi, initrd_init);
