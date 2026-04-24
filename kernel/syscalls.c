@@ -1,5 +1,29 @@
 #include "syscalls.h"
 
+void* sys_brk(void* new_addr) {
+    if (new_addr == 0) return (void*)current_process->heap_break;
+    if (new_addr < current_process->heap_start || new_addr > current_process->heap_max_end) return NULL;
+    
+
+    uint32_t* pd = temp_map_phys0(current_process->page_directory_phys);
+    while (new_addr > current_process->heap_mapped_end) {
+        uint32_t frame = pmm_alloc_frame();
+        if (!frame) {
+            return NULL;
+        }
+
+        map_user_page(pd, current_process->heap_mapped_end, frame, PAGE_WRITE);
+        
+        uint8_t* page = temp_map_phys1(frame);
+        memset(page, 0, PAGE_SIZE);
+
+        current_process->heap_mapped_end += PAGE_SIZE;
+    }
+    
+    current_process->heap_break = new_addr;
+    return (void*)new_addr;
+}
+
 uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     if (fd >= MAX_FDS) return 0;
 
@@ -134,6 +158,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_GETPID:
             ret = sys_getpid();
+            break;
+        case SYS_BRK:
+            ret = (uint32_t)sys_brk((void*)reg->ebx);
             break;
     }
 

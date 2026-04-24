@@ -29,6 +29,6 @@ uint32_t execve(const char* path, const char* argv[]);
 uint32_t getcwd(char* buffer, size_t size);
 uint32_t chdir(const char* path);
 uint32_t getpid();
-void* brk();
+void* brk(void* new_addr);
 
 #endif
