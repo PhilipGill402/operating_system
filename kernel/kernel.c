@@ -96,12 +96,12 @@ void finish_init() {
     scheduler_init();
     
     __asm__ __volatile__("sti");
-    fs_node_t* tty_elf = resolve_path("usr/tty.elf");
+    fs_node_t* tty_elf = resolve_path("usr/test.elf");
     if (!tty_elf) {
-        printf("failed to find tty.elf\n");
+        printf("failed to find test.elf\n");
         tty();
     } else {
-        printf("loaded tty.elf\n");
+        printf("loaded test.elf\n");
         elf_execute(tty_elf); 
     }
 

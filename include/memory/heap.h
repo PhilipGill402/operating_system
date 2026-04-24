@@ -20,12 +20,12 @@ void* kzmalloc(size_t size);
 
 typedef uintptr_t word_t;
 
-typedef struct block_t {
+typedef struct kblock_t {
     size_t size;
     bool allocated;
     //pads block to be 16 bytes
     uint8_t _pad[7];
-} block_t;
+} kblock_t;
 
 typedef struct heap_t {
     uint8_t* ptr;

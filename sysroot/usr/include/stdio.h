@@ -1,6 +1,8 @@
 #ifndef STDIO_H_
 #define STDIO_H_
 
+#include <unistd.h>
+
 #define EOF (-1)
 #define stdout 1
 #define stdin 1

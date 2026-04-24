@@ -6,15 +6,15 @@ static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
 }
 
-bool is_free(block_t* block){
+bool is_free(kblock_t* block){
     return !block->allocated;
 }
 
-size_t block_size(block_t* block){
+size_t block_size(kblock_t* block){
     return block->size;
 }
 
-block_t* get_next_block(block_t* block){
+kblock_t* get_next_block(kblock_t* block){
     uint8_t* current = (uint8_t*)block;
     size_t step = block_size(block);
     uint8_t* next = current + step;
@@ -23,11 +23,11 @@ block_t* get_next_block(block_t* block){
         return NULL;
     }
     
-    return (block_t*)next;
+    return (kblock_t*)next;
 }
 
-void coalesce(block_t* block){
-    block_t* next = get_next_block(block);
+void coalesce(kblock_t* block){
+    kblock_t* next = get_next_block(block);
     if (next == NULL){
         return;
     }
@@ -52,22 +52,22 @@ void init_heap(){
     heap.size = KHEAP_END - KHEAP_START;
     heap.end = KHEAP_END; 
 
-    block_t* block = (block_t*)heap.ptr;
+    kblock_t* block = (kblock_t*)heap.ptr;
     block->size = heap.size;
     block->allocated = false;
 }
 
 void* kmalloc(size_t size){
     //align to 8 byte increments
-    size_t total_size = align_up(sizeof(block_t) + size, 8);
+    size_t total_size = align_up(sizeof(kblock_t) + size, 8);
     
     //makes sure the requested size is not bigger than the arena
-    if (total_size > (heap.size - sizeof(block_t))){
+    if (total_size > (heap.size - sizeof(kblock_t))){
         return NULL;
     }
 
     //finds the first fit block 
-    block_t* block = (block_t*)heap.ptr;
+    kblock_t* block = (kblock_t*)heap.ptr;
     
 
     while ((uint8_t*)block < (uint8_t*)heap.end){
@@ -76,13 +76,13 @@ void* kmalloc(size_t size){
             size_t unneeded = block->size - total_size;
 
             //checks the remaining number of bytes to see if its enough to create a new block with enough space for 8 bytes
-            if (unneeded >= sizeof(block_t) + 8){
+            if (unneeded >= sizeof(kblock_t) + 8){
                 //changes the block's properties to properly allocate it
                 block->size = total_size;
                 block->allocated = true;
                 
                 //divides the old block into the the new one and the remainder
-                block_t* new_block = (block_t*)((uint8_t*)block + block->size);
+                kblock_t* new_block = (kblock_t*)((uint8_t*)block + block->size);
                 
                 //sets the size of the new block and sets its allocation flag to false
                 new_block->size = unneeded;
@@ -93,11 +93,11 @@ void* kmalloc(size_t size){
             }
             
             //returns the first address after the block header
-            return (void*)((uint8_t*)block + sizeof(block_t));
+            return (void*)((uint8_t*)block + sizeof(kblock_t));
         } 
         
         //gets the next block
-        block_t* next = get_next_block(block);
+        kblock_t* next = get_next_block(block);
         
         //we reached the end of the arena 
         if (next == NULL){
@@ -113,7 +113,7 @@ void* kmalloc(size_t size){
 }
 
 void kfree(void* ptr) {
-    block_t* block = (block_t*)((uint8_t*)ptr - sizeof(block_t));
+    kblock_t* block = (kblock_t*)((uint8_t*)ptr - sizeof(kblock_t));
     block->allocated = false;
     
     //combines the current block with the next if the next isn't allocated
@@ -133,9 +133,9 @@ void* kzmalloc(size_t size) {
 
 void* krealloc(void* ptr, size_t size) {
     void* new_ptr = kmalloc(size);
-    block_t* block = (block_t*)((uint8_t*)ptr - sizeof(block_t));
+    kblock_t* block = (kblock_t*)((uint8_t*)ptr - sizeof(kblock_t));
     
-    size_t old_payload_size = block->size - sizeof(block_t);
+    size_t old_payload_size = block->size - sizeof(kblock_t);
     size_t copy_size = old_payload_size < size ? old_payload_size : size;
     memcpy(new_ptr, ptr, copy_size);
 

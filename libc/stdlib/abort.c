@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <syscalls.h>
+#include <unistd.h>
 
 __attribute__((__noreturn__))
 void abort(void) {
