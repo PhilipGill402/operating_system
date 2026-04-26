@@ -1,12 +1,19 @@
 #include "syscalls.h"
 
 void* sys_brk(void* new_addr) {
-    if (new_addr == 0) return (void*)current_process->heap_break;
-    if (new_addr < current_process->heap_start || new_addr > current_process->heap_max_end) return NULL;
+    uint32_t addr = (uint32_t)new_addr;
+    
+    if (addr == 0) { 
+        return (void*)current_process->heap_break;
+    }
+    
+    if (addr < current_process->heap_start || addr > current_process->heap_max_end) {
+        return NULL;
+    }
     
 
     uint32_t* pd = temp_map_phys0(current_process->page_directory_phys);
-    while (new_addr > current_process->heap_mapped_end) {
+    while (addr > current_process->heap_mapped_end) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
             return NULL;
@@ -20,8 +27,8 @@ void* sys_brk(void* new_addr) {
         current_process->heap_mapped_end += PAGE_SIZE;
     }
     
-    current_process->heap_break = new_addr;
-    return (void*)new_addr;
+    current_process->heap_break = addr;
+    return (void*)addr;
 }
 
 uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {

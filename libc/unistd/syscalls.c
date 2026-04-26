@@ -1,5 +1,7 @@
 #include <unistd.h>
 
+#include <stdio.h>
+
 void* brk(void* new_addr) {
     void* ret = (void*)__sys1(SYS_BRK, (uint32_t)new_addr);
     
@@ -39,10 +41,13 @@ uint32_t read(uint32_t fd, char* buffer, size_t count) {
 
 void* sbrk(size_t increment) {
     void* old_break = brk(0);
-
-    uint32_t new_addr = (uint32_t)old_break + increment; // get current heap break
+    uint32_t new_break = (uint32_t)old_break + increment; // get current heap break
     
-    void* new_base = brk((void*)new_addr);
+    if ((increment > 0 && new_break < old_break) || (increment < 0 && new_break > old_break)) {
+        return NULL;
+    }
+    
+    void* new_base = brk((void*)new_break);
     if (!new_base) return NULL;
 
     return old_break;
