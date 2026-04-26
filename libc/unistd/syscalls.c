@@ -1,7 +1,5 @@
 #include <unistd.h>
 
-#include <stdio.h>
-
 void* brk(void* new_addr) {
     void* ret = (void*)__sys1(SYS_BRK, (uint32_t)new_addr);
     

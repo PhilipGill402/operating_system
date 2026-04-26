@@ -1,7 +1,5 @@
 #include <stdlib.h>
 
-#include <stdio.h>
-
 static uint8_t* heap_head = NULL;
 static uint8_t* heap_tail = NULL;
 

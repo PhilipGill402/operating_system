@@ -4,10 +4,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
-
-void* malloc(size_t size);
-void free(void* ptr);
-void* realloc(void* ptr, size_t size);
+#include <stdlib.h>
 
 typedef struct stack_s {
     int size;
