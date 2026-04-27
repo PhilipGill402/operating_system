@@ -1,6 +1,6 @@
 #include <string.h>
 
-string_t create_string() {
+string_t string_create() {
     string_t string;
 
     string.str = malloc(sizeof(char) * 10);
@@ -43,7 +43,11 @@ void string_cat(string_t* dst, string_t* src) {
     dst->len += src->len;
 }
 
-int string_compare(string_t* a, string_t* b) { 
+int string_compare(string_t* a, string_t* b) {
+    if (a->len == 0 && b->len == 0) return 0;
+    else if (a->len == 0) return b->str[0];
+    else if (b->len == 0) return a->str[0];
+
     for (int i = 0; i < a->len && i < b->len; i++) {
         if (a->str[i] != b->str[i]) {
             return a->str[i] - b->str[i];
@@ -83,6 +87,11 @@ int string_len(string_t* string) {
     return string->len;
 }
 
+void string_clear(string_t* str) {
+    memset(str->str, 0, str->capacity); 
+    str->len = 0;
+}
+
 string_t string_literal(const char* str) {
     string_t string;
     string.len = strlen(str);
@@ -93,4 +102,15 @@ string_t string_literal(const char* str) {
     return string;
 }
 
+
+int string_compare_literal(string_t* a, const char* b) {
+    uint32_t i = 0;
+    for (uint32_t i = 0; i < a->len && b[i] != '\0'; i++) {
+        if (a->str[i] != b[i]) {
+            return a->str[i] - b[i];
+        }
+    }
+
+    return 0;
+}
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <vector.h>
 #include <unistd.h>
 
 #define MAX_BUFFER_LENGTH 256
@@ -43,34 +44,23 @@ int parse_line(char* line, char* cmd, char** args) {
  */
 
 int main() {
-    char line[MAX_BUFFER_LENGTH] = { 0 };
-    char cwd[MAX_BUFFER_LENGTH] = { 0 };
-    char cmd[MAX_BUFFER_LENGTH] = { 0 };
-    char* args[10] = { 0 };
-    while (strcmp(cmd, "exit") != 0) {
-        int bytes_read = read(stdin, line, MAX_BUFFER_LENGTH - 1);
-        cmd[bytes_read] = '\0';
-        int argc = parse_line(line, cmd, args);
-        printf("%s: ", cmd);
-
-        for (int i = 0; i < argc; i++) {
-            printf("%s, ", args[i]);
-        } 
-        printf("\n");
-
-/*
-        print_cmd(cmd); 
-        getcwd(cwd, MAX_BUFFER_LENGTH);
-        printf("%s ", cwd); 
+    string_t cmd = string_literal("test");
+    vector_t args = vector_create(sizeof(string_t));
+    char* buffer[MAX_BUFFER_LENGTH];
+    
+    do {
+        string_free(&cmd); 
         printf(">> ");
-        int bytes_read = read(stdin, cmd, MAX_BUFFER_LENGTH - 1);
-        cmd[bytes_read] = '\0';
-        int ret = chdir(cmd);
-        if (ret == 0) printf("failed! \n");
+        
+        read(stdin, buffer, MAX_BUFFER_LENGTH - 1);
 
-        cwd[0] = '\0';
-*/
-    }
+        cmd = string_literal(buffer);
+        
+        if (string_compare_literal(&cmd, "cd") == 0) {
+            printf("change dir!\n");
+        }
+
+    } while (string_compare_literal(&cmd, "exit") != 0);
 
     return 0;
 }
