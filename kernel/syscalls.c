@@ -93,46 +93,67 @@ uint32_t sys_chdir(const char* path) {
         new_dir = fs_root; 
     } else {
         new_dir = resolve_path_from(current_process->cwd, path);
-        if (new_dir->flags != FS_DIR) return 0;
+        if (!new_dir || new_dir->flags != FS_DIR) return 0;
     }
 
     current_process->cwd = new_dir;
-
+    
     return 1;
 }
 
 uint32_t sys_getcwd(char* buffer, size_t size) {
+    if (!buffer || size == 0) return 0;
+
     fs_node_t* start = current_process->cwd;
-    fs_node_t* path[10] = { start };
-    int8_t idx = 1;
-    int32_t bytes_written = 0;
+    if (!start) return 0;
+
+    fs_node_t* path[10];
+    int idx = 0;
+
+    buffer[0] = '\0';
+
+    while (start) {
+        path[idx++] = start;
+        if (start->inode == fs_root->inode) {
+            break;
+        }
+
+        start = fs_parent(start);
+    }
 
     if (!start) return 0;
 
-    while (start->inode != fs_root->inode) {
-        start = fs_parent(start);
-
-        if (!start) return 0;
-
-        path[idx++] = start;
-    }
-
+    size_t used = 0;
+    
     for (int i = idx - 1; i >= 0; i--) {
-        size_t len = strlen(path[i]->name);
-        if (len > size - 1) break;
-        size -= len;
-        bytes_written += len;
+        const char* name = path[i]->name;
+        
+        if (i == idx - 1) {
+            // root
+            if (used + 1 >= size) return 0;
+            buffer[used++] = '/';
+            buffer[used] = '\0';
+            continue;
+        }
 
-        strcat(buffer, path[i]->name); 
+        size_t len = strlen(name);
+
+        if (used + len + 1 >= size) return 0;  // +1 for possible slash or null
+
+        if (used > 1) {
+            buffer[used++] = '/';
+        }
+
+        memcpy(buffer + used, name, len);
+        used += len;
+        buffer[used] = '\0';
     }
     
     for (int8_t i = idx - 1; i >= 0; i--) {
         kfree(path[i]);
     }
 
-    buffer[bytes_written++] = '\0';
-
-    return bytes_written;
+    return used;
 }
 
 uint32_t sys_getpid() {

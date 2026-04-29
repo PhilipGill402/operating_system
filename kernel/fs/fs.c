@@ -6,8 +6,12 @@ fs_node_t* dev_dir;
 fs_node_t* console_node;
 
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
+    fs_node_t* start_copy = kmalloc(sizeof(fs_node_t));
+    memcpy(start_copy, start, sizeof(fs_node_t));
+    strcpy(start_copy->name, start->name); 
+
     if (path[0] == '/') {
-        start = fs_root; 
+        start_copy = fs_root; 
     }
     
     char path_copy[MAX_PATH_LENGTH];
@@ -17,7 +21,7 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     char* curr_dir = strtok(path_copy, '/');
 
     if (!curr_dir && strcmp(path, "/") == 0) {
-        return start;
+        return start_copy;
     }
 
     while (curr_dir != NULL) {
@@ -25,22 +29,22 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
             curr_dir = strtok(NULL, '/');
             continue;
         } else if (strcmp(curr_dir, "..") == 0) {
-            start = fs_parent(start);
+            start_copy = fs_parent(start_copy);
             curr_dir = strtok(NULL, '/');
             continue;
         }
         
-         fs_node_t* dir = fs_finddir(start, curr_dir);
+        fs_node_t* dir = fs_finddir(start_copy, curr_dir);
 
         if (!dir) {
             return NULL;
         } 
 
-        start = dir;
+        start_copy = dir;
         curr_dir = strtok(NULL, '/');
     }
 
-    return start;
+    return start_copy;
 }
 
 fs_node_t* resolve_path(const char* path) {

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <string.h>
+#include <memory.h>
 #include <stdlib.h>
 
 typedef struct queue_t{

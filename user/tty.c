@@ -5,32 +5,16 @@
 
 #define MAX_BUFFER_LENGTH 256
 
-void ch(const char* path) {
+void cd(vector_t* args) {
+    string_t* str = (string_t*)vector_get(args, 1);
+    char* path;
+    if (!str)
+        path = NULL;
+    else
+        path = string_to_literal(str);
+    chdir(path);
+    free(path);
     return;
-}
-
-void print_cmd(char* cmd) {
-    printf("CMD: "); 
-    while (*cmd != '\0') {
-        printf("%d, ", (int)*cmd++);
-    }
-    printf("\n\n");
-}
-
-int parse_line(char* line, char* cmd, char** args) {
-    int count = 0;
-    char* tokens[11];
-    
-    char* token = strtok(line, ' ');
-
-    while (token != NULL) {
-        printf("%x\n", token);
-        strcpy(tokens[count++], token);
-        token = strtok(NULL, ' ');
-        printf("ARG: %s\n", args[count - 1]);
-    }
-
-    return --count;
 }
 
 /*
@@ -43,24 +27,39 @@ int parse_line(char* line, char* cmd, char** args) {
  *
  */
 
+void print_str(void* str) {
+    printf("%r", *(string_t*)str);
+}
+
 int main() {
-    string_t cmd = string_literal("test");
-    vector_t args = vector_create(sizeof(string_t));
-    char* buffer[MAX_BUFFER_LENGTH];
+    string_t line = string_create();
+    char buffer[MAX_BUFFER_LENGTH];
+    char cwd[MAX_BUFFER_LENGTH];
     
-    do {
-        string_free(&cmd); 
-        printf(">> ");
+    while (1) {
+        getcwd(cwd, MAX_BUFFER_LENGTH); 
+        printf("%s >> ", cwd);
+        cwd[0] = '\0';
         
         read(stdin, buffer, MAX_BUFFER_LENGTH - 1);
 
-        cmd = string_literal(buffer);
+        line = string_literal(buffer);
+        vector_t args = string_tokenize(&line, ' ');
+        string_t cmd = *(string_t*)vector_get(&args, 0);
         
         if (string_compare_literal(&cmd, "cd") == 0) {
-            printf("change dir!\n");
+            cd(&args); 
+        } else if (string_compare_literal(&cmd, "exit") == 0) {
+            break;
         }
+    
+        for (uint32_t i = 0; i < vector_size(&args); i++) {
+            string_t str = *(string_t*)vector_get(&args, i);
+            string_free(&str);
+        }
+    }
 
-    } while (string_compare_literal(&cmd, "exit") != 0);
+    
 
     return 0;
 }

@@ -4,6 +4,7 @@
 #include <sys/cdefs.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <vector.h>
 
 typedef struct {
     char* str;
@@ -21,11 +22,9 @@ int string_compare(string_t* a, string_t* b);
 void string_clear(string_t* str);
 int string_compare_literal(string_t* a, const char* b);
 void string_free(string_t* str);
-
-int memcmp(const void*, const void*, size_t);
-void* memcpy(void* __restrict, const void* __restrict, size_t);
-void* memmove(void*, const void*, size_t);
-void* memset(void*, int, size_t);
+string_t string_clone(string_t* str);
+vector_t string_tokenize(string_t* str, char a);
+char* string_to_literal(string_t* str);
 
 int strlen(const char*);
 int strcmp(const char*, const char*);

@@ -69,4 +69,6 @@ extern fs_node_t* console_node;
 extern fs_node_t* dev_dir;
 extern uint32_t num_nodes;
 
+extern fs_node_t* initrd_init(uint32_t addr);
+
 #endif // !INCLUDE_FS_FS_H_
