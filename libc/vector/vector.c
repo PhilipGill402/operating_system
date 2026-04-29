@@ -110,7 +110,7 @@ void vector_free(vector_t* vec){
 }
 
 void* vector_get(const vector_t* vec, int index){
-    if (index > vector_size(vec)){
+    if (index >= vector_size(vec)){
         return NULL;
     }
 

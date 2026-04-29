@@ -12,6 +12,7 @@ void cd(vector_t* args) {
         path = NULL;
     else
         path = string_to_literal(str);
+
     chdir(path);
     free(path);
     return;
