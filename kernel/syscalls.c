@@ -1,5 +1,79 @@
 #include "syscalls.h"
 
+void debug_dump_process_queue_logical(const char* label) {
+    printf("\nQUEUE LOGICAL DUMP: %s\n", label);
+    printf("size=%d capacity=%d head=%d rear=%d element_size=%d expected=%d\n",
+           current_processes.size,
+           current_processes.capacity,
+           current_processes.head,
+           current_processes.rear,
+           current_processes.element_size,
+           sizeof(process_t*));
+
+    for (uint32_t i = 0; i < current_processes.size; i++) {
+        uint32_t idx = (current_processes.head + i) % current_processes.capacity;
+
+        process_t* p = NULL;
+        memcpy(&p,
+               (char*)current_processes.array + idx * current_processes.element_size,
+               sizeof(process_t*));
+
+        printf("logical %d physical slot %d: ptr=%x", i, idx, p);
+
+        if (p) {
+            printf(" pid=%d state=%d", p->pid, p->state);
+        }
+
+        if (i == 0) {
+            printf(" <- next dequeue");
+        }
+
+        printf("\n");
+    }
+
+    printf("\n");
+}
+
+uint32_t sys_getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
+    file_desc_t file_desc = current_process->fds[fd]; 
+    fs_node_t* file = file_desc.node;
+    
+    if (!file || file->flags != FS_DIR) return 0;
+    
+    uint32_t num_entries = 0;
+    for (uint32_t i = 0; i < count; i++) {
+        fs_dirent_t* fs_dent = file->readdir(file, file_desc.offset++);
+        if (!fs_dent) break;
+
+        dirent_t dent;
+        strcpy(dent.name, fs_dent->name);
+        dent.inode = fs_dent->inode;
+
+        dents[num_entries++] = dent;
+    }
+
+    return num_entries;
+}
+
+uint32_t sys_open(const char* path, uint32_t flags) {
+    fs_node_t* file = resolve_path_from(current_process->cwd, path);
+    
+    if (!file) return MAX_FDS + 1;
+
+    uint32_t fd = current_process->open_fds++;
+
+    file_desc_t file_desc = {
+        .node = file,
+        .flags = flags,
+        .offset = 0,
+        .in_use = 1
+    };
+
+    current_process->fds[fd] = file_desc;
+
+    return fd;
+}
+
 void* sys_brk(void* new_addr) {
     uint32_t addr = (uint32_t)new_addr;
     
@@ -37,8 +111,11 @@ uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
     if (!file) return 0;
-     
-    return file->read(file, 0, count, (uint8_t*)buffer);
+    
+    uint32_t bytes_read = file->read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
+    current_process->fds[fd].offset = bytes_read;
+
+    return bytes_read;
 }
 
 uint32_t sys_write(uint32_t fd, char* str, size_t count) {
@@ -48,17 +125,24 @@ uint32_t sys_write(uint32_t fd, char* str, size_t count) {
     
     if (!file) return 0;
 
-    return file->writefile(file, str, 0, count);
+    uint32_t bytes_written = file->writefile(file, str, current_process->fds[fd].offset, count);
+    current_process->fds[fd].offset = bytes_written;
+
+    return bytes_written;
 }
 
+extern uint8_t debug_sched;
 uint32_t sys_fork() {
     process_t* new = process_clone(current_process);
     
-    if (!new) return 0;
+    if (!new) return (uint32_t)-1;
+    new->trapframe->eax = 0; // child process must return 0
+    
+    current_process->ticks_left = 1;
+    int result = enqueue(&current_processes, &new);
+    debug_sched = 1;    
 
-    enqueue(&current_processes, &new);
-
-    return 1;
+    return new->pid;
 }
 
 uint32_t sys_execve(const char* file_name, const char* argv) {
@@ -162,6 +246,8 @@ uint32_t sys_getpid() {
 
 void syscall_handler(regs_t* reg) {
     uint32_t ret = 0;
+    current_process->trapframe = reg;
+    
     switch (reg->eax) {
         case SYS_READ:
             ret = sys_read(reg->ebx, (char*)reg->ecx, (size_t)reg->edx);
@@ -190,10 +276,18 @@ void syscall_handler(regs_t* reg) {
         case SYS_BRK:
             ret = (uint32_t)sys_brk((void*)reg->ebx);
             break;
+        case SYS_OPEN:
+            ret = sys_open((char*)reg->ebx, reg->ecx);
+            break;
+        case SYS_GETDENTS:
+            ret = sys_getdents(reg->ebx, (dirent_t*)reg->ecx, reg->edx);
+            break;
     }
 
     reg->eax = ret;
-
+    reg->eflags |= 0x200;
     enter_user_mode_from_trapframe(reg);
     __builtin_unreachable();
 }
+
+

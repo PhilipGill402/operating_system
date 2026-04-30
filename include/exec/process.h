@@ -10,6 +10,10 @@
 #include "memory/heap.h"
 #include "fs/fs.h"
 
+#define MAX_FDS 128
+
+#define KERNEL_BASE 0xC0000000
+
 #define USER_CS_RING3 0x1B
 #define USER_DS_RING3 0x23
 #define MAX_SEGMENTS 8
@@ -65,13 +69,14 @@ typedef struct {
     regs_t* trapframe;
     uint32_t ticks_left;
     file_desc_t fds[MAX_FDS];
+    uint32_t open_fds;
     fs_node_t* cwd;
 } process_t;
 
 extern process_t* current_process;
 extern uint32_t num_processes;
 
-__attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t *tf);
+__attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t* tf);
 process_t* process_clone(process_t* process);
 void process_init_trapframe(process_t* process);
 void process_init_file_descriptors(process_t* process);

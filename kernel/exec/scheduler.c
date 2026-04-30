@@ -2,6 +2,7 @@
 
 queue_t current_processes;
 
+extern uint8_t debug_sched;
 void scheduler_init() {
     current_processes = queue_create(sizeof(process_t*));
 }

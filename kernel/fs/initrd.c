@@ -89,25 +89,24 @@ uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* b
         printf("can't read a directory\n");
         return 0;
     }
-
+    
     uint8_t* file = (uint8_t*)((uint32_t)superblock + initrd_node->data_offset + offset);
     memcpy(buffer, file, bytes_to_read);
     
     return bytes_to_read;
 }
 
-dirent_t* initrd_readdir(fs_node_t* node, uint32_t index) {
+fs_dirent_t* initrd_readdir(fs_node_t* node, uint32_t index) {
+    fs_dirent_t* entry = kmalloc(sizeof(fs_dirent_t));
     if (node->flags != FS_DIR) {
         return NULL;
     } 
     
-    dirent_t* entry;
     for (uint32_t idx = 0, count = 0; idx < num_nodes; idx++) {
         initrd_node_t* file = &node_table[idx];
 
         if (file->parent_id == node->inode) {
             if (count == index) {
-                entry = kmalloc(sizeof(dirent_t)); 
                 strcpy(entry->name, file->name);
                 entry->inode = file->id;
                 

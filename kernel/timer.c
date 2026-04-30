@@ -2,17 +2,20 @@
 
 volatile uint32_t ticks = 0;
 
+uint8_t debug_sched = 0;
+uint8_t printed_after_fork = 10;
 void timer_callback(regs_t* r) {
     ticks++;
-    
+
     if (!current_process) {
         pic_send_eoi(IRQ_TIMER);
         schedule();
         return;
     }
 
+
     current_process->trapframe = r;
-    current_process->saved_kernel_esp = (uint32_t)r;
+    //current_process->saved_kernel_esp = (uint32_t)r;
 
     if (current_process->state == PROC_RUNNING) {
         current_process->ticks_left--;

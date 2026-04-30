@@ -155,9 +155,13 @@ vector_t string_tokenize(string_t* str, char a) {
 }
 
 char* string_to_literal(string_t* str) {
+    if (!str) return NULL;
+
     char* cstr = malloc(str->len + 1);
+    if (!cstr) return NULL;
+
     memcpy(cstr, str->str, str->len);
-    cstr[str->len + 1] = '\0';
+    cstr[str->len] = '\0';
 
     return cstr;
 }

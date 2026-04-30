@@ -95,11 +95,11 @@ uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffe
     if (!node || !node->read) {
         return 0;
     }
-
+    
     return node->read(node, offset, size, buffer);
 }
 
-dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
+fs_dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
     if (!node || !node->readdir) {
         return NULL;
     }
@@ -119,8 +119,8 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     return node->finddir(node, name);
 }
 
-dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
-    dirent_t* dirent = kmalloc(sizeof(dirent_t)); 
+fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
+    fs_dirent_t* dirent = kmalloc(sizeof(fs_dirent_t)); 
     dev_dir_t* dir = (dev_dir_t*)node->device;
     
     if (!dir || index >= dir->child_count) return NULL;

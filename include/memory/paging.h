@@ -16,6 +16,14 @@
 #define TEMP_PD_INDEX_0 769
 #define TEMP_PT_VIRT_1 0xC0800000
 #define TEMP_PD_INDEX_1 770
+#define TEMP_PT_VIRT_2 0xC0C00000
+#define TEMP_PD_INDEX_2 771
+#define TEMP_PT_VIRT_3 0xC1000000
+#define TEMP_PD_INDEX_3 772
+#define TEMP_PT_VIRT_4 0xC1400000
+#define TEMP_PD_INDEX_4 773
+#define TEMP_PT_VIRT_5 0xC1800000
+#define TEMP_PD_INDEX_5 774
 
 #define KERNEL_VIRT_START 0xC2000000
 #define KERNEL_VIRT_END   0xE0000000
@@ -48,4 +56,7 @@ void* alloc_kernel_page(uint32_t flags);
 void free_kernel_page(uint32_t virt);
 uint32_t* temp_map_phys0(uint32_t phys);
 uint32_t* temp_map_phys1(uint32_t phys);
+uint32_t* temp_map_phys2(uint32_t phys);
+uint32_t* temp_map_phys3(uint32_t phys);
+uint32_t* temp_map_phys4(uint32_t phys);
 #endif // !INCLUDE_PAGING_H_

@@ -56,3 +56,11 @@ uint32_t write(uint32_t fd, const char* buffer, size_t count) {
 }
 
 
+uint32_t open(const char* name, uint32_t flags) {
+    return __sys2(SYS_OPEN, (uint32_t)name, flags);
+}
+
+uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
+    return __sys3(SYS_GETDENTS, fd, (uint32_t)dents, count);
+}
+

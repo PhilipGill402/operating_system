@@ -4,15 +4,22 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define SYS_READ    0
-#define SYS_WRITE   1
-#define SYS_CHDIR   12
-#define SYS_GETPID  20
-#define SYS_BRK     45
-#define SYS_FORK    57
-#define SYS_EXECVE  59
-#define SYS_EXIT    60
-#define SYS_GETCWD  183
+#define SYS_READ        0
+#define SYS_WRITE       1
+#define SYS_OPEN        5
+#define SYS_CHDIR       12
+#define SYS_GETPID      20
+#define SYS_BRK         45
+#define SYS_FORK        57
+#define SYS_EXECVE      59
+#define SYS_EXIT        60
+#define SYS_GETDENTS    141
+#define SYS_GETCWD      183
+
+typedef struct {
+    char name[128];
+    uint32_t inode;
+} dirent_t;
 
 /* HELPERS */
 uint32_t __sys0(uint32_t sys_num);
@@ -31,5 +38,7 @@ uint32_t chdir(const char* path);
 uint32_t getpid();
 void* brk(void* new_addr);
 void* sbrk(size_t increment);
+uint32_t open(const char* path, uint32_t flags);
+uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count);
 
 #endif

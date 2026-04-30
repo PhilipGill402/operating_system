@@ -24,37 +24,43 @@ void process_init_trapframe(process_t* process) {
 
 }
 
-uint32_t clone_page_directory(uint32_t* parent_page_directory) {
-    uint32_t* child_dir = process_create_page_directory();
+uint32_t clone_page_directory(uint32_t parent_page_directory_phys) {
+    uint32_t child_pd_phys = process_create_page_directory();
+    uint32_t* parent_pd = temp_map_phys0(parent_page_directory_phys);
+    uint32_t* child_pd  = temp_map_phys1(child_pd_phys);
 
     for (uint32_t pd_idx = 0; pd_idx < 768; pd_idx++) {
-        if (!(parent_page_directory[pd_idx] & PAGE_PRESENT)) continue;
-        if (!(parent_page_directory[pd_idx] & PAGE_USER)) continue;
+        if (!(parent_pd[pd_idx] & PAGE_PRESENT)) continue;
+        if (!(parent_pd[pd_idx] & PAGE_USER)) continue;
 
-        uint32_t parent_pt_phys = parent_page_directory[pd_idx] & 0xFFFFF000;
-        uint32_t* parent_pt = temp_map_phys0(parent_pt_phys);
-
+        uint32_t parent_pt_phys = parent_pd[pd_idx] & 0xFFFFF000;
+        uint32_t* parent_pt = temp_map_phys2(parent_pt_phys);
+        
         for (uint32_t pt_idx = 0; pt_idx < 1024; pt_idx++) {
-            if (!(parent_pt[pt_idx] & PAGE_PRESENT)) continue;
+            uint32_t* parent_pt = temp_map_phys3(parent_pt_phys);
+            uint32_t pte = parent_pt[pt_idx];
 
-            uint32_t parent_frame = parent_pt[pt_idx] & 0xFFFFF000;
-            uint32_t flags = parent_pt[pt_idx] & 0xFFF;
+            if (!(pte & PAGE_PRESENT)) continue;
+
+            uint32_t parent_frame = pte & 0xFFFFF000;
+            uint32_t flags = pte & 0xFFF;
 
             uint32_t child_frame = pmm_alloc_frame();
             if (!child_frame) {
                 return 0;
             }
 
-            uint32_t* src = temp_map_phys0(parent_frame);
-            uint32_t* dst = temp_map_phys1(child_frame);
+            uint32_t* src = temp_map_phys3(parent_frame);
+            uint32_t* dst = temp_map_phys4(child_frame);
             memcpy(dst, src, PAGE_SIZE);
 
             uint32_t virt = (pd_idx << 22) | (pt_idx << 12);
-            map_user_page(child_dir, virt, child_frame, flags);
+            
+            map_user_page(child_pd, virt, child_frame, flags);
         }
     }
 
-    return child_dir;
+    return child_pd_phys;
 }
 
 process_t* process_clone(process_t* process) {
@@ -71,7 +77,7 @@ process_t* process_clone(process_t* process) {
     if (!new->kernel_stack_bottom) {
         return NULL;
     }
-
+    
     new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memcpy((void*)new->kernel_stack_bottom, (void*)process->kernel_stack_bottom, KERNEL_STACK_SIZE);
     
@@ -88,7 +94,7 @@ process_t* process_clone(process_t* process) {
     if (!new->page_directory_phys) {
         return NULL;
     }
-
+    
     return new;
 }
 
@@ -160,9 +166,13 @@ void process_init_file_descriptors(process_t* process) {
     fs_node_t* console = resolve_path("/dev/console");
 
     for (uint8_t i = 0; i < 3; i++) {
-        process->fds[i].in_use = 1;
+        process->fds[i].in_use = 1; 
         process->fds[i].node = console;
+        process->fds[i].offset = 0;
+        process->fds[i].flags = 0;
     }
+
+    process->open_fds = 3;
 }
 
 void process_destroy(process_t* process) {
