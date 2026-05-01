@@ -35,7 +35,7 @@ void console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t 
     (void)offset;
 
     for (uint32_t i = 0; i < size; i++) {
-        printf("%c", buffer[i]); 
+        terminal_printf("%c", buffer[i]); 
     }
 }
 

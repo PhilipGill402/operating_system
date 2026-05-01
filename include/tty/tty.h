@@ -10,7 +10,7 @@
 #include "interrupts/keyboard.h"
 #include "fs/fs.h"
 #include "exec/elf.h"
-#include "vga.h"
+#include "io/vga.h"
 #include "timer.h"
 
 extern uint32_t heap_curr; 

@@ -1,39 +1,5 @@
 #include "syscalls.h"
 
-void debug_dump_process_queue_logical(const char* label) {
-    printf("\nQUEUE LOGICAL DUMP: %s\n", label);
-    printf("size=%d capacity=%d head=%d rear=%d element_size=%d expected=%d\n",
-           current_processes.size,
-           current_processes.capacity,
-           current_processes.head,
-           current_processes.rear,
-           current_processes.element_size,
-           sizeof(process_t*));
-
-    for (uint32_t i = 0; i < current_processes.size; i++) {
-        uint32_t idx = (current_processes.head + i) % current_processes.capacity;
-
-        process_t* p = NULL;
-        memcpy(&p,
-               (char*)current_processes.array + idx * current_processes.element_size,
-               sizeof(process_t*));
-
-        printf("logical %d physical slot %d: ptr=%x", i, idx, p);
-
-        if (p) {
-            printf(" pid=%d state=%d", p->pid, p->state);
-        }
-
-        if (i == 0) {
-            printf(" <- next dequeue");
-        }
-
-        printf("\n");
-    }
-
-    printf("\n");
-}
-
 uint32_t sys_getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
     file_desc_t file_desc = current_process->fds[fd]; 
     fs_node_t* file = file_desc.node;

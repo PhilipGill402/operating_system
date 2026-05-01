@@ -5,7 +5,8 @@
 
 #include <stack.h>
 
-#include "vga.h"
+#include "io/vga.h"
+#include "io/serial.h"
 #include "gdt.h"
 #include "multiboot.h"
 #include "memory/physical_allocator.h"
@@ -45,6 +46,7 @@ void switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
 }
 
 void kernel_init(uint32_t mbi_phys) {
+    serial_init(); 
     terminal_initialize();
 
     // mapping mbi into virtual memory
@@ -96,10 +98,10 @@ void finish_init() {
     __asm__ __volatile__("sti");
     fs_node_t* tty_elf = resolve_path("usr/tty.elf");
     if (!tty_elf) {
-        printf("failed to find tty.elf\n");
+        serial_printf("failed to find tty.elf\n");
         tty();
     } else {
-        printf("loaded tty.elf\n");
+        serial_printf("loaded tty.elf\n");
         elf_execute(tty_elf); 
     }
 

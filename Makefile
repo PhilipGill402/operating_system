@@ -104,7 +104,7 @@ iso: kernel img libc user
 
 # Run only; assumes kernel was already built earlier
 run:
-	qemu-system-i386 -cdrom $(ISO)
+	qemu-system-i386 -cdrom $(ISO) -serial stdio -monitor none
 
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean

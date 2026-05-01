@@ -1,4 +1,4 @@
-#include "vga.h"
+#include "io/vga.h"
 
 static size_t terminal_row = 0;
 static size_t terminal_column = 0;
