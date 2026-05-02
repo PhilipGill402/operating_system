@@ -1,6 +1,6 @@
 #include "syscalls.h"
 
-uint32_t sys_getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
+uint32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     file_desc_t file_desc = current_process->fds[fd]; 
     fs_node_t* file = file_desc.node;
     
@@ -11,7 +11,7 @@ uint32_t sys_getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
         fs_dirent_t* fs_dent = file->readdir(file, file_desc.offset++);
         if (!fs_dent) break;
 
-        dirent_t dent;
+        sys_dirent_t dent;
         strcpy(dent.name, fs_dent->name);
         dent.inode = fs_dent->inode;
 
@@ -246,7 +246,7 @@ void syscall_handler(regs_t* reg) {
             ret = sys_open((char*)reg->ebx, reg->ecx);
             break;
         case SYS_GETDENTS:
-            ret = sys_getdents(reg->ebx, (dirent_t*)reg->ecx, reg->edx);
+            ret = sys_getdents(reg->ebx, (sys_dirent_t*)reg->ecx, reg->edx);
             break;
     }
 

@@ -4,7 +4,9 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
     (void)node;
     (void)offset;
 
-    if (!buffer || size == 0) return 0;
+    if (!buffer || size == 0) 
+        log_error("Buffer is %p and size was %d\n", buffer, size); 
+        return 0;
 
     while (!keyboard_buffer.ready) {
         asm volatile("sti; hlt" ::: "memory");
@@ -42,7 +44,9 @@ void console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t 
 fs_node_t* create_console_node(fs_node_t* parent) {
     fs_node_t* node = kzmalloc(sizeof(fs_node_t));
 
-    if (!node) return NULL;
+    if (!node) 
+        log_error("Node '%s' is null", parent->name);
+        return NULL;
 
     strcpy(node->name, "console");
     node->flags = FS_DEV;

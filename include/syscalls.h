@@ -9,7 +9,6 @@
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "interrupts/registers.h"
-#include "tty/tty.h"
 #include "fs/initrd.h"
 #include "fs/fs.h"
 
@@ -26,6 +25,11 @@
 #define SYS_EXIT        60
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
+
+typedef struct {
+    char name[128];
+    uint32_t inode;
+} sys_dirent_t;
 
 void syscall_handler(regs_t* reg);
 

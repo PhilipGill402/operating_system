@@ -14,68 +14,68 @@ uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size) {
 
 uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
     if (!elf) {
-        printf("elf data is NULL\n");
+        log_error("elf data is NULL\n");
         return 0;
     }
 
     if (size < sizeof(Elf32_Ehdr)) {
-        printf("Elf not large enough for ELF header\n"); 
+        log_error("Elf not large enough for ELF header\n"); 
         return 0;
     }
     
     Elf32_Ehdr* header = (Elf32_Ehdr*)elf; 
 
     if (header->e_ident[0] != ELFMAG0) {
-        printf("magic validation failed\n"); 
+        log_error("magic validation failed\n"); 
         return 0;
     } else if (header->e_ident[1] != ELFMAG1) {
-        printf("magic validation failed\n"); 
+        log_error("magic validation failed\n"); 
         return 0;
     } else if (header->e_ident[2] != ELFMAG2) {
-        printf("magic validation failed\n"); 
+        log_error("magic validation failed\n"); 
         return 0;
     }  else if (header->e_ident[3] != ELFMAG3) {
-        printf("magic validation failed\n"); 
+        log_error("magic validation failed\n"); 
         return 0;
     }
 
     if (header->e_ident[4] != ELFCLASS32) {
-        printf("not 32 bit ELF\n");
+        log_error("not 32 bit ELF\n");
         return 0;
     }
 
     if (header->e_ident[5] != ELFDATA2LSB) {
-        printf("not little endian\n");
+        log_error("not little endian\n");
         return 0;
     }
 
     if (header->e_ident[6] != 1) {
-        printf("wrong ELF version\n");
+        log_error("wrong ELF version\n");
         return 0;
     }
 
     if (header->e_ident[7] != 0) {
-        printf("wrong ABI version\n");
+        log_error("wrong ABI version\n");
         return 0;
     }
 
     if (header->e_type != ET_EXEC) {
-        printf("ELF type not recognized\n");
+        log_error("ELF type not recognized\n");
         return 0;
     }
 
     if (header->e_machine != EM_386) {
-        printf("only 32 bit x86 machines supported\n");
+        log_error("only 32 bit x86 machines supported\n");
         return 0;
     }
 
     if (header->e_phoff == 0 || header->e_phnum <= 0 || header->e_phentsize != sizeof(Elf32_Phdr)) {
-        printf("malformed program header\n");
+        log_error("malformed program header\n");
         return 0;
     }
 
     if (header->e_phoff > size || header->e_phoff + (header->e_phnum * sizeof(Elf32_Phdr)) > size) {
-        printf("program headers too big\n");
+        log_error("program headers too big\n");
         return 0;
     }
 
@@ -85,24 +85,24 @@ uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
 void elf_print_info(const uint8_t* elf) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
 
-    printf("ELF Info\n");
-    printf("-----------\n");
-    printf("magic: ");
-    printf("%x, %c, %c, %c\n", header->e_ident[0], header->e_ident[1], header->e_ident[2], header->e_ident[3]);
+    serial_printf("ELF Info\n");
+    serial_printf("-----------\n");
+    serial_printf("magic: ");
+    serial_printf("%x, %c, %c, %c\n", header->e_ident[0], header->e_ident[1], header->e_ident[2], header->e_ident[3]);
 
-    printf("class: %d\n", header->e_ident[4]);
-    printf("data: %d\n", header->e_ident[5]);
-    printf("type: %d\n", header->e_type);
-    printf("machine: %d\n", header->e_machine);
-    printf("version: %d\n", header->e_version);
-    printf("entry: %x\n", header->e_entry);
-    printf("phoff: %x\n", header->e_phoff);
-    printf("phentsize: %d\n", header->e_phentsize);
-    printf("phnum: %d\n", header->e_phnum);
-    printf("shoff: %x\n", header->e_shoff);
-    printf("shentsize: %d\n", header->e_shentsize);
-    printf("shnum: %d\n", header->e_shnum);
-    printf("ehsize: %d\n", header->e_ehsize);
+    serial_printf("class: %d\n", header->e_ident[4]);
+    serial_printf("data: %d\n", header->e_ident[5]);
+    serial_printf("type: %d\n", header->e_type);
+    serial_printf("machine: %d\n", header->e_machine);
+    serial_printf("version: %d\n", header->e_version);
+    serial_printf("entry: %x\n", header->e_entry);
+    serial_printf("phoff: %x\n", header->e_phoff);
+    serial_printf("phentsize: %d\n", header->e_phentsize);
+    serial_printf("phnum: %d\n", header->e_phnum);
+    serial_printf("shoff: %x\n", header->e_shoff);
+    serial_printf("shentsize: %d\n", header->e_shentsize);
+    serial_printf("shnum: %d\n", header->e_shnum);
+    serial_printf("ehsize: %d\n", header->e_ehsize);
 }
 
 uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
@@ -123,17 +123,17 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
         }
 
         if (count >= MAX_SEGMENTS) {
-            printf("too many segments\n");
+            log_error("too many segments\n");
             return 0;
         }
 
         if (ph->p_offset > size || ph->p_filesz > size - ph->p_offset) {
-            printf("segment exceeds ELF file size\n");
+            log_error("segment exceeds ELF file size\n");
             return 0;
         }
 
         if (ph->p_memsz < ph->p_filesz) {
-            printf("segment memsz smaller than filesz\n");
+            log_error("segment memsz smaller than filesz\n");
             return 0;
         }
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <log.h>
 #include "fs/fs.h"
 #include "memory/heap.h"
 

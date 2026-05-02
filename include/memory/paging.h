@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <log.h>
 #include "physical_allocator.h"
 
 #define PAGE_SIZE 4096

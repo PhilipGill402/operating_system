@@ -26,6 +26,7 @@ LIBK_DIR := libk
 LIBK := $(BUILD_DIR)/libk.a
 LIBC := $(LIBC_DIR)/build/libc.a
 LIBC_INC := $(LIBC_DIR)/include
+LIBK_INC := $(LIBK_DIR)/include
 CRT0 := $(LIBC_DIR)/build/crt0.o
 SYSROOT := sysroot
 
@@ -34,7 +35,7 @@ ISO := myos.iso
 
 FS := initrd.img
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBC_INC)
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBK_INC)
 ASFLAGS :=
 LDFLAGS := -T linker.ld -ffreestanding -O2 -nostdlib
 LIBS := -lgcc

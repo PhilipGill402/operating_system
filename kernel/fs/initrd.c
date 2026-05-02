@@ -79,14 +79,14 @@ uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* b
     uint32_t bytes_to_read = size < (node->size - offset) ? size : (node->size - offset);
     
     if (node->inode > num_nodes) {
-        printf("invalide file id\n");
+        log_error("invalide file id\n");
         return 0;
     }
 
     initrd_node_t* initrd_node = &node_table[node->inode];
     
     if (initrd_node->type != INITRD_NODE_FILE) {
-        printf("can't read a directory\n");
+        log_error("can't read a directory\n");
         return 0;
     }
     
@@ -174,12 +174,12 @@ fs_node_t* initrd_init(uint32_t addr) {
     superblock = (initrd_superblock_t*)addr;
     
     if (superblock->magic != INITRD_MAGIC) {
-        printf("image file not in specified format\n"); 
+        log_error("image file not in specified format\n"); 
         return NULL;
     }
 
     if (superblock->node_count == 0) {
-        printf("file system must have at least one file\n");
+        log_error("file system must have at least one file\n");
         return NULL;
     }
     
@@ -195,22 +195,22 @@ fs_node_t* initrd_init(uint32_t addr) {
     initrd_node_t root = node_table[superblock->root_node];
 
     if (root.id != 0) {
-        printf("root node not 0\n");
+        log_error("root node not 0\n");
         return NULL;
     }
 
     if (root.type != INITRD_NODE_DIR) {
-        printf("root node is not a directory\n");
+        log_error("root node is not a directory\n");
         return NULL;
     }
 
     if (root.parent_id != INITRD_INVALID_NODE) {
-        printf("root node parent is not invalid\n");
+        log_error("root node parent is not invalid\n");
         return NULL;
     }
 
     if (strcmp(root.name, "/")) {
-        printf("root name is not correct\n");
+        log_error("root name is not correct\n");
         return NULL;
     }
     

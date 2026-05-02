@@ -12,7 +12,7 @@ uint32_t next_free_virt = KERNEL_VIRT_START;
 
 void map_boot_page(uint32_t phys_addr) {
     if (phys_addr >= 0x400000) {
-        printf("map_boot_page phys too high: %x\n", phys_addr);
+        log_error("map_boot_page phys too high: %x\n", phys_addr);
         for (;;);
     }
 
@@ -25,7 +25,7 @@ void map_boot_page(uint32_t phys_addr) {
 
 void create_temp_page_table(uint32_t* virt_page_directory, uint32_t pd_idx) {
     if (virt_page_directory[pd_idx] & PAGE_PRESENT) {
-        printf("Couldn't allocate temp page table\n");
+        log_error("Couldn't allocate temp page table\n");
         return;
     }
 

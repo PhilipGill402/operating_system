@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <log.h>
 #include "multiboot.h"
 #include "memory/paging.h"
 #include "memory/heap.h"

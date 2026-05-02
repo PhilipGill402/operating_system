@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include <stack.h>
+#include <log.h>
 
 #include "io/vga.h"
 #include "io/serial.h"
@@ -15,7 +16,6 @@
 #include "interrupts/idt.h"
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
-#include "tty/tty.h"
 #include "fs/initrd.h"
 #include "fs/fs.h"
 #include "exec/scheduler.h"
@@ -97,11 +97,9 @@ void finish_init() {
     
     __asm__ __volatile__("sti");
     fs_node_t* tty_elf = resolve_path("usr/tty.elf");
-    if (!tty_elf) {
-        serial_printf("failed to find tty.elf\n");
-        tty();
+    if (tty_elf) {
+        log_error("Couldn't load init file\n"); 
     } else {
-        serial_printf("loaded tty.elf\n");
         elf_execute(tty_elf); 
     }
 

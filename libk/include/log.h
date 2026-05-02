@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <../../include/io/serial.h>
+#include "../../include/io/serial.h"
 
 typedef enum {
     DEBUG,
