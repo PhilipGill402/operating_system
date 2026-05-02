@@ -214,18 +214,21 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->entry = header->e_entry;
     process->page_directory_phys = process_create_page_directory();
     if (!process->page_directory_phys) {
+        log_error("failed to init the page directory\n"); 
         kfree(buf);
         process_destroy(process);
         return NULL;
     }
     
     if (!elf_load(buf, size, process)) {
+        log_error("failed to load the elf\n"); 
         kfree(buf);
         process_destroy(process);
         return NULL; 
     }
 
     if (!process_init_stack(process)) {
+        log_error("failed to initialize the stack of the process\n");
         kfree(buf);
         process_destroy(process);
         return NULL;
@@ -233,6 +236,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
 
 
     if (!process_init_heap(process)) {
+        log_error("failed to initialize the heap of the process\n");
         kfree(buf);
         process_destroy(process);
         return NULL;

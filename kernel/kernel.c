@@ -97,7 +97,7 @@ void finish_init() {
     
     __asm__ __volatile__("sti");
     fs_node_t* tty_elf = resolve_path("usr/tty.elf");
-    if (tty_elf) {
+    if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {
         elf_execute(tty_elf); 

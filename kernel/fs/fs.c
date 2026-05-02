@@ -36,9 +36,11 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
         
         fs_node_t* dir = fs_finddir(start_copy, curr_dir);
 
-        if (!dir)
+        if (!dir) {
             log_error("'dir' returned null\n");
             return NULL;
+        }
+            
 
         start_copy = dir;
         curr_dir = strtok(NULL, '/');
@@ -48,9 +50,11 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
 }
 
 fs_node_t* resolve_path(const char* path) {
-    if (!path) 
+    if (!path) {
         log_error("path is null\n"); 
         return NULL;
+    } 
+        
     
 
     if (path[0] == '/') {
@@ -61,46 +65,58 @@ fs_node_t* resolve_path(const char* path) {
 }
 
 fs_node_t* fs_parent(fs_node_t* node) {
-    if (!node || !node->parent) 
+    if (!node || !node->parent) {
         log_error("node is at %p or node->parent is null\n", node); 
         return NULL;
+    } 
+        
     
 
     return node->parent(node);
 }
 
 void fs_createdir(fs_node_t* node, char* name) {
-    if (!node || !node->createdir)
+    if (!node || !node->createdir) {
         log_error("node is at %p or node->createdir is null\n", node); 
         return;
+    }
+        
 
     return node->createdir(node, name);
 }
 
 void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
-    if (!node || !node->createfile)
+    if (!node || !node->createfile) {
         log_error("node is at %p or node->createfile is null\n", node); 
         return;
+    }
+        
 
     return node->createfile(node, name, size);
 }
 
 uint32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
-    if (!node)
+    if (!node) {
         log_error("node is at %p\n");
         return 0;
+    }
+        
 
-    if (!node->writefile || node->flags == FS_DIR)
+    if (!node->writefile || node->flags == FS_DIR) {
         log_error("node->writefile is at %p and node->flags == FS_DIR = %d\n", node->writefile, node->flags == FS_DIR);        
         return 0;
+    }
+        
 
     return node->writefile(node, buffer, offset, size);
 }
 
 uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
-    if (!node || !node->read)
+    if (!node || !node->read) {
         log_error("node is at %p or node->read is null\n", node); 
         return 0;
+    }
+        
     
     return node->read(node, offset, size, buffer);
 }
@@ -114,9 +130,11 @@ fs_dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
 }
 
 fs_node_t* fs_finddir(fs_node_t* node, char* name) {
-    if (!node || !node->finddir)
+    if (!node || !node->finddir) {
         log_error("node is at %p or node->finddir is null\n", node);
         return NULL;
+    }
+        
 
     if (node == fs_root && strcmp(name, "dev") == 0) {
         return dev_dir; 
@@ -129,9 +147,11 @@ fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
     fs_dirent_t* dirent = kmalloc(sizeof(fs_dirent_t)); 
     dev_dir_t* dir = (dev_dir_t*)node->device;
     
-    if (!dir || index >= dir->child_count)
+    if (!dir || index >= dir->child_count) {
         log_error("dir is at %p or index >= dir->child_count\n", node);
         return NULL;
+    }
+        
 
     fs_node_t* child = dir->children[index];
     strcpy(dirent->name, child->name);
@@ -143,9 +163,11 @@ fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
 fs_node_t* dev_finddir(fs_node_t* node, char* name) {
     dev_dir_t* dir = (dev_dir_t*)node->device;
 
-    if (!dir) 
+    if (!dir) {
         log_error("dir is at null\n");
         return NULL;
+    } 
+        
 
     for (uint32_t i = 0; i < dir->child_count; i++) {
         if (strcmp(dir->children[i]->name, name) == 0) {
@@ -157,9 +179,11 @@ fs_node_t* dev_finddir(fs_node_t* node, char* name) {
 }
 
 fs_node_t* dev_parent(fs_node_t* node) {
-    if (!node || !node->device)
+    if (!node || !node->device) {
         log_error("node is at %p or node->device is\n", node);
         return NULL;
+    }
+        
     
     dev_dir_t* dir = node->device;
     
@@ -170,9 +194,11 @@ fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
     fs_node_t* node = kzmalloc(sizeof(fs_node_t));
     dev_dir_t* data = kzmalloc(sizeof(dev_dir_t));
 
-    if (!node || !data)
+    if (!node || !data) {
         log_error("node is at %p and data is at %p\n", node, data);
         return NULL;
+    }
+        
 
     strcpy(node->name, name);
     node->flags = FS_DIR;
@@ -194,21 +220,32 @@ fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
     return node;
 }
 
-void dev_add_child(fs_node_t* dir, fs_node_t* child) {
+int dev_add_child(fs_node_t* dir, fs_node_t* child) {
+    if (!dir || !child) {
+        log_error("dir is at %x and child is at %x\n", dir, child);
+        return 0;
+    }
+        
+
     dev_dir_t* device = dir->device;
     
-    if (!device || device->child_count >= 16) 
-        log_error("device is at %p or device->child_count >= 16\n", device);
-        return;
+    if (!device || device->child_count >= 16) {
+        log_error("device is at %x or device->child_count >= 16\n", device);
+        return 0;
+    }
+        
 
     device->children[device->child_count++] = child;
+
+    return 1;
 }
 
 void init_dev() {
     dev_dir = create_dev_dir("dev", fs_root, num_nodes);
     console_node = create_console_node(dev_dir);
 
-    dev_add_child(dev_dir, console_node);
+    if (!dev_add_child(dev_dir, console_node))
+        log_error("failed to init devices\n");
 }
 
 uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {

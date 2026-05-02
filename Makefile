@@ -35,7 +35,7 @@ ISO := myos.iso
 
 FS := initrd.img
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBK_INC)
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBK_INC) -g
 ASFLAGS :=
 LDFLAGS := -T linker.ld -ffreestanding -O2 -nostdlib
 LIBS := -lgcc
