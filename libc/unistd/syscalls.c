@@ -69,3 +69,7 @@ int waitpid(uint32_t pid, int* status, uint32_t options) {
     return (int)__sys3(SYS_WAITPID, pid, (uint32_t)status, options);
 }
 
+int close(uint32_t fd) {
+    return (int)__sys1(SYS_CLOSE, fd);
+}
+

@@ -17,6 +17,7 @@
 #define SYS_READ        0
 #define SYS_WRITE       1
 #define SYS_OPEN        5
+#define SYS_CLOSE       6
 #define SYS_WAITPID     7
 #define SYS_CHDIR       12
 #define SYS_GETPID      20

@@ -305,6 +305,13 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
 
+    process->exit_status = 0;
+    process->waited_on = 0;
+    process->waiting_for_pid = 0;
+    process->wait_result_status = 0; 
+    process->waiting_status_ptr = NULL;
+    process->wait_has_results = 0;
+
     if (!process->page_directory_phys) {
         kfree(buf);
         process_destroy(process);

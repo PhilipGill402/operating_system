@@ -74,7 +74,6 @@ void run(vector_t* args) {
     
     int status;
     waitpid(pid, &status, 0);
-    printf("Process ended with status %d\n", status);
 
     free(path);
 }

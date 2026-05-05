@@ -1,30 +1,38 @@
 #include "syscalls.h"
 
+int sys_close(uint32_t fd) {
+    file_desc_t file_desc = current_process->fds[fd]; 
+    kfree(file_desc.node); 
+    memset(&file_desc, 0, sizeof(file_desc_t));
+
+    return 1;
+}
+
 int sys_waitpid(uint32_t pid, int* status, int options) {
     (void)options;
 
-    while (1) {
-        process_t* child = get_process(pid);
+    process_t* child = get_process(pid);
 
-        if (!child) return -1;
+    if (!child) return -1;
 
-        if (child->state == PROC_TERMINATED && !child->waited_on) {
-            int child_status = child->exit_status;
-            
-            if (status) *status = child_status;
+    if (child->state == PROC_TERMINATED && !child->waited_on) {
+        int child_status = child->exit_status;
+        log_debug("child status: %d\n", child_status);
+        
+        if (status) *status = child_status;
 
-            child->waited_on = 1;
+        child->waited_on = 1;
 
-            process_destroy(child);
+        process_destroy(child);
 
-            return pid;
-        }
-
-        current_process->state = PROC_BLOCKED;
-        current_process->waiting_for_pid = pid;
-
-        schedule();
+        return pid;
     }
+
+    current_process->state = PROC_BLOCKED;
+    current_process->waiting_for_pid = pid;
+    current_process->waiting_status_ptr = status;
+
+    schedule();
 }
 
 uint32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
@@ -156,8 +164,8 @@ uint32_t sys_exit(regs_t* reg, int32_t status) {
     current_process->trapframe = reg;
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
-    current_process->exit_status = status; 
-    
+    current_process->exit_status = status;
+
     process_wake_parent(current_process->pid);
 
     schedule();
@@ -227,11 +235,6 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
         buffer[used] = '\0';
     }
     
-    /*
-    for (int8_t i = idx - 1; i >= 0; i--) {
-        kfree(path[i]);
-    }
-    */
     return used;
 }
 
@@ -279,6 +282,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_WAITPID:
             ret = sys_waitpid(reg->ebx, (int*)reg->ecx, reg->edx);
+            break;
+        case SYS_CLOSE:
+            ret = sys_close(reg->ebx);
             break;
     }
 

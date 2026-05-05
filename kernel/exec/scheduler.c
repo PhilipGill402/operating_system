@@ -2,9 +2,20 @@
 
 queue_t current_processes;
 
-extern uint8_t debug_sched;
 void scheduler_init() {
     current_processes = queue_create(sizeof(process_t*));
+}
+
+void complete_pending_wait(process_t* process) {
+    if (!process->wait_has_results) return;
+    
+    if (process->waiting_status_ptr) {
+        *(process->waiting_status_ptr) = process->wait_result_status;
+    }
+
+    process->wait_has_results = 0;
+    process->waiting_status_ptr = NULL;
+    process->waiting_for_pid = 0;
 }
 
 process_t* dequeue_ready() {
@@ -39,6 +50,7 @@ void schedule() {
 
     load_cr3(current_process->page_directory_phys);
     tss_set_kernel_stack(current_process->kernel_stack_top);
+    complete_pending_wait(next);
     enter_user_mode_from_trapframe(current_process->trapframe);
 }
 
@@ -58,6 +70,8 @@ void process_wake_parent(uint32_t child_pid) {
     if (parent->state == PROC_BLOCKED && parent->waiting_for_pid == child_pid) {
         parent->state = PROC_READY;
         parent->waiting_for_pid = 0;
+        parent->wait_result_status = child->exit_status;
+        parent->wait_has_results = 1;
 
         enqueue(&current_processes, &parent);
     }

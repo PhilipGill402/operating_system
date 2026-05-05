@@ -49,9 +49,12 @@ typedef struct {
     proc_state_t state;
     uint32_t entry;
 
-    uint32_t exit_status;
+    int32_t exit_status;
     uint8_t waited_on;
     uint32_t waiting_for_pid;
+    int32_t wait_result_status; 
+    int32_t* waiting_status_ptr;
+    uint8_t wait_has_results;
 
     uint32_t image_base;
     uint32_t image_end;

@@ -96,9 +96,13 @@ process_t* process_clone(process_t* process) {
     
     new->pid = num_processes++;
     new->ppid = process->pid;
+    
     new->exit_status = 0;
     new->waited_on = 0;
     new->waiting_for_pid = 0;
+    new->wait_result_status = 0;
+    new->waiting_status_ptr = NULL;
+    new->wait_has_results = 0;
 
     new->ticks_left = DEFAULT_MAX_TICKS;
     new->state = PROC_READY;
