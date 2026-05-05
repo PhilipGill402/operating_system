@@ -6,47 +6,55 @@ fs_node_t* dev_dir;
 fs_node_t* console_node;
 
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
-    fs_node_t* start_copy = kmalloc(sizeof(fs_node_t));
-    memcpy(start_copy, start, sizeof(fs_node_t));
-    strcpy(start_copy->name, start->name); 
+    if (!start || !path) return NULL;
+
+    fs_node_t* current = kmalloc(sizeof(fs_node_t));
+    if (!current) return NULL;
 
     if (path[0] == '/') {
-        start_copy = fs_root; 
+        memcpy(current, fs_root, sizeof(fs_node_t));
+    } else {
+        memcpy(current, start, sizeof(fs_node_t));
     }
-    
+
     char path_copy[MAX_PATH_LENGTH];
     strncpy(path_copy, path, sizeof(path_copy) - 1);
     path_copy[sizeof(path_copy) - 1] = '\0';
 
-    char* curr_dir = strtok(path_copy, '/');
+    char* token = strtok(path_copy, '/');
 
-    if (!curr_dir && strcmp(path, "/") == 0) {
-        return start_copy;
+    if (!token && strcmp(path, "/") == 0) {
+        return current;
     }
 
-    while (curr_dir != NULL) {
-        if (strcmp(curr_dir, ".") == 0) {
-            curr_dir = strtok(NULL, '/');
+    while (token != NULL) {
+        if (strcmp(token, ".") == 0) {
+            token = strtok(NULL, '/');
             continue;
-        } else if (strcmp(curr_dir, "..") == 0) {
-            start_copy = fs_parent(start_copy);
-            curr_dir = strtok(NULL, '/');
-            continue;
+        } 
+        
+        fs_node_t* next = NULL;
+
+        if (strcmp(token, "..") == 0) {
+            next = fs_parent(current); 
+        } else {
+            next = fs_finddir(current, token);
         }
         
-        fs_node_t* dir = fs_finddir(start_copy, curr_dir);
-
-        if (!dir) {
-            log_error("'dir' returned null\n");
+        if (!next) {
+            kfree(current);
+            log_error("resolve_path_from: failed to resolve '%s'\n", token);
             return NULL;
         }
             
 
-        start_copy = dir;
-        curr_dir = strtok(NULL, '/');
+        kfree(current);
+        current = next;
+
+        token = strtok(NULL, '/');
     }
 
-    return start_copy;
+    return current;
 }
 
 fs_node_t* resolve_path(const char* path) {
@@ -136,7 +144,8 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     }
         
 
-    if (node == fs_root && strcmp(name, "dev") == 0) {
+    if (node->inode == fs_root->inode && strcmp(name, "dev") == 0) {
+         
         return dev_dir; 
     }
 

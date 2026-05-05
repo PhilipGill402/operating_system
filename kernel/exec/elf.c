@@ -192,6 +192,61 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     return 1;
 }
 
+uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
+    if (!process || !elf) return 0;
+    
+    uint32_t size = 0;
+    uint8_t* buffer = elf_from_file(elf, &size);
+    
+    if (!buffer) return 0;
+    
+    if (!elf_validate(buffer, size)) {
+        kfree(buffer);
+        return 0;
+    }
+    
+    if (!elf_load(buffer, size, process)) {
+        kfree(buffer);
+        return 0;
+    }
+     
+    uint32_t old_pd = process->page_directory_phys;
+    uint32_t new_pd = process_create_page_directory();
+    
+    if (!new_pd) {
+        kfree(buffer);
+        process->page_directory_phys = old_pd;
+        return 0;
+    }
+
+    process->page_directory_phys = new_pd;
+    
+    Elf32_Ehdr* header = (Elf32_Ehdr*)buffer;
+    process->entry = header->e_entry;
+    
+    if (!process_init_stack(process)) {
+        process->page_directory_phys = old_pd;
+        kfree(buffer);
+        return 0;
+    }
+
+    if (!process_init_heap(process)) {
+        process->page_directory_phys = old_pd;
+        kfree(buffer);
+        return 0;
+    } 
+    
+    process->trapframe->eip = process->entry;
+    process->trapframe->useresp = process->user_stack_top;
+    process->trapframe->cs = USER_CS_RING3;
+    process->trapframe->ss = USER_DS_RING3;
+    process->trapframe->ds = USER_DS_RING3;
+    process->trapframe->eflags = 0x202;
+    
+    kfree(buffer);
+    return 1;
+}
+
 process_t* process_create_from_elf(fs_node_t* elf) {
     uint32_t size;
     process_t* process = kzmalloc(sizeof(process_t));

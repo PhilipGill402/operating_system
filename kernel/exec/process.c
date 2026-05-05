@@ -37,7 +37,6 @@ uint32_t clone_page_directory(uint32_t parent_page_directory_phys) {
         uint32_t* parent_pt = temp_map_phys2(parent_pt_phys);
         
         for (uint32_t pt_idx = 0; pt_idx < 1024; pt_idx++) {
-            uint32_t* parent_pt = temp_map_phys3(parent_pt_phys);
             uint32_t pte = parent_pt[pt_idx];
 
             if (!(pte & PAGE_PRESENT)) continue;
@@ -60,6 +59,8 @@ uint32_t clone_page_directory(uint32_t parent_page_directory_phys) {
         }
     }
 
+    
+
     return child_pd_phys;
 }
 
@@ -78,6 +79,12 @@ process_t* process_clone(process_t* process) {
         return NULL;
     }
     
+    if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + KERNEL_STACK_SIZE) {
+        log_error("clone: bad parent kernel stack bounds\n");
+        kfree(new);
+        return NULL;
+    }
+
     new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memcpy((void*)new->kernel_stack_bottom, (void*)process->kernel_stack_bottom, KERNEL_STACK_SIZE);
     
@@ -85,12 +92,15 @@ process_t* process_clone(process_t* process) {
     new->saved_kernel_esp = process->saved_kernel_esp + delta;
     new->saved_kernel_ebp = process->saved_kernel_ebp + delta;
     new->trapframe = (regs_t*)((uint32_t)process->trapframe + delta);
-
+    
     new->pid = num_processes++;
     new->ticks_left = DEFAULT_MAX_TICKS;
     new->state = PROC_READY;
-    new->page_directory_phys = clone_page_directory(process->page_directory_phys);
+    
+    
 
+    new->page_directory_phys = clone_page_directory(process->page_directory_phys);
+    
     if (!new->page_directory_phys) {
         return NULL;
     }
@@ -190,7 +200,7 @@ void process_destroy(process_t* process) {
     }
 
     // cleans up the user stack memory
-    for (uint32_t addr = current_process->user_stack_bottom; addr < current_process->user_stack_top; addr += PAGE_SIZE) {
+    for (uint32_t addr = process->user_stack_bottom; addr < process->user_stack_top; addr += PAGE_SIZE) {
         uint32_t frame = unmap_page(addr);
         if (frame) {
             pmm_free_frame(frame);
@@ -199,7 +209,7 @@ void process_destroy(process_t* process) {
     
     // frees heap allocated variables
     kfree(process->cwd);
-    kfree(process);
     kfree(process->kernel_stack_bottom);
+    kfree(process);
     process = NULL;
 }

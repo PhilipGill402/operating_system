@@ -97,7 +97,6 @@ uint32_t sys_write(uint32_t fd, char* str, size_t count) {
     return bytes_written;
 }
 
-extern uint8_t debug_sched;
 uint32_t sys_fork() {
     process_t* new = process_clone(current_process);
     
@@ -106,25 +105,19 @@ uint32_t sys_fork() {
     
     current_process->ticks_left = 1;
     int result = enqueue(&current_processes, &new);
-    debug_sched = 1;    
 
     return new->pid;
 }
 
 uint32_t sys_execve(const char* file_name, const char* argv) {
     fs_node_t* elf = fs_cwd->finddir(fs_cwd, file_name);
-    process_t* proc_elf = process_create_from_elf(elf);
-    
-    if (!proc_elf) {
+    if (!process_exec_from_elf(current_process, elf)) {
         kfree(elf);
-        kfree(proc_elf);
         return 0;
     }
-
-    memcpy(current_process, proc_elf, sizeof(process_t));
+    
     kfree(elf);
-    kfree(proc_elf);
-
+    
     return 1;
 }
 
@@ -199,10 +192,11 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
         buffer[used] = '\0';
     }
     
+    /*
     for (int8_t i = idx - 1; i >= 0; i--) {
         kfree(path[i]);
     }
-
+    */
     return used;
 }
 
