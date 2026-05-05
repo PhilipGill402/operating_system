@@ -7,6 +7,7 @@
 #define SYS_READ        0
 #define SYS_WRITE       1
 #define SYS_OPEN        5
+#define SYS_WAITPID     7
 #define SYS_CHDIR       12
 #define SYS_GETPID      20
 #define SYS_BRK         45
@@ -40,5 +41,6 @@ void* brk(void* new_addr);
 void* sbrk(size_t increment);
 uint32_t open(const char* path, uint32_t flags);
 uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count);
+int waitpid(uint32_t pid, int* status, uint32_t options);
 
 #endif

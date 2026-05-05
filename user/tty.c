@@ -69,11 +69,12 @@ void run(vector_t* args) {
     uint32_t pid = fork();
     
     if (pid == 0) {
-        printf("made it\n"); 
         execve(path, NULL);
-        printf("failed to execute\n");
-        exit(1);
     }
+    
+    int status;
+    waitpid(pid, &status, 0);
+    printf("Process ended with status %d\n", status);
 
     free(path);
 }

@@ -174,11 +174,13 @@ void* kmalloc(size_t size){
 }
 
 void kfree(void* ptr) {
+    if (!ptr) return; 
+
     kblock_t* block = (kblock_t*)((uint8_t*)ptr - sizeof(kblock_t));
     block->allocated = false;
     
     //combines the current block with the next if the next isn't allocated
-    //coalesce(block);
+    coalesce(block);
 }
 
 void* kzmalloc(size_t size) {

@@ -311,6 +311,8 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
 
+    process_table[process->pid] = process;
+
     process_init_trapframe(process);
     
     kfree(buf);

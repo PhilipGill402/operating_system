@@ -1,6 +1,7 @@
 #include "exec/process.h"
 
 process_t* current_process = NULL;
+process_t* process_table[MAX_PROCESSES] = { 0 };
 uint32_t num_processes = 0;
 
 static uint32_t align_up(uint32_t value, uint32_t align) {
@@ -94,16 +95,21 @@ process_t* process_clone(process_t* process) {
     new->trapframe = (regs_t*)((uint32_t)process->trapframe + delta);
     
     new->pid = num_processes++;
+    new->ppid = process->pid;
+    new->exit_status = 0;
+    new->waited_on = 0;
+    new->waiting_for_pid = 0;
+
     new->ticks_left = DEFAULT_MAX_TICKS;
     new->state = PROC_READY;
-    
-    
 
     new->page_directory_phys = clone_page_directory(process->page_directory_phys);
     
     if (!new->page_directory_phys) {
         return NULL;
     }
+
+    process_table[new->pid] = new;
     
     return new;
 }
@@ -213,3 +219,8 @@ void process_destroy(process_t* process) {
     kfree(process);
     process = NULL;
 }
+
+
+
+
+

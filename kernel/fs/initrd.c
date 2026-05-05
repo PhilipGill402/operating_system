@@ -140,7 +140,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             return file;
         }
     }
-
+    
     return NULL;
 }
 

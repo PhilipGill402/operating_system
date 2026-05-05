@@ -27,7 +27,7 @@ process_t* dequeue_ready() {
 
 void schedule() {
     process_t* next = dequeue_ready();
-    
+     
     if (!next) {
         // TODO: made some sort of idle task 
         return;
@@ -40,4 +40,25 @@ void schedule() {
     load_cr3(current_process->page_directory_phys);
     tss_set_kernel_stack(current_process->kernel_stack_top);
     enter_user_mode_from_trapframe(current_process->trapframe);
+}
+
+process_t* get_process(uint32_t pid) {
+    if (pid >= MAX_PROCESSES) return NULL;
+
+    return process_table[pid]; 
+}
+
+void process_wake_parent(uint32_t child_pid) {
+    process_t* child = get_process(child_pid);
+    if (!child) return;
+
+    process_t* parent = get_process(child->ppid);
+    if (!parent) return;
+    
+    if (parent->state == PROC_BLOCKED && parent->waiting_for_pid == child_pid) {
+        parent->state = PROC_READY;
+        parent->waiting_for_pid = 0;
+
+        enqueue(&current_processes, &parent);
+    }
 }

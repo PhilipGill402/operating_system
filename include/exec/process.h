@@ -29,6 +29,8 @@
 #define USER_STACK_SIZE      (PAGE_SIZE * 4)
 #define USER_STACK_BOTTOM    (USER_STACK_TOP - USER_STACK_SIZE)
 
+#define MAX_PROCESSES 64
+
 typedef struct {
     uint32_t start;
     uint32_t end;
@@ -43,8 +45,13 @@ typedef enum {
 
 typedef struct {
     uint32_t pid;
+    uint32_t ppid; 
     proc_state_t state;
     uint32_t entry;
+
+    uint32_t exit_status;
+    uint8_t waited_on;
+    uint32_t waiting_for_pid;
 
     uint32_t image_base;
     uint32_t image_end;
@@ -74,6 +81,7 @@ typedef struct {
 } process_t;
 
 extern process_t* current_process;
+extern process_t* process_table[MAX_PROCESSES];
 extern uint32_t num_processes;
 
 __attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t* tf);
@@ -84,5 +92,6 @@ uint32_t process_init_stack(process_t* process);
 uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();
+
 
 #endif // !INCLUDE_EXEC_PROCESS_H_

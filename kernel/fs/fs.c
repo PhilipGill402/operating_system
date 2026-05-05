@@ -145,7 +145,6 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
         
 
     if (node->inode == fs_root->inode && strcmp(name, "dev") == 0) {
-         
         return dev_dir; 
     }
 

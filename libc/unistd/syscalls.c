@@ -65,3 +65,7 @@ uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
     return __sys3(SYS_GETDENTS, fd, (uint32_t)dents, count);
 }
 
+int waitpid(uint32_t pid, int* status, uint32_t options) {
+    return (int)__sys3(SYS_WAITPID, pid, (uint32_t)status, options);
+}
+

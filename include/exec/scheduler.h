@@ -10,6 +10,7 @@
 process_t* dequeue_ready();
 void scheduler_init();
 void schedule();
+void process_wake_parent(uint32_t child_pid);
 
 extern queue_t current_processes;
 
