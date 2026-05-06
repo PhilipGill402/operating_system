@@ -97,10 +97,12 @@ uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* b
 }
 
 fs_dirent_t* initrd_readdir(fs_node_t* node, uint32_t index) {
+    if (!node) return NULL;
+
+    if (node->flags != FS_DIR) return NULL;
+
     fs_dirent_t* entry = kmalloc(sizeof(fs_dirent_t));
-    if (node->flags != FS_DIR) {
-        return NULL;
-    } 
+    if (!entry) return NULL;
     
     for (uint32_t idx = 0, count = 0; idx < num_nodes; idx++) {
         initrd_node_t* file = &node_table[idx];

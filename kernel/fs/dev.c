@@ -7,7 +7,8 @@ fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
     dev_dir_t* dir = (dev_dir_t*)node->device;
     
     if (!dir || index >= dir->child_count) {
-        log_error("dir is at %p or index >= dir->child_count\n", node);
+        log_error("dir is at %x or index >= dir->child_count\n", node);
+        kfree(dirent);
         return NULL;
     }
         
@@ -23,32 +24,43 @@ fs_node_t* dev_finddir(fs_node_t* node, char* name) {
     if (!node || !name) return NULL; 
 
     dev_dir_t* dir = (dev_dir_t*)node->device;
+    fs_node_t* ret = kmalloc(sizeof(fs_node_t));
 
     if (!dir) {
         log_error("dir is at null\n");
+        kfree(ret);
         return NULL;
     } 
         
-
     for (uint32_t i = 0; i < dir->child_count; i++) {
-        if (strcmp(dir->children[i]->name, name) == 0) {
-            return dir->children[i];
+        fs_node_t* child = dir->children[i];
+        if (strcmp(child->name, name) == 0) {
+            memcpy(ret, child, sizeof(fs_node_t));
+            strcpy(ret->name, child->name); 
+
+            return ret;
         }
     }
-
+    
+    kfree(ret);
     return NULL;
 }
 
 fs_node_t* dev_parent(fs_node_t* node) {
     if (!node || !node->device) {
-        log_error("node is at %p or node->device is\n", node);
+        log_error("node is at %x or node->device is\n", node);
         return NULL;
     }
-        
     
     dev_dir_t* dir = node->device;
+
+    if (!dir) return NULL;
     
-    return dir->parent;
+    fs_node_t* ret = kmalloc(sizeof(fs_node_t));
+    memcpy(ret, dir->parent, sizeof(fs_node_t));
+    strcpy(ret->name, dir->parent->name);
+    
+    return ret;
 }
 
 fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
@@ -56,7 +68,9 @@ fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
     dev_dir_t* data = kzmalloc(sizeof(dev_dir_t));
 
     if (!node || !data) {
-        log_error("node is at %p and data is at %p\n", node, data);
+        log_error("node is at %x and data is at %x\n", node, data);
+        kfree(node); 
+        kfree(data); 
         return NULL;
     }
         
@@ -102,7 +116,7 @@ int dev_add_child(fs_node_t* dir, fs_node_t* child) {
 }
 
 void init_dev() {
-    dev_dir = create_dev_dir("dev", fs_root, num_nodes);
+    dev_dir = create_dev_dir("dev", fs_root, num_nodes++);
     console_node = create_console_node(dev_dir);
 
     if (!dev_add_child(dev_dir, console_node))

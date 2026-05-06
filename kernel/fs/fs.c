@@ -67,13 +67,15 @@ fs_dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
 
 fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     if (!node || !node->finddir) {
-        log_error("node is at %p or node->finddir is null\n", node);
+        log_error("node is at %x or node->finddir is null\n", node);
         return NULL;
     }
         
 
     if (node->inode == fs_root->inode && strcmp(name, "dev") == 0) {
         return dev_dir; 
+    } else if (node->inode == fs_root->inode && strcmp(name, "proc") == 0) {
+        return proc_dir;
     }
 
     return node->finddir(node, name);
@@ -124,6 +126,7 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
     }
 
     init_dev();
+    init_proc();
 
     return 1;
 }
@@ -195,4 +198,16 @@ fs_node_t* resolve_path(const char* path) {
     return resolve_path_from(fs_cwd, path);
 }
 
+
+fs_node_t* fs_node_clone(fs_node_t* node) {
+    if (!node) return NULL;
+
+    fs_node_t* clone = kmalloc(sizeof(fs_node_t));
+    if (!clone) return NULL;
+
+    memcpy(clone, node, sizeof(fs_node_t));
+    strcpy(clone->name, node->name);
+
+    return clone;
+}
 
