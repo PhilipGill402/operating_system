@@ -58,6 +58,8 @@ void cat(vector_t* args) {
     
     printf("\n");
     free(path);
+
+    close(fd);
 }
 
 void run(vector_t* args) {
@@ -77,16 +79,6 @@ void run(vector_t* args) {
 
     free(path);
 }
-
-/*
- * init buffers
- * read line
- * parse command
- * parse args
- * run corresponding function
- * repeat
- *
- */
 
 void print_str(void* str) {
     printf("%r", *(string_t*)str);

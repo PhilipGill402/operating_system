@@ -112,4 +112,6 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm initrd.img
 	rm -rf sysroot
+	rm $(KERNEL_BIN)
+	rm $(ISO)
 

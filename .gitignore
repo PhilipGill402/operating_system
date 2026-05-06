@@ -1,0 +1,11 @@
+build/
+isodir/
+*.o
+*.a
+*.bin
+*.elf
+*.iso
+*.img
+
+
+.DS_Store
