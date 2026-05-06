@@ -8,14 +8,25 @@
 void ps(vector_t* args) {
     (void)args;
 
-    uint32_t fd = open("/proc", 0);
+    uint32_t fd = open("/proc/0", 0);
 
+    char* buffer = malloc(30);
+    if (!buffer) return;
+
+    uint32_t bytes_read = read(fd, buffer, 30);
+
+    if (bytes_read == 0) printf("no bytes read");
+    else printf("%s", buffer);
+   
+
+    /*
     dirent_t* entries = malloc(sizeof(dirent_t) * 10);
     uint32_t num_entries = getdents(fd, entries, 10);
 
     for (uint32_t i = 0; i < num_entries; i++) {
-        printf("%s\t", entries[i].name);
+        
     }
+    */
 
     printf("\n");
 }

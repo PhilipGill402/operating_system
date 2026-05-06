@@ -2,6 +2,16 @@
 
 fs_node_t* proc_dir;
 
+static const char* proc_state_to_str(proc_state_t state) {
+    switch (state) {
+        case PROC_RUNNING: return "RUNNING";
+        case PROC_READY: return "READY";
+        case PROC_BLOCKED: return "BLOCKED";
+        case PROC_TERMINATED: return "ZOMBIE";
+        default: return "UNKNOWN";
+    }
+}
+
 static void uint_to_str(uint32_t num, char* str) {
     int i = 0;
 
@@ -25,15 +35,33 @@ static void uint_to_str(uint32_t num, char* str) {
     }
 }
 
+static int str_to_uint(const char* str, uint32_t* out) {
+    if (!str || !*str) return 0;
+
+    uint32_t result = 0;
+
+    for (uint32_t i = 0; str[i]; i++) {
+        if (str[i] < '0' || str[i] > '9') {
+            return 0;
+        }
+
+        result = result * 10 + (str[i] - '0');
+    }
+
+    *out = result;
+    return 1;
+}
+
 fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
     uint32_t seen = 0; 
-
+    log_debug("made it\n");
     for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
         process_t* proc = process_table[i];
 
         if (!proc) continue;
 
         if (seen == index) {
+            log_debug("made it\n");
             fs_dirent_t* dent = kzmalloc(sizeof(fs_dirent_t));
             if (!dent) return NULL;
 
@@ -49,30 +77,65 @@ fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
     return NULL;
 }
 
-fs_node_t* proc_finddir(fs_node_t* node, char* name) {
-    if (!node || !name) return NULL; 
-
-    proc_dir_t* proc = (proc_dir_t*)node->proc;
-    if (!proc) return NULL;
-
-    for (uint32_t i = 0; i < proc->child_count; i++) {
-        fs_node_t* child = proc->children[i];
-        if (strcmp(child->name, name) == 0) {
-            return fs_node_clone(child); 
-        }
-    }
-
-    return NULL;
-}
-
 fs_node_t* proc_parent(fs_node_t* node) {
     if (!node) return NULL;
 
-    proc_dir_t* proc = (proc_dir_t*)node->proc;
-    if (!proc) return NULL; 
+    if (!(node->flags & FS_PROC)) return NULL;
 
-    return fs_node_clone(proc->parent);
+    if (node->flags & FS_DIR) {
+        proc_dir_t* proc = (proc_dir_t*)node->proc;
+        if (!proc) return NULL; 
+
+        return fs_node_clone(proc->parent);
+    } else {
+        return fs_node_clone(proc_dir);
+    }
+
+    
 }
+
+uint32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+    if (!node || !buffer) return 0;
+    if ((node->flags & (FS_FILE | FS_PROC)) != (FS_FILE | FS_PROC)) return 0;
+
+    process_t* proc = process_table[node->inode];
+    if (!proc) return 0;
+    
+    return buf_offset;
+}
+
+fs_node_t* proc_finddir(fs_node_t* node, char* name) {
+    if (!node || !name) return NULL; 
+
+    // get pid from name
+    uint32_t pid;
+    if (!str_to_uint(name, &pid)) {
+        return NULL;
+    }
+    process_t* process = process_table[pid];
+    if (!process) return NULL;
+
+    // create fs_node_t from process
+    fs_node_t* proc_node = kzmalloc(sizeof(fs_node_t));
+    if (!proc_node) return NULL;
+
+    strcpy(proc_node->name, name);
+    proc_node->inode = pid;
+    proc_node->flags = FS_PROC | FS_FILE;
+    proc_node->size = 0;
+
+    proc_node->read = proc_read;
+    proc_node->readdir = NULL;
+    proc_node->finddir = NULL;
+    proc_node->parent = proc_parent;
+    proc_node->createdir = NULL;
+    proc_node->createfile = NULL;
+    proc_node->writefile = NULL;
+
+    return proc_node;
+}
+
+
 
 fs_node_t* create_proc_dir(const char* name, fs_node_t* parent, uint32_t inode) {
     fs_node_t* node = kzmalloc(sizeof(fs_node_t));
@@ -87,7 +150,7 @@ fs_node_t* create_proc_dir(const char* name, fs_node_t* parent, uint32_t inode) 
         
 
     strcpy(node->name, name);
-    node->flags = FS_DIR;
+    node->flags = FS_DIR | FS_PROC;
     node->inode = inode;
     node->size = 0;
     node->proc = data;
@@ -121,20 +184,6 @@ int proc_add_child(fs_node_t* dir, fs_node_t* child) {
 
 void init_proc() {
     proc_dir = create_proc_dir("proc", fs_root, num_nodes++);
-    
-    for (uint32_t i = 0; i < num_processes; i++) {
-        process_t* proc = process_table[i];
-        if (!proc) continue;
-
-        fs_node_t* proc_node = kzmalloc(sizeof(fs_node_t));
-        if (!proc_node) continue;
-
-        strcpy(proc_node->name, proc->name); 
-        proc_node->flags = FS_PROC;
-        proc_node->inode = num_nodes++;
-
-        proc_add_child(proc_dir, proc_node);
-    }
 }
 
 

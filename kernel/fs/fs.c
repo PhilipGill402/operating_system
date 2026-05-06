@@ -61,7 +61,7 @@ fs_dirent_t* fs_readdir(fs_node_t* node, uint32_t index) {
     if (!node || !node->readdir) {
         return NULL;
     }
-
+    
     return node->readdir(node, index);
 }
 

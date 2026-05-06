@@ -39,11 +39,11 @@ uint32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     file_desc_t file_desc = current_process->fds[fd]; 
     fs_node_t* file = file_desc.node;
     
-    if (!file || file->flags != FS_DIR) return 0;
+    if (!file || !(file->flags & FS_DIR)) return 0;
     
     uint32_t num_entries = 0;
     for (uint32_t i = 0; i < count; i++) {
-        fs_dirent_t* fs_dent = file->readdir(file, file_desc.offset++);
+        fs_dirent_t* fs_dent = fs_readdir(file, file_desc.offset++);
         if (!fs_dent) break;
 
         sys_dirent_t dent;
