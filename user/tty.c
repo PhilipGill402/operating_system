@@ -5,6 +5,21 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+void ps(vector_t* args) {
+    (void)args;
+
+    uint32_t fd = open("/proc", 0);
+
+    dirent_t* entries = malloc(sizeof(dirent_t) * 10);
+    uint32_t num_entries = getdents(fd, entries, 10);
+
+    for (uint32_t i = 0; i < num_entries; i++) {
+        printf("%s\t", entries[i].name);
+    }
+
+    printf("\n");
+}
+
 void cd(vector_t* args) {
     string_t* str = (string_t*)vector_get(args, 1);
     char* path;
@@ -110,6 +125,8 @@ int main() {
             run(&args);
         } else if (string_compare_literal(&cmd, "cat") == 0) {
             cat(&args);
+        } else if (string_compare_literal(&cmd, "ps") == 0) {
+            ps(&args);
         } else {
             printf("Couldn't recognize '%r' command\n", cmd);
         }
