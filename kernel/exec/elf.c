@@ -234,8 +234,9 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
         process->page_directory_phys = old_pd;
         kfree(buffer);
         return 0;
-    } 
-    
+    }
+
+    strcpy(process->name, elf->name);
     process->trapframe->eip = process->entry;
     process->trapframe->useresp = process->user_stack_top;
     process->trapframe->cs = USER_CS_RING3;

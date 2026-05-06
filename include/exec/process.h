@@ -8,7 +8,7 @@
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "memory/heap.h"
-#include "fs/fs.h"
+#include "fs/fs_types.h"
 
 #define MAX_FDS 128
 
@@ -44,6 +44,8 @@ typedef enum {
 } proc_state_t;
 
 typedef struct {
+    char name[128]; 
+
     uint32_t pid;
     uint32_t ppid; 
     proc_state_t state;

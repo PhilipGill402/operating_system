@@ -1,77 +1,5 @@
 #include "fs/fs.h"
 
-fs_node_t* fs_root;
-fs_node_t* fs_cwd;
-fs_node_t* dev_dir;
-fs_node_t* console_node;
-
-fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
-    if (!start || !path) return NULL;
-
-    fs_node_t* current = kmalloc(sizeof(fs_node_t));
-    if (!current) return NULL;
-
-    if (path[0] == '/') {
-        memcpy(current, fs_root, sizeof(fs_node_t));
-    } else {
-        memcpy(current, start, sizeof(fs_node_t));
-    }
-
-    char path_copy[MAX_PATH_LENGTH];
-    strncpy(path_copy, path, sizeof(path_copy) - 1);
-    path_copy[sizeof(path_copy) - 1] = '\0';
-
-    char* token = strtok(path_copy, '/');
-
-    if (!token && strcmp(path, "/") == 0) {
-        return current;
-    }
-
-    while (token != NULL) {
-        if (strcmp(token, ".") == 0) {
-            token = strtok(NULL, '/');
-            continue;
-        } 
-        
-        fs_node_t* next = NULL;
-
-        if (strcmp(token, "..") == 0) {
-            next = fs_parent(current); 
-        } else {
-            next = fs_finddir(current, token);
-        }
-        
-        if (!next) {
-            kfree(current);
-            log_error("resolve_path_from: failed to resolve '%s'\n", token);
-            return NULL;
-        }
-            
-
-        kfree(current);
-        current = next;
-
-        token = strtok(NULL, '/');
-    }
-
-    return current;
-}
-
-fs_node_t* resolve_path(const char* path) {
-    if (!path) {
-        log_error("path is null\n"); 
-        return NULL;
-    } 
-        
-    
-
-    if (path[0] == '/') {
-        return resolve_path_from(fs_root, path);
-    }
-    
-    return resolve_path_from(fs_cwd, path);
-}
-
 fs_node_t* fs_parent(fs_node_t* node) {
     if (!node || !node->parent) {
         log_error("node is at %p or node->parent is null\n", node); 
@@ -151,111 +79,6 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     return node->finddir(node, name);
 }
 
-fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
-    fs_dirent_t* dirent = kmalloc(sizeof(fs_dirent_t)); 
-    dev_dir_t* dir = (dev_dir_t*)node->device;
-    
-    if (!dir || index >= dir->child_count) {
-        log_error("dir is at %p or index >= dir->child_count\n", node);
-        return NULL;
-    }
-        
-
-    fs_node_t* child = dir->children[index];
-    strcpy(dirent->name, child->name);
-    dirent->inode = child->inode;
-
-    return dirent;
-}
-
-fs_node_t* dev_finddir(fs_node_t* node, char* name) {
-    dev_dir_t* dir = (dev_dir_t*)node->device;
-
-    if (!dir) {
-        log_error("dir is at null\n");
-        return NULL;
-    } 
-        
-
-    for (uint32_t i = 0; i < dir->child_count; i++) {
-        if (strcmp(dir->children[i]->name, name) == 0) {
-            return dir->children[i];
-        }
-    }
-
-    return NULL;
-}
-
-fs_node_t* dev_parent(fs_node_t* node) {
-    if (!node || !node->device) {
-        log_error("node is at %p or node->device is\n", node);
-        return NULL;
-    }
-        
-    
-    dev_dir_t* dir = node->device;
-    
-    return dir->parent;
-}
-
-fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
-    fs_node_t* node = kzmalloc(sizeof(fs_node_t));
-    dev_dir_t* data = kzmalloc(sizeof(dev_dir_t));
-
-    if (!node || !data) {
-        log_error("node is at %p and data is at %p\n", node, data);
-        return NULL;
-    }
-        
-
-    strcpy(node->name, name);
-    node->flags = FS_DIR;
-    node->inode = inode;
-    node->size = 0;
-    node->device = data;
-
-    data->child_count = 0;
-    data->parent = parent;
-
-    node->read = NULL;
-    node->readdir = dev_readdir;
-    node->finddir = dev_finddir;
-    node->parent = dev_parent;
-    node->createdir = NULL;
-    node->createfile = NULL;
-    node->writefile = NULL;
-
-    return node;
-}
-
-int dev_add_child(fs_node_t* dir, fs_node_t* child) {
-    if (!dir || !child) {
-        log_error("dir is at %x and child is at %x\n", dir, child);
-        return 0;
-    }
-        
-
-    dev_dir_t* device = dir->device;
-    
-    if (!device || device->child_count >= 16) {
-        log_error("device is at %x or device->child_count >= 16\n", device);
-        return 0;
-    }
-        
-
-    device->children[device->child_count++] = child;
-
-    return 1;
-}
-
-void init_dev() {
-    dev_dir = create_dev_dir("dev", fs_root, num_nodes);
-    console_node = create_console_node(dev_dir);
-
-    if (!dev_add_child(dev_dir, console_node))
-        log_error("failed to init devices\n");
-}
-
 uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
     if (!(mbi->flags & (1 << 3))) {
         log_error("multiboot info not found\n");
@@ -303,6 +126,73 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
     init_dev();
 
     return 1;
+}
+
+fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
+    if (!start || !path) return NULL;
+
+    fs_node_t* current = kmalloc(sizeof(fs_node_t));
+    if (!current) return NULL;
+
+    if (path[0] == '/') {
+        memcpy(current, fs_root, sizeof(fs_node_t));
+    } else {
+        memcpy(current, start, sizeof(fs_node_t));
+    }
+
+    char path_copy[MAX_PATH_LENGTH];
+    strncpy(path_copy, path, sizeof(path_copy) - 1);
+    path_copy[sizeof(path_copy) - 1] = '\0';
+
+    char* token = strtok(path_copy, '/');
+
+    if (!token && strcmp(path, "/") == 0) {
+        return current;
+    }
+
+    while (token != NULL) {
+        if (strcmp(token, ".") == 0) {
+            token = strtok(NULL, '/');
+            continue;
+        } 
+        
+        fs_node_t* next = NULL;
+
+        if (strcmp(token, "..") == 0) {
+            next = fs_parent(current); 
+        } else {
+            next = fs_finddir(current, token);
+        }
+        
+        if (!next) {
+            kfree(current);
+            log_error("resolve_path_from: failed to resolve '%s'\n", token);
+            return NULL;
+        }
+            
+
+        kfree(current);
+        current = next;
+
+        token = strtok(NULL, '/');
+    }
+
+    return current;
+}
+
+fs_node_t* resolve_path(const char* path) {
+    if (!path) {
+        log_error("path is null\n"); 
+        return NULL;
+    } 
+        
+    
+
+    if (path[0] == '/') {
+        return resolve_path_from(fs_root, path);
+    }
+    
+    return resolve_path_from(fs_cwd, path);
 }
 
 

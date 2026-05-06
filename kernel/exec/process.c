@@ -68,6 +68,7 @@ uint32_t clone_page_directory(uint32_t parent_page_directory_phys) {
 process_t* process_clone(process_t* process) {
     process_t* new = kzmalloc(sizeof(process_t));
     
+    
     if (!new) {
         return NULL;
     }
@@ -112,6 +113,8 @@ process_t* process_clone(process_t* process) {
     if (!new->page_directory_phys) {
         return NULL;
     }
+
+    strcpy(new->name, process->name);
 
     process_table[new->pid] = new;
     
