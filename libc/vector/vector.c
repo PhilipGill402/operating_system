@@ -148,18 +148,6 @@ void* vector_pop_back(vector_t* vec){
     return element;
 }
 
-void vector_print(const vector_t* vec, void (*print_element)(void*)) {
-    printf("<"); 
-    for (int i = 0; i < vector_size(vec); i++) {
-        print_element(vector_get(vec, i));
-        
-        if (i != vector_size(vec) - 1) {
-            printf(", ");
-        }
-    }
-    printf(">\n");
-}
-
 void vector_push_back(vector_t* vec, void* element) {
     // if the array is full then double its capacity  
     if (vector_size(vec) == vec->capacity){
@@ -189,7 +177,7 @@ void vector_resize(vector_t* vec, int new_size){
     vec->size = new_size;
 }
 
-void shrink_to_fit(vector_t* vec){
+void vector_shrink_to_fit(vector_t* vec){
     vec->capacity = vec->size;
 }
 
@@ -215,7 +203,7 @@ void vector_swap(vector_t* vec, vector_t* other_vec){
 
 }
 
-void upsize(vector_t* vec, int new_size, void* element){
+void vector_upsize(vector_t* vec, int new_size, void* element){
     if (new_size < vector_size(vec)){
         return;
     } 

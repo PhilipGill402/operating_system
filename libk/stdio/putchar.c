@@ -2,7 +2,7 @@
 
 int putchar(int ic) {
     char c = (char) ic;
-    terminal_putchar(c);
+    terminal_putchar(c, NULL);
 
     return ic;
 }

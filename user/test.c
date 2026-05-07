@@ -1,17 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main() {
     printf("Hello world\n");
-    int* x = malloc(sizeof(int) * 4096);
     
-    for (int i = 0; i < 4096; i++) {
-        x[i] = i;
-    }
+    string_t str = string_create();
 
-    for (int i = 0; i < 4096; i++) {
-        printf("%d\n", x[i]);
-    } 
+    sprintf(&str, "Hello %s times %d\n", "world", 10);
+
+    printf("%r\n", str);
 
     return 0;
 }

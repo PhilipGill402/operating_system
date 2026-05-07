@@ -19,6 +19,6 @@ void log_log(LogLevel level, const char* file_name, int line_no, const char* fmt
     serial_printf("[%s] %s:%d: ", log_level, file_name, line_no);
 
     va_start(args, fmt);
-    kvprintf(serial_write_char, fmt, args);
+    kvprintf(serial_write_char, NULL, fmt, args);
     va_end(args);
 }
