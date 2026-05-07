@@ -100,8 +100,10 @@ uint32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buf
 
     process_t* proc = process_table[node->inode];
     if (!proc) return 0;
+
+    uint32_t bytes_written = snprintf(buffer, size, "PID: %d\tPPID: %d\tStatus: %s\tName: %s", proc->pid, proc->ppid, proc_state_to_str(proc->state), proc->name);
     
-    return buf_offset;
+    return bytes_written;
 }
 
 fs_node_t* proc_finddir(fs_node_t* node, char* name) {

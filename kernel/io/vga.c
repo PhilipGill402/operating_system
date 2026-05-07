@@ -42,7 +42,9 @@ void terminal_putchar_at(char c, uint8_t color, size_t x, size_t y) {
     terminal_buffer[idx] = vga_entry(c, color);
 }
 
-void terminal_putchar(char c) {
+void terminal_putchar(char c, void* ctx) {
+    (void)ctx;
+
     if (c == 0x08 && terminal_column > 3) { // backspace
         terminal_column--;
         terminal_putchar_at(' ', terminal_color, terminal_column, terminal_row);
@@ -73,7 +75,7 @@ void terminal_putchar(char c) {
 
 void terminal_write(const char* str, size_t size) {
     for (size_t i = 0; i < size; i++) {
-        terminal_putchar(str[i]);
+        terminal_putchar(str[i], NULL);
     }
 }
 

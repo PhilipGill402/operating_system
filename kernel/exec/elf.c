@@ -235,7 +235,8 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
         kfree(buffer);
         return 0;
     }
-
+    
+    log_debug("Elf name: %s\n", elf->name);
     strcpy(process->name, elf->name);
     process->trapframe->eip = process->entry;
     process->trapframe->useresp = process->user_stack_top;

@@ -4,6 +4,7 @@
 
 #include <stdarg.h>
 #include <limits.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -14,7 +15,8 @@
 
 int serial_printf(const char* __restrict, ...);
 int terminal_printf(const char* __restrict, ...);
-int kvprintf(void (*putc)(char c), const char* fmt, va_list args);
+int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* fmt, va_list args);
+int snprintf(char* str, size_t size, const char* fmt, ...);
 int putchar(int);
 int puts(const char*);
 

@@ -10,10 +10,10 @@ void ps(vector_t* args) {
 
     uint32_t fd = open("/proc/0", 0);
 
-    char* buffer = malloc(30);
+    char* buffer = malloc(50);
     if (!buffer) return;
 
-    uint32_t bytes_read = read(fd, buffer, 30);
+    uint32_t bytes_read = read(fd, buffer, 50);
 
     if (bytes_read == 0) printf("no bytes read");
     else printf("%s", buffer);

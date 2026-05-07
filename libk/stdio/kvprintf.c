@@ -73,7 +73,7 @@ static void uint32_to_hex(uint32_t num, char* str) {
     str[10] = '\0';
 }
 
-int kvprintf(void (*putc)(char c), const char* format, va_list args) {
+int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_list args) {
     int written = 0;
 
     while (*format != '\0') {
@@ -93,7 +93,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             }
 
             for (size_t i = 0; i < amount; i++) {
-                putc(format[i]);
+                putc(format[i], ctx);
             }
 
             format += amount;
@@ -112,7 +112,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
                 return -1;
             }
 
-            putc(c);
+            putc(c, ctx);
             written++;
         }
 
@@ -132,7 +132,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             }
 
             for (size_t i = 0; i < len; i++) {
-                putc(str[i]);
+                putc(str[i], ctx);
             }
 
             written += len;
@@ -153,7 +153,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             }
 
             for (size_t i = 0; i < len; i++) {
-                putc(str[i]);
+                putc(str[i], ctx);
             }
 
             written += len;
@@ -174,7 +174,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             }
 
             for (size_t i = 0; i < len; i++) {
-                putc(str[i]);
+                putc(str[i], ctx);
             }
 
             written += len;
@@ -193,7 +193,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             if (maxrem < len) return -1;
 
             for (size_t i = 0; i < len; i++) {
-                putc(str[i]);
+                putc(str[i], ctx);
             }
 
             written += len;
@@ -209,7 +209,7 @@ int kvprintf(void (*putc)(char c), const char* format, va_list args) {
             }
 
             for (size_t i = 0; i < len; i++) {
-                putc(format[i]);
+                putc(format[i], ctx);
             }
 
             written += len;

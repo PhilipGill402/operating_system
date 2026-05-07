@@ -4,7 +4,9 @@ static int serial_transmit_empty() {
     return inb(COM1 + 5) & 0x20;
 }
 
-void serial_write_char(char c) {
+void serial_write_char(char c, void* ctx) {
+    (void)ctx;    
+
     while (!serial_transmit_empty()) {}
 
     if (c == '\n') {
@@ -16,7 +18,7 @@ void serial_write_char(char c) {
 }
 void serial_write(const char* str) {
     while (*str) {
-        serial_write_char(*str);
+        serial_write_char(*str, NULL);
         str++;
     }
 }
