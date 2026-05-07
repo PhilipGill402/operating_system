@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #define EOF (-1)
@@ -26,6 +27,7 @@ int sprintf_c(char* str, const char* fmt, ...);
 int sprintf_s(string_t* str, const char* fmt, ...);
 int snprintf_c(char* str, size_t size, const char* fmt, ...);
 int snprintf_s(string_t* str, size_t size, const char* fmt, ...);
+int fprintf(uint32_t fd, const char* fmt, ...);
 
 int putchar(int c);
 int puts(const char* str);

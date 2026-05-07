@@ -114,7 +114,7 @@ uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     if (!file) return 0;
     
     uint32_t bytes_read = file->read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
-    current_process->fds[fd].offset = bytes_read;
+    current_process->fds[fd].offset += bytes_read;
 
     return bytes_read;
 }
@@ -127,7 +127,7 @@ uint32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (!file) return 0;
 
     uint32_t bytes_written = file->writefile(file, str, current_process->fds[fd].offset, count);
-    current_process->fds[fd].offset = bytes_written;
+    current_process->fds[fd].offset += bytes_written;
 
     return bytes_written;
 }

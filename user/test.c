@@ -3,13 +3,20 @@
 #include <string.h>
 
 int main() {
-    printf("Hello world\n");
+    uint32_t fd = open("/txt/hello.txt", 0);
     
-    string_t str = string_create();
+    uint32_t written = fprintf(fd, "hello %s times %d", "world", 10);
 
-    sprintf(&str, "Hello %s times %d\n", "world", 10);
+    close(fd);
+    
+    fd = open("/txt/hello.txt", 0);
 
-    printf("%r\n", str);
+    char* buffer = malloc(50);
+    uint32_t bytes_read = read(fd, buffer, 50);
+    buffer[bytes_read] = '\0';
+    
+
+    printf("%s\n", buffer); 
 
     return 0;
 }

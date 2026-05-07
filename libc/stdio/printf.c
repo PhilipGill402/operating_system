@@ -17,6 +17,14 @@ typedef struct {
     size_t capacity;
 } sprintf_s_ctx_t;
 
+static void fprintf_putc(char c, void* ctx) {
+    if (!ctx) return; 
+
+    uint32_t fd = *(uint32_t*)ctx;
+
+    write(fd, &c, 1);
+}
+
 static void snprintf_c_putc(char c, void* ctx) {
     sprintf_c_ctx_t* snprintf_ctx = (sprintf_c_ctx_t*)ctx;
 
@@ -363,6 +371,15 @@ int snprintf_s(string_t* str, size_t size, const char* fmt, ...) {
     int written = kvprintf(snprintf_s_putc, &ctx, fmt, args);
     va_end(args);
     
+    return written;
+}
+
+int fprintf(uint32_t fd, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int written = kvprintf(fprintf_putc, &fd, fmt, args);
+    va_end(args);
+
     return written;
 }
 
