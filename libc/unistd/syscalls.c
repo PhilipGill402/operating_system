@@ -73,3 +73,7 @@ int close(uint32_t fd) {
     return (int)__sys1(SYS_CLOSE, fd);
 }
 
+int lseek(uint32_t fd, uint32_t offset) {
+    return (int)__sys2(SYS_LSEEK, fd, offset);
+}
+

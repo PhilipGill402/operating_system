@@ -1,5 +1,11 @@
 #include "syscalls.h"
 
+int sys_lseek(uint32_t fd, uint32_t offset) {
+    current_process->fds[fd].offset = offset;
+
+    return offset;
+}
+
 int sys_close(uint32_t fd) {
     file_desc_t file_desc = current_process->fds[fd]; 
     kfree(file_desc.node); 
@@ -17,7 +23,6 @@ int sys_waitpid(uint32_t pid, int* status, int options) {
 
     if (child->state == PROC_TERMINATED && !child->waited_on) {
         int child_status = child->exit_status;
-        log_debug("child status: %d\n", child_status);
         
         if (status) *status = child_status;
 
@@ -165,6 +170,8 @@ uint32_t sys_exit(regs_t* reg, int32_t status) {
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
     current_process->exit_status = status;
+    
+    log_debug("Process %d exited with status %d\n", current_process->pid, current_process->exit_status);
 
     process_wake_parent(current_process->pid);
 
@@ -285,6 +292,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_CLOSE:
             ret = sys_close(reg->ebx);
+            break;
+        case SYS_LSEEK:
+            ret = sys_lseek(reg->ebx, reg->ecx);
             break;
     }
 

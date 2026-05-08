@@ -20,6 +20,7 @@
 #define SYS_CLOSE       6
 #define SYS_WAITPID     7
 #define SYS_CHDIR       12
+#define SYS_LSEEK       19
 #define SYS_GETPID      20
 #define SYS_BRK         45
 #define SYS_FORK        57

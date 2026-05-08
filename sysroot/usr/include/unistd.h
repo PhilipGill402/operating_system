@@ -10,6 +10,7 @@
 #define SYS_CLOSE       6
 #define SYS_WAITPID     7
 #define SYS_CHDIR       12
+#define SYS_LSEEK       19
 #define SYS_GETPID      20
 #define SYS_BRK         45
 #define SYS_FORK        57
@@ -44,5 +45,6 @@ uint32_t open(const char* path, uint32_t flags);
 uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count);
 int waitpid(uint32_t pid, int* status, uint32_t options);
 int close(uint32_t fd);
+int lseek(uint32_t fd, uint32_t offset);
 
 #endif
