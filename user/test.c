@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 int main() {
-    char* num = "123.456 abc 456";
-    double converted = atof(num);
-
-    printf("str: %s\nconverted: %f\n", num, converted);
+    printf("%d\n", isalnum('*'));
 
     return 0;
 }
