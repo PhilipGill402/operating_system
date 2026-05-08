@@ -86,7 +86,7 @@ process_t* process_clone(process_t* process) {
         kfree(new);
         return NULL;
     }
-
+    
     new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memcpy((void*)new->kernel_stack_bottom, (void*)process->kernel_stack_bottom, KERNEL_STACK_SIZE);
     
@@ -115,7 +115,8 @@ process_t* process_clone(process_t* process) {
     }
 
     strcpy(new->name, process->name);
-
+    new->cwd = fs_node_clone(process->cwd);
+    
     process_table[new->pid] = new;
     
     return new;
