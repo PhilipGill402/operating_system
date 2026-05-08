@@ -91,7 +91,7 @@ static void uint_to_str(uint32_t num, char* str) {
     }
 }
 
-static void int_to_str(int num, char* str) {
+static int int_to_str(int num, char* str, int d) {
     unsigned int value;
     int i = 0;
     int negative = 0;
@@ -99,7 +99,7 @@ static void int_to_str(int num, char* str) {
     if (num == 0) {
         str[0] = '0';
         str[1] = '\0';
-        return;
+        return 1;
     }
 
     if (num < 0) {
@@ -114,6 +114,10 @@ static void int_to_str(int num, char* str) {
         value /= 10;
     }
 
+    while (i < d) {
+        str[i++] = '0'; 
+    } 
+
     if (negative) {
         str[i++] = '-';
     }
@@ -125,6 +129,8 @@ static void int_to_str(int num, char* str) {
         str[j] = str[k];
         str[k] = temp;
     }
+
+    return i;
 }
 
 static void uint32_to_hex(uint32_t num, char* str) {
@@ -139,6 +145,29 @@ static void uint32_to_hex(uint32_t num, char* str) {
     }
 
     str[10] = '\0';
+}
+
+static void double_to_str(double num, char* str, int afterpoint) {
+    int i = (int)num;
+    double r = num - (double)i;
+
+    if (r < 0) {
+        r = -r;
+    }
+
+    int n = int_to_str(i, str, 0);
+    
+    int afterpoint_pow = 1;
+
+    for (int i = 1; i <= afterpoint; i++) {
+        afterpoint_pow *= 10;
+    }
+
+    str[n] = '.';
+
+    r = r * afterpoint_pow + 0.0000001;
+
+    int_to_str((int)r, str + n + 1, afterpoint);
 }
 
 int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_list args) {
@@ -212,7 +241,7 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
             int num = va_arg(args, int);
             char str[12];
 
-            int_to_str(num, str);
+            int_to_str(num, str, 0);
 
             size_t len = strlen(str);
 
@@ -276,6 +305,25 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
             }
 
             written += string_len(&string);
+        }
+
+        else if (*format == 'f') {
+            format++;
+
+            double num = va_arg(args, double);
+            char str[20];
+
+            double_to_str(num, str, 8);
+
+            size_t len = strlen(str);
+
+            if (maxrem < len) return -1;
+
+            for (size_t i = 0; i < len; i++) {
+                putc(str[i], ctx);
+            }
+
+            written += len;
         }
 
         else {

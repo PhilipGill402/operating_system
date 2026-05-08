@@ -19,8 +19,14 @@ typedef struct block_t {
 
 __attribute__((__noreturn__))
 void abort(void);
+
+//allocations
 void* malloc(size_t size);
 void free(void* ptr);
 void* realloc(void* ptr, size_t size);
+
+//conversions
+int atoi(const char* str);
+double atof(const char* str);
 
 #endif // !STDLIB_H_
