@@ -4,7 +4,12 @@
 #include <ctype.h>
 
 int main() {
-    printf("%d\n", isalnum('*'));
+    int fd = open("/txt/hello.txt", 0);
+    printf("FD: %d\n", fd);
+    close(fd);
+    fd = open("/txt/hello.txt", 0);
+    printf("FD: %d\n", fd);
+    close(fd);
 
     return 0;
 }

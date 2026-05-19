@@ -7,9 +7,11 @@ int sys_lseek(uint32_t fd, uint32_t offset) {
 }
 
 int sys_close(uint32_t fd) {
-    file_desc_t file_desc = current_process->fds[fd]; 
-    kfree(file_desc.node); 
-    memset(&file_desc, 0, sizeof(file_desc_t));
+    if (fd >= MAX_FDS)
+        return -1;
+
+    kfree(current_process->fds[fd].node); 
+    memset(&current_process->fds[fd], 0, sizeof(file_desc_t));
 
     return 1;
 }
@@ -65,8 +67,19 @@ uint32_t sys_open(const char* path, uint32_t flags) {
     fs_node_t* file = resolve_path_from(current_process->cwd, path);
     
     if (!file) return MAX_FDS + 1;
+    
+    // finding lowest available fd
+    uint32_t fd = MAX_FDS + 1;
+    for (uint32_t i = 0; i < MAX_FDS; i++) {
+        if (current_process->fds[i].in_use == 0) {
+            fd = i;
+            break;
+        }
+    }
 
-    uint32_t fd = current_process->open_fds++;
+    if (fd >= MAX_FDS + 1) {
+        log_error("Too many file descriptors open\n");
+    }
 
     file_desc_t file_desc = {
         .node = file,

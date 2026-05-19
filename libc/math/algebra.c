@@ -1,6 +1,6 @@
 #include <math.h>
 
-int powi(int x, int y) {
+int powi(int x, int n) {
     if (n == 0) {
         return 1;
     }
