@@ -94,36 +94,6 @@ This OS includes a small freestanding C library with support for:
 
 ---
 
-## Project Structure
-
-A typical layout for this project is:
-
-```txt
-.
-├── kernel/
-│   ├── exec/
-│   ├── fs/
-│   ├── interrupts/
-│   ├── memory/
-│   └── io/
-├── libc/
-│   ├── include/
-│   └── src/
-├── user/
-│   └── user programs
-├── fs/
-│   └── initrd filesystem contents
-├── include/
-│   └── kernel headers
-├── build/
-├── isodir/
-└── Makefile
-```
-
-The exact folder names may vary, but the codebase is organized around a freestanding kernel, a separate libc, user programs, and a generated filesystem image.
-
----
-
 ## Architecture Overview
 
 ### Boot Flow
@@ -191,8 +161,6 @@ Required tools usually include:
 ```txt
 i686-elf-gcc
 i686-elf-as
-i686-elf-ld
-i686-elf-ar
 grub-mkrescue
 xorriso
 qemu-system-i386
@@ -201,7 +169,7 @@ qemu-system-i386
 Example build command:
 
 ```sh
-make
+make iso
 ```
 
 To run in QEMU:
@@ -223,18 +191,6 @@ Exact targets may depend on the current Makefile.
 ## Debugging
 
 Serial output is available through COM1 and is useful for kernel debugging. VGA text output is also supported for basic terminal display.
-
-Typical QEMU serial debugging can be done with something like:
-
-```sh
-qemu-system-i386 -cdrom build/os.iso -serial stdio
-```
-
-or:
-
-```sh
-qemu-system-i386 -cdrom build/os.iso -serial file:serial.log
-```
 
 ---
 
@@ -277,15 +233,3 @@ Future development goals include:
 ## Notes
 
 This project is primarily educational. It is not intended to be production-ready or POSIX-complete. The goal is to learn how operating systems work internally by implementing core kernel subsystems manually.
-
----
-
-## License
-
-Add your license here.
-
-For example:
-
-```txt
-MIT License
-```
