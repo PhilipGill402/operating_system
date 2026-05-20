@@ -3,13 +3,13 @@
 #include <string.h>
 #include <ctype.h>
 
-int main() {
-    int fd = open("/txt/hello.txt", 0);
-    printf("FD: %d\n", fd);
-    close(fd);
-    fd = open("/txt/hello.txt", 0);
-    printf("FD: %d\n", fd);
-    close(fd);
+int main(int argc, char* argv[]) {
+    printf("%d\n", argc);
+
+    for (int i = 0; i < argc; i++) {
+        printf("%d\n", i); 
+        printf("%s\n", argv[i]);
+    }
 
     return 0;
 }

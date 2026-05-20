@@ -11,6 +11,7 @@
 #include "fs/fs_types.h"
 
 #define MAX_FDS 128
+#define MAX_ARGV 32
 
 #define KERNEL_BASE 0xC0000000
 
@@ -85,6 +86,11 @@ typedef struct {
     fs_node_t* cwd;
 } process_t;
 
+typedef struct {
+    int argc;
+    char* argv[MAX_ARGV];
+} cmd_args_t;
+
 extern process_t* current_process;
 extern process_t* process_table[MAX_PROCESSES];
 extern uint32_t num_processes;
@@ -94,6 +100,7 @@ process_t* process_clone(process_t* process);
 void process_init_trapframe(process_t* process);
 void process_init_file_descriptors(process_t* process);
 uint32_t process_init_stack(process_t* process);
+uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
 uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();

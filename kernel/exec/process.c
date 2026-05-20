@@ -163,6 +163,33 @@ uint32_t process_init_stack(process_t* process) {
     return 1;
 }
 
+uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
+    uint32_t sp = process->user_stack_top;
+    uint32_t argv_ptrs[32];
+    
+    for (int i = args->argc - 1; i >= 0; --i) {
+        size_t len = strlen(args->argv[i]) + 1;
+        sp -= len;
+        memcpy((void*)sp, args->argv[i], len);
+        argv_ptrs[i] = sp;
+    }
+
+    sp &= ~0xF;
+
+    sp -= sizeof(uint32_t);
+    *(uint32_t*)sp = 0;
+
+    for (int i = args->argc - 1; i >= 0; i--) {
+        sp -= sizeof(uint32_t);
+        *(uint32_t*)sp = argv_ptrs[i];
+    }
+
+    sp -= sizeof(uint32_t);
+    *(uint32_t*)sp = args->argc;
+
+    return sp;
+}
+
 uint32_t process_init_heap(process_t* process) {
     uint32_t heap_start = align_up(process->image_end, PAGE_SIZE);
     

@@ -1,5 +1,35 @@
 #include "syscalls.h"
 
+static int copy_argv(const char* argv[], cmd_args_t* args) {
+    args->argc = 0;
+
+    if (!argv) 
+        return 1;
+
+    for (uint32_t i = 0; i < MAX_ARGV; i++) {
+        if (!argv[i])
+            break;
+
+        size_t len = strlen(argv[i]) + 1;
+        char* copy = kmalloc(len);
+        if (!copy)
+            return 0;
+        
+        memcpy(copy, argv[i], len);
+
+        args->argv[args->argc++] = copy;
+    }
+
+    args->argv[args->argc] = NULL;
+    return 1;
+}
+
+static void free_exec_args(cmd_args_t* args) {
+    for (uint32_t i = 0; i < args->argc; i++) {
+        kfree(args->argv[i]);
+    }
+}
+
 int sys_lseek(uint32_t fd, uint32_t offset) {
     current_process->fds[fd].offset = offset;
 
@@ -162,19 +192,27 @@ uint32_t sys_fork() {
     return new->pid;
 }
 
-uint32_t sys_execve(const char* file_name, const char* argv) {
-    fs_node_t* elf = fs_cwd->finddir(current_process->cwd, file_name);
+uint32_t sys_execve(const char* file_name, const char* argv[]) {
+    fs_node_t* elf = current_process->cwd->finddir(current_process->cwd, file_name);
     if (!elf) {
         return 0;
     }
+    
+    cmd_args_t args = { 0 };
+    if (!copy_argv(argv, &args)) {
+        kfree(elf);
+        return 0;
+    }
 
-    if (!process_exec_from_elf(current_process, elf)) {
+    if (!process_exec_from_elf(current_process, elf, &args)) {
+        free_exec_args(&args); 
         kfree(elf);
         return 0;
     }
     
+    free_exec_args(&args);
     kfree(elf);
-    
+
     return 1;
 }
 

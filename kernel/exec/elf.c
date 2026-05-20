@@ -192,7 +192,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
     return 1;
 }
 
-uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
+uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* args) {
     if (!process || !elf) return 0;
     
     uint32_t size = 0;
@@ -230,6 +230,8 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
         return 0;
     }
 
+    uint32_t user_sp = process_add_argv_to_stack(process, args);
+        
     if (!process_init_heap(process)) {
         process->page_directory_phys = old_pd;
         kfree(buffer);
@@ -238,7 +240,8 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf) {
     
     strcpy(process->name, elf->name);
     process->trapframe->eip = process->entry;
-    process->trapframe->useresp = process->user_stack_top;
+    process->trapframe->useresp = user_sp;
+    process->trapframe->esp = user_sp;
     process->trapframe->cs = USER_CS_RING3;
     process->trapframe->ss = USER_DS_RING3;
     process->trapframe->ds = USER_DS_RING3;
@@ -275,6 +278,8 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         process_destroy(process);
         return NULL;
     }
+
+    load_cr3(process->page_directory_phys);
     
     if (!elf_load(buf, size, process)) {
         log_error("failed to load the elf\n"); 
@@ -290,6 +295,17 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
 
+    char* init_argv[] = {
+        elf->name,
+        NULL
+    };
+    
+    cmd_args_t args = {
+        .argc = 0,
+        .argv = init_argv 
+    };
+    
+    uint32_t user_sp = process_add_argv_to_stack(process, &args);
 
     if (!process_init_heap(process)) {
         log_error("failed to initialize the heap of the process\n");
@@ -298,10 +314,13 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
 
-    
-    
     process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
+    
+    process_init_trapframe(process);
+
+    process->trapframe->useresp = user_sp;
+    process->trapframe->esp = user_sp; 
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
@@ -323,8 +342,6 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     
     strcpy(process->name, elf->name);
 
-    process_init_trapframe(process);
-    
     kfree(buf);
     
     return process;
@@ -336,7 +353,7 @@ void elf_execute(fs_node_t* elf) {
     if (!process) {
         return;
     }
-    
+
     enqueue(&current_processes, &process);
 }
 

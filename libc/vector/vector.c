@@ -74,7 +74,7 @@ bool vector_empty(const vector_t* vec){
 }
 
 void vector_erase(vector_t* vec, int index){
-    if (index >= vector_size(vec)){
+    if (!vec || index < 0 || index >= vector_size(vec)){
         return;
     }
     

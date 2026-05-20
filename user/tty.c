@@ -5,6 +5,22 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+void print_string(void* str) {
+    printf("%r", *(string_t*)str);
+}
+
+void vector_print(const vector_t* vec, void (*print_element)(void*)) {
+    printf("<"); 
+    for (int i = 0; i < vector_size(vec); i++) {
+        print_element(vector_get(vec, i));
+        
+        if (i != vector_size(vec) - 1) {
+            printf(", ");
+        }
+    }
+    printf(">\n");
+}
+
 void ps(vector_t* args) {
     (void)args;
 
@@ -90,14 +106,30 @@ void cat(vector_t* args) {
 
 void run(vector_t* args) {
     string_t* str_path = (string_t*)vector_get(args, 1);
+    vector_print(args, print_string);
+    vector_erase(args, 0);
+    vector_print(args, print_string);
+
     if (!str_path) return;
+    
+    int argc = vector_size(args);
+    printf("%d\n", argc);
+    char* argv[argc];
+    
+    for (int i = 0; i < argc; i++) {
+        string_t* arg = (string_t*)vector_get(args, i);
+        argv[i] = string_to_literal(arg);
+        printf("%s\n", argv[i]);
+    }
+
+    argv[argc] = NULL;
     
     char* path = string_to_literal(str_path);
 
     uint32_t pid = fork();
     
     if (pid == 0) {
-        execve(path, NULL);
+        execve(path, argv);
     }
     
     int status;
@@ -110,7 +142,7 @@ void print_str(void* str) {
     printf("%r", *(string_t*)str);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     string_t line = string_create();
     char buffer[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
