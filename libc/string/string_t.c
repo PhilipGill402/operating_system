@@ -148,7 +148,6 @@ vector_t string_tokenize(string_t* str, char a) {
     string_t copy = string_clone(&token);
     vector_push_back(&tokens, &copy);
     
-    string_free(&copy);
     string_free(&token);
 
     return tokens;

@@ -1,4 +1,5 @@
 #include <vector.h>
+#include <stdio.h>
 
 void vector_assign(vector_t* vec, void* element, int num_copies){
     if (num_copies > vec->capacity){
@@ -83,7 +84,7 @@ void vector_erase(vector_t* vec, int index){
         vec->size--;
     } else {
         for (int i = index; i < vector_size(vec) - 1; i++){
-            memcpy((char*)vec->array + i * vec->element_size, (char*)vec->array + (i + 1) * vec->element_size, vec->element_size); 
+            memmove((char*)vec->array + i * vec->element_size, (char*)vec->array + (i + 1) * vec->element_size, vec->element_size);
         }
 
         vec->size--;

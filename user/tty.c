@@ -106,20 +106,15 @@ void cat(vector_t* args) {
 
 void run(vector_t* args) {
     string_t* str_path = (string_t*)vector_get(args, 1);
-    vector_print(args, print_string);
-    vector_erase(args, 0);
-    vector_print(args, print_string);
 
     if (!str_path) return;
     
-    int argc = vector_size(args);
-    printf("%d\n", argc);
-    char* argv[argc];
+    int argc = vector_size(args) - 1;
+    char* argv[argc + 1];
     
     for (int i = 0; i < argc; i++) {
-        string_t* arg = (string_t*)vector_get(args, i);
-        argv[i] = string_to_literal(arg);
-        printf("%s\n", argv[i]);
+        string_t arg = *(string_t*)vector_get(args, i + 1);
+        argv[i] = string_to_literal(&arg);
     }
 
     argv[argc] = NULL;
@@ -152,7 +147,8 @@ int main(int argc, char* argv[]) {
         printf("%s >> ", cwd);
         cwd[0] = '\0';
         
-        read(stdin, buffer, MAX_BUFFER_LENGTH - 1);
+        uint32_t bytes = read(stdin, buffer, MAX_BUFFER_LENGTH - 1);
+        buffer[bytes] = '\0';
 
         line = string_literal(buffer);
         vector_t args = string_tokenize(&line, ' ');
