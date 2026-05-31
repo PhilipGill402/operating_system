@@ -11,6 +11,7 @@
 #include "interrupts/registers.h"
 #include "fs/initrd.h"
 #include "fs/fs.h"
+#include "syscall_defs.h"
 
 #define PAGE_SIZE 4096
 
@@ -28,11 +29,6 @@
 #define SYS_EXIT        60
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
-
-typedef struct {
-    char name[128];
-    uint32_t inode;
-} sys_dirent_t;
 
 void syscall_handler(regs_t* reg);
 

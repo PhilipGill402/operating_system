@@ -4,11 +4,9 @@
 #include <ctype.h>
 
 int main(int argc, char* argv[]) {
-    printf("%d\n", argc);
+    int ret = write(256, NULL, 0);
 
-    for (int i = 0; i < argc; i++) {
-        printf("%s\n", argv[i]);
-    }
+    printf("%d\n", ret);
 
     return 0;
 }

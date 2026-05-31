@@ -8,8 +8,8 @@
 
 #define EOF (-1)
 #define stdout 1
-#define stdin 1
-#define stderr 1
+#define stdin 2
+#define stderr 3
 
 #define sprintf(str, fmt, ...) _Generic((str),  \
     string_t*: sprintf_s,                       \

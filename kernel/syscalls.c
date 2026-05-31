@@ -30,15 +30,15 @@ static void free_exec_args(cmd_args_t* args) {
     }
 }
 
-int sys_lseek(uint32_t fd, uint32_t offset) {
+int32_t sys_lseek(uint32_t fd, uint32_t offset) {
     current_process->fds[fd].offset = offset;
 
     return offset;
 }
 
-int sys_close(uint32_t fd) {
+int32_t sys_close(uint32_t fd) {
     if (fd >= MAX_FDS)
-        return -1;
+        return EBADF;
 
     kfree(current_process->fds[fd].node); 
     memset(&current_process->fds[fd], 0, sizeof(file_desc_t));
@@ -46,12 +46,12 @@ int sys_close(uint32_t fd) {
     return 1;
 }
 
-int sys_waitpid(uint32_t pid, int* status, int options) {
+int32_t sys_waitpid(uint32_t pid, int* status, int options) {
     (void)options;
 
     process_t* child = get_process(pid);
 
-    if (!child) return -1;
+    if (!child) return ESRCH;
 
     if (child->state == PROC_TERMINATED && !child->waited_on) {
         int child_status = child->exit_status;
@@ -72,11 +72,12 @@ int sys_waitpid(uint32_t pid, int* status, int options) {
     schedule();
 }
 
-uint32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
+int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     file_desc_t file_desc = current_process->fds[fd]; 
     fs_node_t* file = file_desc.node;
     
-    if (!file || !(file->flags & FS_DIR)) return 0;
+    if (!file) return EBADF;
+    if (!(file->flags & FS_DIR)) return ENOTDIR;
     
     uint32_t num_entries = 0;
     for (uint32_t i = 0; i < count; i++) {
@@ -93,10 +94,10 @@ uint32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     return num_entries;
 }
 
-uint32_t sys_open(const char* path, uint32_t flags) {
+int32_t sys_open(const char* path, uint32_t flags) {
     fs_node_t* file = resolve_path_from(current_process->cwd, path);
     
-    if (!file) return MAX_FDS + 1;
+    if (!file) return ENOENT;
     
     // finding lowest available fd
     uint32_t fd = MAX_FDS + 1;
@@ -109,6 +110,7 @@ uint32_t sys_open(const char* path, uint32_t flags) {
 
     if (fd >= MAX_FDS + 1) {
         log_error("Too many file descriptors open\n");
+        return ENFILE; 
     }
 
     file_desc_t file_desc = {
@@ -131,7 +133,7 @@ void* sys_brk(void* new_addr) {
     }
     
     if (addr < current_process->heap_start || addr > current_process->heap_max_end) {
-        return NULL;
+        return EFAULT;
     }
     
 
@@ -139,7 +141,7 @@ void* sys_brk(void* new_addr) {
     while (addr > current_process->heap_mapped_end) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
-            return NULL;
+            return EFAULT;
         }
 
         map_user_page(pd, current_process->heap_mapped_end, frame, PAGE_WRITE);
@@ -154,12 +156,12 @@ void* sys_brk(void* new_addr) {
     return (void*)addr;
 }
 
-uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
-    if (fd >= MAX_FDS) return 0;
+int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
+    if (fd >= MAX_FDS) return EBADF;
 
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
-    if (!file) return 0;
+    if (!file) return ENOENT;
     
     uint32_t bytes_read = file->read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
     current_process->fds[fd].offset += bytes_read;
@@ -167,12 +169,12 @@ uint32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     return bytes_read;
 }
 
-uint32_t sys_write(uint32_t fd, char* str, size_t count) {
-    if (fd >= MAX_FDS) return 0;
+int32_t sys_write(uint32_t fd, char* str, size_t count) {
+    if (fd >= MAX_FDS) return EBADF;
 
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
-    if (!file) return 0;
+    if (!file) return ENOENT;
 
     uint32_t bytes_written = file->writefile(file, str, current_process->fds[fd].offset, count);
     current_process->fds[fd].offset += bytes_written;
@@ -180,10 +182,11 @@ uint32_t sys_write(uint32_t fd, char* str, size_t count) {
     return bytes_written;
 }
 
-uint32_t sys_fork() {
+int32_t sys_fork() {
     process_t* new = process_clone(current_process);
     
-    if (!new) return (uint32_t)-1;
+    // dont know if this is right, check later
+    if (!new) return ESRCH;
     new->trapframe->eax = 0; // child process must return 0
     
     current_process->ticks_left = 1;
@@ -192,22 +195,26 @@ uint32_t sys_fork() {
     return new->pid;
 }
 
-uint32_t sys_execve(const char* file_name, const char* argv[]) {
+int32_t sys_execve(const char* file_name, const char* argv[]) {
     fs_node_t* elf = current_process->cwd->finddir(current_process->cwd, file_name);
-    if (!elf) {
-        return 0;
-    }
+    
+    if (!elf) return ENOENT;
+    if (elf->flags == FS_DIR) return EISDIR;
     
     cmd_args_t args = { 0 };
     if (!copy_argv(argv, &args)) {
         kfree(elf);
-        return 0;
+
+        // this could be wrong too, check later
+        return EFAULT;
     }
 
     if (!process_exec_from_elf(current_process, elf, &args)) {
         free_exec_args(&args); 
         kfree(elf);
-        return 0;
+
+        // this could be wrong too, check later
+        return EFAULT;
     }
     
     free_exec_args(&args);
@@ -216,7 +223,7 @@ uint32_t sys_execve(const char* file_name, const char* argv[]) {
     return 1;
 }
 
-uint32_t sys_exit(regs_t* reg, int32_t status) {
+int32_t sys_exit(regs_t* reg, int32_t status) {
     current_process->trapframe = reg;
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
@@ -231,13 +238,14 @@ uint32_t sys_exit(regs_t* reg, int32_t status) {
     return 0;
 }
 
-uint32_t sys_chdir(const char* path) {
+int32_t sys_chdir(const char* path) {
     fs_node_t* new_dir;
     if (!path) {
         new_dir = fs_root; 
     } else {
         new_dir = resolve_path_from(current_process->cwd, path);
-        if (!new_dir || new_dir->flags != FS_DIR) return 0;
+        if (!new_dir) return ENOENT;
+        if (new_dir->flags != FS_DIR) return ENOTDIR;
     }
 
     current_process->cwd = new_dir;
@@ -245,11 +253,12 @@ uint32_t sys_chdir(const char* path) {
     return 1;
 }
 
-uint32_t sys_getcwd(char* buffer, size_t size) {
-    if (!buffer || size == 0) return 0;
+int32_t sys_getcwd(char* buffer, size_t size) {
+    if (!buffer) return EFAULT;
+    if (size == 0) return ERANGE;
 
     fs_node_t* start = current_process->cwd;
-    if (!start) return 0;
+    if (!start) return ENOENT;
 
     fs_node_t* path[10];
     int idx = 0;
@@ -265,7 +274,7 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
         start = fs_parent(start);
     }
 
-    if (!start) return 0;
+    if (!start) return ENOENT;
 
     size_t used = 0;
     
@@ -274,7 +283,7 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
         
         if (i == idx - 1) {
             // root
-            if (used + 1 >= size) return 0;
+            if (used + 1 >= size) return ERANGE;
             buffer[used++] = '/';
             buffer[used] = '\0';
             continue;
@@ -282,7 +291,7 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
 
         size_t len = strlen(name);
 
-        if (used + len + 1 >= size) return 0;  // +1 for possible slash or null
+        if (used + len + 1 >= size) return ERANGE;  // +1 for possible slash or null
 
         if (used > 1) {
             buffer[used++] = '/';
@@ -296,7 +305,7 @@ uint32_t sys_getcwd(char* buffer, size_t size) {
     return used;
 }
 
-uint32_t sys_getpid() {
+int32_t sys_getpid() {
     return current_process->pid;
 }
 
