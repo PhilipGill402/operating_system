@@ -4,7 +4,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
+
 #include <unistd.h>
+#include <errno.h>
 
 #define EOF (-1)
 #define stdout 1
@@ -32,5 +34,7 @@ int fprintf(uint32_t fd, const char* fmt, ...);
 int putchar(int c);
 int puts(const char* str);
 int getchar();
+
+void perror(const char* str);
 
 #endif // !STDIO_H_

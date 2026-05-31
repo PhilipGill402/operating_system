@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <errno.h>
 
 #define SYS_READ        0
 #define SYS_WRITE       1
@@ -43,8 +44,8 @@ void* brk(void* new_addr);
 void* sbrk(size_t increment);
 uint32_t open(const char* path, uint32_t flags);
 uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count);
-int waitpid(uint32_t pid, int* status, uint32_t options);
-int close(uint32_t fd);
-int lseek(uint32_t fd, uint32_t offset);
+int32_t waitpid(uint32_t pid, int* status, uint32_t options);
+int32_t close(uint32_t fd);
+int32_t lseek(uint32_t fd, uint32_t offset);
 
 #endif
