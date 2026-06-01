@@ -34,13 +34,15 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
     return len;
 }
 
-void console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+uint32_t console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     (void)node;
     (void)offset;
 
     for (uint32_t i = 0; i < size; i++) {
         terminal_printf("%c", buffer[i]); 
     }
+
+    return size;
 }
 
 fs_node_t* create_console_node(fs_node_t* parent) {
@@ -57,6 +59,7 @@ fs_node_t* create_console_node(fs_node_t* parent) {
     node->inode = 2;
     node->size = 0;
     node->device = NULL;
+    node->mount_parent = NULL;
 
     node->read = console_read;
     node->readdir = NULL;

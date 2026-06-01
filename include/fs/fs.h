@@ -12,15 +12,15 @@
 #include "fs/dev.h"
 #include "fs/proc.h"
 #include "fs/ramfs.h"
+#include "fs/vfs.h"
+#include "fs/initrd.h"
 
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128
 
-uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr));
+uint8_t fs_init(multiboot_info_t* mbi);
 fs_node_t* resolve_path(const char* path);
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path);
-fs_node_t* fs_node_clone(fs_node_t* node);
 
-extern fs_node_t* initrd_init(uint32_t addr);
 
 #endif // !INCLUDE_FS_FS_H_

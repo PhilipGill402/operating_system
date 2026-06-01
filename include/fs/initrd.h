@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <log.h>
-#include "fs/fs.h"
+#include "fs/fs_types.h"
 #include "memory/heap.h"
 
 #define INITRD_MAGIC 0x52445449

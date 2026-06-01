@@ -1,7 +1,8 @@
 #include "fs/ramfs.h"
 
+#include <log.h>
+
 ramfs_node_t* root;
-uint32_t num_ramfs_nodes = 0;
 
 // forward declaration
 fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs);
@@ -22,7 +23,7 @@ void ramfs_createdir(fs_node_t* node, char* name) {
     
     strcpy(child->name, name);
     child->type = FS_DIR;
-    child->inode = num_ramfs_nodes++;
+    child->inode = inode_count++;
     child->parent = ramfs;
     child->child_count = 0;
     child->data = NULL;
@@ -55,11 +56,11 @@ void ramfs_createfile(fs_node_t* node, char* name, uint32_t size) {
 
     strcpy(child->name, name);
     child->type = FS_FILE;
-    child->inode = num_ramfs_nodes++;
+    child->inode = inode_count++;
     child->parent = ramfs;
     child->child_count = 0;
     child->size = 0;
-    child->capacity = RAMFS_SIZE_MAX;
+    child->capacity = size;
     child->fs_node = ramfs_to_vfs(child);
 
     ramfs->children[ramfs->child_count++] = child;
@@ -84,7 +85,7 @@ uint32_t ramfs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_
     return write_size;
 }
 
-uint32_t ramfs_read(fs_node_t* node, uint32_t offset, uint32_t size, char* buffer) {
+uint32_t ramfs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->device)
         return 0;
 
@@ -149,11 +150,14 @@ fs_node_t* ramfs_parent(fs_node_t* node) {
 
 fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs) {
     fs_node_t* node = kmalloc(sizeof(fs_node_t));
+    if (!node)
+        return NULL;
 
     strcpy(node->name, ramfs->name);
     node->flags = ramfs->type;
     node->inode = ramfs->inode;
     node->size = ramfs->size;
+    node->mount_parent = NULL;
     node->device = ramfs;
     node->proc = NULL;
     
@@ -164,6 +168,8 @@ fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs) {
     node->readdir = ramfs_readdir;
     node->finddir = ramfs_finddir;
     node->parent = ramfs_parent;
+
+    return node;
 }
 
 fs_node_t* ramfs_init() {
@@ -172,9 +178,9 @@ fs_node_t* ramfs_init() {
     if (!root)
         return NULL;
 
-    strcpy(root, "tmp"); 
+    strcpy(root->name, "tmp"); 
     root->type = FS_DIR;
-    root->inode = num_ramfs_nodes++;
+    root->inode = inode_count++;
     root->parent = NULL;
     root->child_count = 0;
     root->data = NULL;

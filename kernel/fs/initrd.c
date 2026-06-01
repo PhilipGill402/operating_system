@@ -131,6 +131,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->flags = curr_node->type == INITRD_NODE_DIR ? FS_DIR : FS_FILE;
             file->inode = curr_node->id;
             file->size = curr_node->size;
+            file->mount_parent = NULL;
             file->read = initrd_read;
             file->finddir = initrd_finddir;
             file->readdir = initrd_readdir;
@@ -149,7 +150,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
 fs_node_t* initrd_parent(fs_node_t* node) {
     initrd_node_t* parent_initrd_node;
     if (node->inode == superblock->root_node) {
-        parent_initrd_node = &node_table[0];
+        return node->mount_parent; 
     } else {
         initrd_node_t* initrd_node = &node_table[node->inode];
         parent_initrd_node = &node_table[initrd_node->parent_id];
@@ -161,6 +162,13 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     fs_node->flags = parent_initrd_node->type == INITRD_NODE_DIR ? FS_DIR : FS_FILE;
     fs_node->inode = parent_initrd_node->id;
     fs_node->size = parent_initrd_node->size;
+    
+    if (parent_initrd_node->id == superblock->root_node) {
+        fs_node->mount_parent = fs_root;
+    } else {
+        fs_node->mount_parent = NULL;
+    }
+    
     fs_node->read = initrd_read;
     fs_node->finddir = initrd_finddir;
     fs_node->readdir = initrd_readdir;
@@ -211,7 +219,7 @@ fs_node_t* initrd_init(uint32_t addr) {
         return NULL;
     }
 
-    if (strcmp(root.name, "/")) {
+    if (strcmp(root.name, "initrd")) {
         log_error("root name is not correct\n");
         return NULL;
     }
@@ -225,6 +233,7 @@ fs_node_t* initrd_init(uint32_t addr) {
     fs_root->flags = FS_DIR;
     fs_root->inode = root.id;
     fs_root->size = root.size;
+    fs_root->mount_parent = NULL;
     fs_root->read = initrd_read;
     fs_root->readdir = initrd_readdir;
     fs_root->finddir = initrd_finddir;

@@ -1,13 +1,16 @@
 #include "fs/fs.h"
 
+
 fs_node_t* fs_parent(fs_node_t* node) {
     if (!node || !node->parent) {
         log_error("node is at %p or node->parent is null\n", node); 
         return NULL;
     } 
-        
-    
 
+    if (node->mount_parent) {
+        return node->mount_parent;
+    }
+        
     return node->parent(node);
 }
 
@@ -33,13 +36,13 @@ void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
 
 uint32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     if (!node) {
-        log_error("node is at %p\n");
+        log_error("node is at %x\n", node);
         return 0;
     }
         
 
     if (!node->writefile || node->flags == FS_DIR) {
-        log_error("node->writefile is at %p and node->flags == FS_DIR = %d\n", node->writefile, node->flags == FS_DIR);        
+        log_error("node->writefile is at %x and node->flags == FS_DIR = %d\n", node->writefile, node->flags == FS_DIR);        
         return 0;
     }
         
@@ -81,7 +84,7 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     return node->finddir(node, name);
 }
 
-uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
+uint8_t fs_init(multiboot_info_t* mbi) {
     if (!(mbi->flags & (1 << 3))) {
         log_error("multiboot info not found\n");
         return 0;
@@ -117,73 +120,98 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
 
     uint32_t initrd_location = mod_start + KERNEL_BASE;
     
-    fs_root = initrd_init(initrd_location);
-    fs_cwd = fs_root;
-
+    fs_root = vfs_init();
     if (!fs_root) {
-        log_error("initrd_init failed\n");
+        log_error("vfs_init failed\n");
         return 0;
     }
 
+    fs_cwd = fs_root;
+    
+    fs_node_t* initrd_root = initrd_init(initrd_location);
+    if (!initrd_root) {
+        log_error("initrd_init failed\n");
+        return 0;
+    }
+    fs_mount(initrd_root, "initrd");
+
     fs_node_t* ramfs = ramfs_init();
+    if (!ramfs) {
+        log_error("ramfs_init failed\n");
+        return 0;
+    }
+
+    fs_mount(ramfs, "tmp");
 
     init_dev();
     init_proc();
 
-
+    fs_mount(dev_dir, "dev");
+    fs_mount(proc_dir, "proc");
 
     return 1;
 }
 
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
-    if (!start || !path) return NULL;
+    if (!start || !path) 
+        return NULL;
 
-    fs_node_t* current = kmalloc(sizeof(fs_node_t));
-    if (!current) return NULL;
-
+    fs_node_t* current = start;
+    if (!current)
+        return NULL;
+    
     if (path[0] == '/') {
-        memcpy(current, fs_root, sizeof(fs_node_t));
-    } else {
-        memcpy(current, start, sizeof(fs_node_t));
+        current = fs_root;
+        while (*path == '/')
+            path++;
     }
 
-    char path_copy[MAX_PATH_LENGTH];
-    strncpy(path_copy, path, sizeof(path_copy) - 1);
-    path_copy[sizeof(path_copy) - 1] = '\0';
-
-    char* token = strtok(path_copy, '/');
-
-    if (!token && strcmp(path, "/") == 0) {
-        return current;
-    }
-
-    while (token != NULL) {
-        if (strcmp(token, ".") == 0) {
-            token = strtok(NULL, '/');
-            continue;
-        } 
-        
-        fs_node_t* next = NULL;
-
-        if (strcmp(token, "..") == 0) {
-            next = fs_parent(current); 
-        } else {
-            next = fs_finddir(current, token);
+    char component[128];
+    
+    while (*path) {
+        while (*path == '/') {
+            path++;
         }
-        
-        if (!next) {
-            kfree(current);
-            log_error("resolve_path_from: failed to resolve '%s'\n", token);
+
+        if (*path == '\0') {
+            break;
+        }
+
+        uint32_t i = 0;
+
+        while (*path && *path != '/' && i < sizeof(component) - 1) {
+            component[i++] = *path++;
+        }
+
+        component[i] = '\0';
+
+        if (strcmp(component, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(component, "..") == 0) {
+            fs_node_t* parent = fs_parent(current);
+
+            if (parent) {
+                current = parent;
+            }
+
+            continue;
+        }
+
+        if (!current->finddir) {
+            log_error("no finddir\n");
             return NULL;
         }
-            
+    
+        current = current->finddir(current, component);
 
-        kfree(current);
-        current = next;
-
-        token = strtok(NULL, '/');
+        if (!current) {
+            log_error("couldn't resolve path: %s\n", path);
+            return NULL;
+        }
     }
-
+    
     return current;
 }
 
@@ -193,8 +221,6 @@ fs_node_t* resolve_path(const char* path) {
         return NULL;
     } 
         
-    
-
     if (path[0] == '/') {
         return resolve_path_from(fs_root, path);
     }
@@ -203,15 +229,4 @@ fs_node_t* resolve_path(const char* path) {
 }
 
 
-fs_node_t* fs_node_clone(fs_node_t* node) {
-    if (!node) return NULL;
-
-    fs_node_t* clone = kmalloc(sizeof(fs_node_t));
-    if (!clone) return NULL;
-
-    memcpy(clone, node, sizeof(fs_node_t));
-    strcpy(clone->name, node->name);
-
-    return clone;
-}
 

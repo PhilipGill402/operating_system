@@ -192,8 +192,8 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
     if (!file) return ENOENT;
-
-    uint32_t bytes_written = file->writefile(file, str, current_process->fds[fd].offset, count);
+    
+    uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd].offset, count);
     current_process->fds[fd].offset += bytes_written;
 
     return bytes_written;
@@ -276,7 +276,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
 
     fs_node_t* start = current_process->cwd;
     if (!start) return ENOENT;
-
+    
     fs_node_t* path[10];
     int idx = 0;
 
@@ -284,7 +284,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
 
     while (start) {
         path[idx++] = start;
-        if (start->inode == fs_root->inode) {
+        if (strcmp(start->name, fs_root->name) == 0) {
             break;
         }
 

@@ -116,7 +116,7 @@ int dev_add_child(fs_node_t* dir, fs_node_t* child) {
 }
 
 void init_dev() {
-    dev_dir = create_dev_dir("dev", fs_root, num_nodes++);
+    dev_dir = create_dev_dir("dev", fs_root, inode_count++);
     console_node = create_console_node(dev_dir);
 
     if (!dev_add_child(dev_dir, console_node))

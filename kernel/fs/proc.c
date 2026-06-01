@@ -185,7 +185,7 @@ int proc_add_child(fs_node_t* dir, fs_node_t* child) {
 }
 
 void init_proc() {
-    proc_dir = create_proc_dir("proc", fs_root, num_nodes++);
+    proc_dir = create_proc_dir("proc", fs_root, inode_count++);
 }
 
 

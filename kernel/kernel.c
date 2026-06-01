@@ -16,7 +16,6 @@
 #include "interrupts/idt.h"
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
-#include "fs/initrd.h"
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
@@ -91,12 +90,12 @@ void finish_init() {
     
     init_heap();
     
-    fs_init(mbi, initrd_init);
+    fs_init(mbi);
 
     scheduler_init();
     
     __asm__ __volatile__("sti");
-    fs_node_t* tty_elf = resolve_path("usr/tty.elf");
+    fs_node_t* tty_elf = resolve_path("/initrd/usr/tty.elf");
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {
