@@ -14,7 +14,7 @@ int strcmp(const char*, const char*);
 int strncmp(const char*, const char*, size_t);
 void strcpy(char*, char*);
 void strncpy(char*, char*, size_t);
-void strcat(char*, char*);
+char* strcat(char*, char*);
 void strncat(char*, char*, size_t);
 char* strchar(char*, int);
 char* strrchar(char*, int);

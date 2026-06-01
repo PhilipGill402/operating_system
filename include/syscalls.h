@@ -9,7 +9,6 @@
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "interrupts/registers.h"
-#include "fs/initrd.h"
 #include "fs/fs.h"
 #include "syscall_defs.h"
 

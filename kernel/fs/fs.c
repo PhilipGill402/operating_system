@@ -3,7 +3,7 @@
 
 fs_node_t* fs_parent(fs_node_t* node) {
     if (!node || !node->parent) {
-        log_error("node is at %p or node->parent is null\n", node); 
+        log_error("node is at %x or node->parent is null\n", node); 
         return NULL;
     } 
 
@@ -16,7 +16,7 @@ fs_node_t* fs_parent(fs_node_t* node) {
 
 void fs_createdir(fs_node_t* node, char* name) {
     if (!node || !node->createdir) {
-        log_error("node is at %p or node->createdir is null\n", node); 
+        log_error("node is at %x or node->createdir is null\n", node); 
         return;
     }
         
@@ -26,7 +26,7 @@ void fs_createdir(fs_node_t* node, char* name) {
 
 void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
     if (!node || !node->createfile) {
-        log_error("node is at %p or node->createfile is null\n", node); 
+        log_error("node is at %x or node->createfile is null\n", node); 
         return;
     }
         
@@ -204,7 +204,7 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
             return NULL;
         }
     
-        current = current->finddir(current, component);
+        current = fs_finddir(current, component);
 
         if (!current) {
             log_error("couldn't resolve path: %s\n", path);
@@ -215,7 +215,7 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     return current;
 }
 
-fs_node_t* resolve_path(const char* path) {
+fs_node_t* resolve_path(const char* path, fs_node_t* cwd) {
     if (!path) {
         log_error("path is null\n"); 
         return NULL;
@@ -225,7 +225,7 @@ fs_node_t* resolve_path(const char* path) {
         return resolve_path_from(fs_root, path);
     }
     
-    return resolve_path_from(fs_cwd, path);
+    return resolve_path_from(cwd, path);
 }
 
 

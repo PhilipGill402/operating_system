@@ -214,7 +214,7 @@ uint32_t process_init_heap(process_t* process) {
 
 void process_init_file_descriptors(process_t* process) {
     memset(process->fds, 0, sizeof(file_desc_t) * MAX_FDS);
-    fs_node_t* console = resolve_path("/dev/console");
+    fs_node_t* console = resolve_path("/dev/console", fs_root);
 
     for (uint8_t i = 0; i < 3; i++) {
         process->fds[i].in_use = 1; 

@@ -1,5 +1,48 @@
 #include "syscalls.h"
 
+static char* trim_path(const char* path) {
+    uint32_t last_slash = -1;
+
+    for (uint32_t i = 0; i < strlen(path); i++) {
+        if (path[i] == '/') 
+            last_slash = i;
+    }
+
+    if (last_slash == -1) {
+        return NULL;
+    } else if (last_slash == 0) {
+        char* trim = kmalloc(2);
+        trim[0] = '/';
+        trim[1] = '\0';
+
+        return trim;
+    }
+
+    char* trim = kmalloc(last_slash + 1);
+    strncpy(trim, path, last_slash);
+    trim[last_slash] = '\0';
+
+    return trim;
+}
+
+static char* get_file_name(const char* path) {
+    log_debug("made it\n");
+    char* file_name = kmalloc(strlen(path) + 1); 
+    
+    uint32_t idx = strlen(path);
+    uint32_t count = 0;
+    
+    log_debug("made it\n");
+    for (uint32_t idx = strlen(path); path[idx] != '/'; idx--) {
+        log_debug("%c\n", path[idx]);
+        file_name[count++] = path[idx];
+    }
+
+    file_name[count] = '\0';
+
+    return file_name;
+}
+
 static int copy_argv(const char* argv[], cmd_args_t* args) {
     args->argc = 0;
 
@@ -95,13 +138,21 @@ int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
 }
 
 int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
-    fs_node_t* file = resolve_path_from(current_process->cwd, path);
+    fs_node_t* file = resolve_path(path, current_process->cwd);
     
     if (!file && flags & O_CREAT) {
+        char* trim = trim_path(path);
+        
+        log_debug("trim: %s\n", trim);
+        
+        char* file_name = get_file_name(path);
+
+        log_debug("file_name: %s\n", file_name);
+
         char* name = kmalloc(strlen(path));
         strcpy(name, path);
         file = kmalloc(sizeof(fs_node_t));
-        file->createfile(file, name, 256);
+        fs_createfile(file, name, 256); 
         kfree(name);
     } else if (!file) {
         return ENOENT;
@@ -176,11 +227,7 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     
     if (!file) return ENOENT;
     
-    //log_debug("\n--- FD (%d) ---\n", fd);
-    //log_debug("Offset: %d\n", current_process->fds[fd].offset);
-    //log_debug("Count: %d\n", count);
-    uint32_t bytes_read = file->read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
-    //log_debug("Bytes read: %d\n", bytes_read);
+    uint32_t bytes_read = fs_read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
     current_process->fds[fd].offset += bytes_read;
 
     return bytes_read;
@@ -188,12 +235,20 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
 
 int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (fd >= MAX_FDS) return EBADF;
-
+    
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
     
     if (!file) return ENOENT;
     
+    /*
+    log_debug("--- FD (%d) ---\n", fd);
+    log_debug("%x\n", fs_writefile);
+    log_debug("%x\n", file->writefile);
+    */
     uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd].offset, count);
+    
+    //log_debug("%x\n", &current_process->fds[fd]);
+
     current_process->fds[fd].offset += bytes_written;
 
     return bytes_written;

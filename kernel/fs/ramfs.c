@@ -137,6 +137,8 @@ fs_node_t* ramfs_finddir(fs_node_t* node, char* name) {
             return ramfs_to_vfs(child);
         }
     }
+
+    return NULL;
 }
 
 fs_node_t* ramfs_parent(fs_node_t* node) {

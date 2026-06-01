@@ -1,6 +1,8 @@
 #include <string.h>
 
-void strcat(char* dst, char* src){
+char* strcat(char* dst, char* src){
+    char* ret = dst; 
+    
     while (*dst != '\0'){
         dst++;
     }
@@ -10,4 +12,8 @@ void strcat(char* dst, char* src){
         src++;
         dst++;
     }
+
+    *dst = '\0';
+
+    return ret;
 }

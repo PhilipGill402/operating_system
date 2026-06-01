@@ -126,7 +126,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
     for (uint32_t i = 0; i < superblock->node_count; i++) {
         initrd_node_t* curr_node = &node_table[i];
         if (strcmp(curr_node->name, name) == 0 && curr_node->parent_id == node->inode) {
-            fs_node_t* file = kmalloc(sizeof(fs_node_t));
+            fs_node_t* file = kzmalloc(sizeof(fs_node_t));
             strcpy(file->name, curr_node->name);
             file->flags = curr_node->type == INITRD_NODE_DIR ? FS_DIR : FS_FILE;
             file->inode = curr_node->id;
@@ -136,9 +136,9 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->finddir = initrd_finddir;
             file->readdir = initrd_readdir;
             file->parent = initrd_parent;
-            file->createdir = initrd_createdir;
-            file->createfile = initrd_createfile;
-            file->writefile = initrd_writefile;
+            file->createdir = NULL;
+            file->createfile = NULL;
+            file->writefile = NULL;
             
             return file;
         }
@@ -170,11 +170,12 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     }
     
     fs_node->read = initrd_read;
+    fs_node->writefile = NULL;
     fs_node->finddir = initrd_finddir;
     fs_node->readdir = initrd_readdir;
     fs_node->parent = initrd_parent;
-    fs_node->createdir = initrd_createdir;
-    fs_node->createfile = initrd_createfile;
+    fs_node->createdir = NULL;
+    fs_node->createfile = NULL;
 
     return fs_node;
 }
@@ -235,11 +236,12 @@ fs_node_t* initrd_init(uint32_t addr) {
     fs_root->size = root.size;
     fs_root->mount_parent = NULL;
     fs_root->read = initrd_read;
+    fs_root->writefile = NULL;
     fs_root->readdir = initrd_readdir;
     fs_root->finddir = initrd_finddir;
     fs_root->parent = initrd_parent;
-    fs_root->createdir = initrd_createdir;
-    fs_root->createfile = initrd_createfile;
+    fs_root->createdir = NULL;
+    fs_root->createfile = NULL;
     
     return fs_root;
 }
