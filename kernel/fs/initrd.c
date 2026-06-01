@@ -11,9 +11,9 @@ uint32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32
     initrd_node_t* file = &node_table[node->inode];
     
     uint32_t write_size = offset + size > node->size ? node->size - offset : size;
-    if (offset + size > node->size) {
-        return 0;
-    }
+    
+    if (offset + size > node->size) 
+        write_size = node->size - offset;
     
     void* dst = (void*)((uint32_t)superblock + file->data_offset + offset);
     memcpy(dst, buffer, write_size);

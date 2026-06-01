@@ -125,8 +125,12 @@ uint8_t fs_init(multiboot_info_t* mbi, fs_node_t* (*init)(uint32_t addr)) {
         return 0;
     }
 
+    fs_node_t* ramfs = ramfs_init();
+
     init_dev();
     init_proc();
+
+
 
     return 1;
 }

@@ -9,11 +9,11 @@ void* brk(void* new_addr) {
     return (void*)ret;
 }
 
-uint32_t chdir(const char* path) {
+int32_t chdir(const char* path) {
     return (uint32_t)__sys1(SYS_CHDIR, (uint32_t)path);
 }
 
-uint32_t execve(const char* path, const char* argv[]) { 
+int32_t execve(const char* path, const char* argv[]) { 
     return (uint32_t)__sys2(SYS_EXECVE, (uint32_t)path, (uint32_t)argv);
 }
 
@@ -24,19 +24,19 @@ void exit(int32_t error_code) {
     for (;;) {}
 }
 
-uint32_t fork() {
+int32_t fork() {
     return (uint32_t)__sys0(SYS_FORK); 
 }
 
-uint32_t getcwd(char* buffer, size_t size) {
+int32_t getcwd(char* buffer, size_t size) {
     return (uint32_t)__sys2(SYS_GETCWD, (uint32_t)buffer, size);
 }
 
-uint32_t getpid() {
+int32_t getpid() {
     return (uint32_t)__sys0(SYS_GETPID);
 }
 
-uint32_t read(uint32_t fd, char* buffer, size_t count) {
+int32_t read(uint32_t fd, char* buffer, size_t count) {
     return (uint32_t)__sys3(SYS_READ, fd, (uint32_t)buffer, (uint32_t)count);
 }
 
@@ -54,16 +54,16 @@ void* sbrk(size_t increment) {
     return old_break;
 }
 
-uint32_t write(uint32_t fd, const char* buffer, size_t count) {
+int32_t write(uint32_t fd, const char* buffer, size_t count) {
     return (uint32_t)__sys3(SYS_WRITE, fd, (uint32_t)buffer, (uint32_t)count);
 }
 
 
-uint32_t open(const char* name, uint32_t flags) {
-    return (uint32_t)__sys2(SYS_OPEN, (uint32_t)name, flags);
+int32_t open(const char* name, uint32_t flags, mode_t mode) {
+    return (uint32_t)__sys3(SYS_OPEN, (uint32_t)name, flags, (uint32_t)mode);
 }
 
-uint32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
+int32_t getdents(uint32_t fd, dirent_t* dents, uint32_t count) {
     return (uint32_t)__sys3(SYS_GETDENTS, fd, (uint32_t)dents, count);
 }
 

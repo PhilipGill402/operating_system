@@ -94,11 +94,19 @@ int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     return num_entries;
 }
 
-int32_t sys_open(const char* path, uint32_t flags) {
+int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     fs_node_t* file = resolve_path_from(current_process->cwd, path);
     
-    if (!file) return ENOENT;
-    
+    if (!file && flags & O_CREAT) {
+        char* name = kmalloc(strlen(path));
+        strcpy(name, path);
+        file = kmalloc(sizeof(fs_node_t));
+        file->createfile(file, name, 256);
+        kfree(name);
+    } else if (!file) {
+        return ENOENT;
+    }
+
     // finding lowest available fd
     uint32_t fd = MAX_FDS + 1;
     for (uint32_t i = 0; i < MAX_FDS; i++) {
@@ -119,6 +127,11 @@ int32_t sys_open(const char* path, uint32_t flags) {
         .offset = 0,
         .in_use = 1
     };
+
+    if (flags & O_TRUNC)
+        file_desc.offset = 0;
+    else if (flags & O_APPEND)
+        file_desc.offset = file->size;
 
     current_process->fds[fd] = file_desc;
 
@@ -163,7 +176,11 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     
     if (!file) return ENOENT;
     
+    //log_debug("\n--- FD (%d) ---\n", fd);
+    //log_debug("Offset: %d\n", current_process->fds[fd].offset);
+    //log_debug("Count: %d\n", count);
     uint32_t bytes_read = file->read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
+    //log_debug("Bytes read: %d\n", bytes_read);
     current_process->fds[fd].offset += bytes_read;
 
     return bytes_read;
@@ -342,7 +359,7 @@ void syscall_handler(regs_t* reg) {
             ret = (uint32_t)sys_brk((void*)reg->ebx);
             break;
         case SYS_OPEN:
-            ret = sys_open((char*)reg->ebx, reg->ecx);
+            ret = sys_open((char*)reg->ebx, reg->ecx, (sys_mode_t)reg->edx);
             break;
         case SYS_GETDENTS:
             ret = sys_getdents(reg->ebx, (sys_dirent_t*)reg->ecx, reg->edx);

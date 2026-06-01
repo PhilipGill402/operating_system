@@ -11,6 +11,7 @@
 #include "fs/fs_types.h"
 #include "fs/dev.h"
 #include "fs/proc.h"
+#include "fs/ramfs.h"
 
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128

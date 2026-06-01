@@ -24,7 +24,7 @@ void vector_print(const vector_t* vec, void (*print_element)(void*)) {
 void ps(vector_t* args) {
     (void)args;
 
-    uint32_t fd = open("/proc/0", 0);
+    uint32_t fd = open("/proc/0", O_RDONLY, 0);
 
     char* buffer = malloc(50);
     if (!buffer) return;
@@ -69,7 +69,7 @@ void ls(vector_t* args) {
         str_path = *vec_path;
     // if no path then use the cwd 
     char* path = string_to_literal(&str_path);
-    uint32_t fd = open(path, 0);
+    uint32_t fd = open(path, O_RDONLY, 0);
     
     dirent_t* entries = malloc(sizeof(dirent_t) * 10);
     uint32_t num_entries = getdents(fd, entries, 10);
@@ -88,7 +88,7 @@ void cat(vector_t* args) {
 
     char* path = string_to_literal(str_path);
 
-    uint32_t fd = open(path, 0);
+    uint32_t fd = open(path, O_RDONLY, 0);
     char buffer[MAX_BUFFER_LENGTH];
     uint32_t bytes_read = 0;
     
