@@ -98,9 +98,20 @@ uint32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buf
 
     process_t* proc = process_table[node->inode];
     if (!proc) return 0;
-
-    uint32_t bytes_written = snprintf(buffer, size, "PID: %d\tPPID: %d\tStatus: %s\tName: %s", proc->pid, proc->ppid, proc_state_to_str(proc->state), proc->name);
     
+    char intern_buffer[256];
+
+    uint32_t bytes_written = snprintf(intern_buffer, size, "PID: %d\tPPID: %d\tStatus: %s\tName: %s", proc->pid, proc->ppid, proc_state_to_str(proc->state), proc->name);
+    intern_buffer[bytes_written] = '\0';
+    
+    size_t len = strlen(intern_buffer);
+
+    if (offset >= len)
+        return 0;
+
+    bytes_written = offset + size < len ? offset + size : len - offset;
+    memcpy(buffer, intern_buffer + offset, bytes_written);
+
     return bytes_written;
 }
 
