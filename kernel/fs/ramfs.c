@@ -53,7 +53,7 @@ void ramfs_createfile(fs_node_t* node, char* name, uint32_t size) {
     
     if (!child->data)
         return;
-
+    
     strcpy(child->name, name);
     child->type = FS_FILE;
     child->inode = inode_count++;

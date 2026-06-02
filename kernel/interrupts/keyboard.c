@@ -115,10 +115,12 @@ void keyboard_callback(regs_t* r) {
 
     if (shift_pressed(scancode)) {
         shift_down = 1;
+        return;
     }
     
     if (shift_released(scancode)) {
         shift_down = 0;
+        return;
     }
     
     if (scancode & 0x80) {

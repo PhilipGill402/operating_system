@@ -17,7 +17,8 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
     asm volatile("cli" ::: "memory");
 
     uint32_t len = keyboard_buffer.length;
-    if (len >= size) len = size - 1;
+    if (len >= size)
+        len = size - 1;
 
     for (uint32_t i = 0; i < len; i++) {
         buffer[i] = (uint8_t)keyboard_buffer.data[i];

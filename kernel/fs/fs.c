@@ -203,7 +203,7 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
             log_error("no finddir\n");
             return NULL;
         }
-    
+        
         current = fs_finddir(current, component);
 
         if (!current) {
