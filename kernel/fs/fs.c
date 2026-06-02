@@ -135,7 +135,7 @@ uint8_t fs_init(multiboot_info_t* mbi) {
 
     fs_mount(ramfs, "tmp");
 
-    init_dev();
+    fs_node_t* dev_dir = init_dev();
     if (!dev_dir) {
         log_error("dev_init failed\n");
         return 0;

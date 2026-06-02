@@ -13,8 +13,6 @@ typedef struct {
     fs_node_t* parent;
 } dev_dir_t;
 
-extern fs_node_t* dev_dir;
-
-void init_dev();
+fs_node_t* init_dev();
 
 #endif

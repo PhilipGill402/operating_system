@@ -115,11 +115,13 @@ int dev_add_child(fs_node_t* dir, fs_node_t* child) {
     return 1;
 }
 
-void init_dev() {
+fs_node_t* init_dev() {
     dev_dir = create_dev_dir("dev", fs_root, inode_count++);
     console_node = create_console_node(dev_dir);
 
     if (!dev_add_child(dev_dir, console_node))
         log_error("failed to init devices\n");
+
+    return dev_dir;
 }
 
