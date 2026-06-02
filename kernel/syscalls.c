@@ -75,6 +75,20 @@ static void free_exec_args(cmd_args_t* args) {
     }
 }
 
+int32_t sys_kill(uint32_t pid, int32_t sig) {
+    if (!(sig & SIGTERM) && !(sig & SIGKILL) && !(sig & SIGSTOP) && !(sig & SIGCONT))
+        return EINVAL;
+
+    process_t* proc = get_process(pid);
+
+    if (!proc)
+        return ESRCH;
+    
+    proc->pending_signals |= sig;
+
+    return 0;
+}
+
 int32_t sys_lseek(uint32_t fd, uint32_t offset) {
     current_process->fds[fd].offset = offset;
 
@@ -267,7 +281,7 @@ int32_t sys_fork() {
 }
 
 int32_t sys_execve(const char* file_name, const char* argv[]) {
-    fs_node_t* elf = current_process->cwd->finddir(current_process->cwd, file_name);
+    fs_node_t* elf = fs_finddir(current_process->cwd, file_name);
     
     if (!elf) return ENOENT;
     if (elf->flags == FS_DIR) return EISDIR;
@@ -427,6 +441,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_LSEEK:
             ret = sys_lseek(reg->ebx, reg->ecx);
+            break;
+        case SYS_KILL:
+            ret = sys_kill(reg->ebx, reg->ecx);
             break;
     }
 

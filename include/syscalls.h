@@ -22,6 +22,7 @@
 #define SYS_CHDIR       12
 #define SYS_LSEEK       19
 #define SYS_GETPID      20
+#define SYS_KILL        37
 #define SYS_BRK         45
 #define SYS_FORK        57
 #define SYS_EXECVE      59

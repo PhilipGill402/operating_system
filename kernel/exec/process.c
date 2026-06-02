@@ -8,6 +8,12 @@ static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
 }
 
+process_t* get_process(uint32_t pid) {
+    if (pid >= MAX_PROCESSES) return NULL;
+
+    return process_table[pid]; 
+}
+
 void process_init_trapframe(process_t* process) {
     regs_t* tf = (regs_t*)(process->kernel_stack_top - sizeof(regs_t));
     memset(tf, 0, sizeof(regs_t));
@@ -107,6 +113,8 @@ process_t* process_clone(process_t* process) {
 
     new->ticks_left = DEFAULT_MAX_TICKS;
     new->state = PROC_READY;
+
+    new->pending_signals = 0;
 
     new->page_directory_phys = clone_page_directory(process->page_directory_phys);
     

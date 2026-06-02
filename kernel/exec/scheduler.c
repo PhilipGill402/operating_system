@@ -18,6 +18,28 @@ void complete_pending_wait(process_t* process) {
     process->waiting_for_pid = 0;
 }
 
+void check_pending_signals(process_t* proc) {
+    if (proc->pending_signals & SIGTERM) {
+        proc->exit_status = 128 + SIGTERM; 
+        proc->state = PROC_TERMINATED;
+        process_wake_parent(proc->pid);
+    } 
+    
+    if (proc->pending_signals & SIGKILL) {
+        proc->exit_status = 128 + SIGKILL;
+        proc->state = PROC_TERMINATED;
+        process_wake_parent(proc->pid);
+    } 
+    
+    if (proc->pending_signals & SIGSTOP) {
+        proc->state = PROC_BLOCKED;
+    } 
+
+    if (proc->pending_signals & SIGCONT) {
+        proc->state = PROC_READY;
+    }
+}
+
 process_t* dequeue_ready() {
     process_t* next;
 
@@ -29,6 +51,8 @@ process_t* dequeue_ready() {
         }
 
         if (next->state == PROC_READY) return next;
+
+        check_pending_signals(next);
 
         enqueue(&current_processes, &next);
     } 
@@ -54,11 +78,6 @@ void schedule() {
     enter_user_mode_from_trapframe(current_process->trapframe);
 }
 
-process_t* get_process(uint32_t pid) {
-    if (pid >= MAX_PROCESSES) return NULL;
-
-    return process_table[pid]; 
-}
 
 void process_wake_parent(uint32_t child_pid) {
     process_t* child = get_process(child_pid);

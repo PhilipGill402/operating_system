@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include "interrupts/idt.h"
 #include "interrupts/port.h"
-
+#include "exec/process.h"
 
 #define INPUT_BUFFER_SIZE 128
+
+#define SCANCODE_LEFT_CTRL_PRESS    0x1D
+#define SCANCODE_LEFT_CTRL_RELEASE  0x9D
 
 static volatile uint8_t last_scancode = 0;
 

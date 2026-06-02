@@ -26,7 +26,6 @@ typedef struct fs_node_t{
     uint32_t inode;
     uint32_t size;
     void* device;
-    void* proc;
 
     fs_node_t* mount_parent;
 

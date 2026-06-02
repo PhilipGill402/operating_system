@@ -81,7 +81,7 @@ fs_node_t* proc_parent(fs_node_t* node) {
     if (!(node->flags & FS_PROC)) return NULL;
 
     if (node->flags & FS_DIR) {
-        proc_dir_t* proc = (proc_dir_t*)node->proc;
+        proc_dir_t* proc = (proc_dir_t*)node->device;
         if (!proc) return NULL; 
 
         return fs_node_clone(proc->parent);
@@ -164,7 +164,7 @@ fs_node_t* create_proc_dir(const char* name, fs_node_t* parent, uint32_t inode) 
     node->flags = FS_DIR | FS_PROC;
     node->inode = inode;
     node->size = 0;
-    node->proc = data;
+    node->device = data;
 
     data->child_count = 0;
     data->parent = parent;
@@ -183,7 +183,7 @@ fs_node_t* create_proc_dir(const char* name, fs_node_t* parent, uint32_t inode) 
 int proc_add_child(fs_node_t* dir, fs_node_t* child) {
     if (!dir || !child) return 0;
 
-    proc_dir_t* proc = (proc_dir_t*)dir->proc;
+    proc_dir_t* proc = (proc_dir_t*)dir->device;
     if (!proc) return 0;
 
     if (proc->child_count >= MAX_PROCESSES) return 0;

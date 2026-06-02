@@ -2,6 +2,7 @@
 #include <string.h>
 #include <vector.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define MAX_BUFFER_LENGTH 256
 
@@ -124,7 +125,11 @@ void run(vector_t* args) {
     uint32_t pid = fork();
     
     if (pid == 0) {
-        execve(path, argv);
+        errno = 0; 
+        int ret = execve(path, argv);
+        if (ret == -1) {
+            perror("execve");
+        }
     }
     
     int status;

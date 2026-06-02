@@ -161,7 +161,6 @@ fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs) {
     node->size = ramfs->size;
     node->mount_parent = NULL;
     node->device = ramfs;
-    node->proc = NULL;
     
     node->createdir = ramfs_createdir;
     node->createfile = ramfs_createfile;

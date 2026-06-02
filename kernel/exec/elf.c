@@ -331,6 +331,8 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->wait_result_status = 0; 
     process->waiting_status_ptr = NULL;
     process->wait_has_results = 0;
+    
+    process->pending_signals = 0;
 
     if (!process->page_directory_phys) {
         kfree(buf);

@@ -1,6 +1,7 @@
 #include "interrupts/keyboard.h"
 
 static uint8_t shift_down = 0;
+static uint8_t ctrl_down = 0;
 input_buffer_t keyboard_buffer;
 
 static const char scancode_set[128] = {
@@ -127,8 +128,23 @@ void keyboard_callback(regs_t* r) {
         return;
     }
 
+    if (scancode == SCANCODE_LEFT_CTRL_PRESS) {
+        ctrl_down = 1;         
+        return;
+    }
+
+    if (scancode == SCANCODE_LEFT_CTRL_RELEASE) {
+        ctrl_down = 0;
+        return;
+    }
+
     char c = shift_down ? scancode_set_shift[scancode] : scancode_set[scancode];
-    
+
+    if (ctrl_down && c == 'c') {
+        current_process->state |= SIGKILL;
+        return;
+    }
+
     if (c == '\n') {
         putchar(c);
         input_buffer_submit();

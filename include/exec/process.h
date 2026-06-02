@@ -32,6 +32,11 @@
 
 #define MAX_PROCESSES 64
 
+#define SIGTERM 1
+#define SIGKILL 2
+#define SIGSTOP 4
+#define SIGCONT 8
+
 typedef struct {
     uint32_t start;
     uint32_t end;
@@ -81,9 +86,12 @@ typedef struct {
     
     regs_t* trapframe;
     uint32_t ticks_left;
+    
     file_desc_t fds[MAX_FDS];
     uint32_t open_fds;
     fs_node_t* cwd;
+
+    uint32_t pending_signals;
 } process_t;
 
 typedef struct {
@@ -104,6 +112,6 @@ uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
 uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();
-
+process_t* get_process(uint32_t pid);
 
 #endif // !INCLUDE_EXEC_PROCESS_H_

@@ -53,7 +53,6 @@ fs_node_t* vfs_init() {
     vfs_root->inode = inode_count++;
     vfs_root->size = 0;
     vfs_root->device = NULL;
-    vfs_root->proc = NULL;
     vfs_root->mount_parent = NULL;
 
     vfs_root->read = NULL;

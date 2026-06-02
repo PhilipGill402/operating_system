@@ -79,3 +79,7 @@ int32_t lseek(uint32_t fd, uint32_t offset) {
     return (int)__sys2(SYS_LSEEK, fd, offset);
 }
 
+int32_t kill(uint32_t pid, int32_t sig) {
+    return (int)__sys2(SYS_KILL, pid, sig);
+}
+

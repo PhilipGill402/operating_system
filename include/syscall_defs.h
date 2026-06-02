@@ -191,6 +191,11 @@ typedef uint16_t sys_mode_t;
 #define O_PATH
 #define O_TMPFILE
 
+#define SIGTERM 1
+#define SIGKILL 2
+#define SIGSTOP 4
+#define SIGCONT 8
+
 
 
 #endif // !INCLUDE_SYSCALL_DEFS_H_
