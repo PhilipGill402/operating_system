@@ -54,14 +54,12 @@ static int str_to_uint(const char* str, uint32_t* out) {
 
 fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
     uint32_t seen = 0; 
-    log_debug("made it\n");
     for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
         process_t* proc = process_table[i];
 
         if (!proc) continue;
 
         if (seen == index) {
-            log_debug("made it\n");
             fs_dirent_t* dent = kzmalloc(sizeof(fs_dirent_t));
             if (!dent) return NULL;
 
@@ -184,8 +182,10 @@ int proc_add_child(fs_node_t* dir, fs_node_t* child) {
     return 1;
 }
 
-void init_proc() {
+fs_node_t* init_proc() {
     proc_dir = create_proc_dir("proc", fs_root, inode_count++);
+
+    return proc_dir;
 }
 
 

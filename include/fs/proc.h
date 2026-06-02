@@ -2,6 +2,7 @@
 #define INCLUDE_FS_PROC_H_
 
 #include "exec/process.h"
+#include "fs/fs_types.h"
 
 typedef struct {
     fs_node_t* children[MAX_PROCESSES];
@@ -9,8 +10,6 @@ typedef struct {
     fs_node_t* parent;
 } proc_dir_t;
 
-extern fs_node_t* proc_dir;
-
-void init_proc();
+fs_node_t* init_proc();
 
 #endif // !INCLUDE_FS_PROC_H_

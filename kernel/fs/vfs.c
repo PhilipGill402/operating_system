@@ -11,7 +11,6 @@ int fs_mount(fs_node_t* root, char* name) {
     strncpy(mount.name, name, 128);
     mount.root = root;
     root->mount_parent = fs_node_clone(fs_root);
-    
     mount_table[mount_count++] = mount;
 
     return 0;
@@ -33,7 +32,7 @@ fs_dirent_t* vfs_readdir(fs_node_t* node, uint32_t index) {
 fs_node_t* vfs_finddir(fs_node_t* node, char* name) {
     if (!name)
         return NULL;
-
+    
     for (uint8_t i = 0; i < mount_count; i++) {
         if (strcmp(mount_table[i].name, name) == 0) {
             return fs_node_clone(mount_table[i].root);

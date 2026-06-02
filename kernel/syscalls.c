@@ -315,8 +315,9 @@ int32_t sys_chdir(const char* path) {
         new_dir = fs_root; 
     } else {
         new_dir = resolve_path_from(current_process->cwd, path);
+        
         if (!new_dir) return ENOENT;
-        if (new_dir->flags != FS_DIR) return ENOTDIR;
+        if (!(new_dir->flags & FS_DIR)) return ENOTDIR;
     }
 
     current_process->cwd = new_dir;

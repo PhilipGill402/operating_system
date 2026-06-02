@@ -1,6 +1,5 @@
 #include "fs/fs.h"
 
-
 fs_node_t* fs_parent(fs_node_t* node) {
     if (!node || !node->parent) {
         log_error("node is at %x or node->parent is null\n", node); 
@@ -73,13 +72,6 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
         log_error("node is at %x or node->finddir is null\n", node);
         return NULL;
     }
-        
-
-    if (node->inode == fs_root->inode && strcmp(name, "dev") == 0) {
-        return dev_dir; 
-    } else if (node->inode == fs_root->inode && strcmp(name, "proc") == 0) {
-        return proc_dir;
-    }
 
     return node->finddir(node, name);
 }
@@ -144,9 +136,19 @@ uint8_t fs_init(multiboot_info_t* mbi) {
     fs_mount(ramfs, "tmp");
 
     init_dev();
-    init_proc();
+    if (!dev_dir) {
+        log_error("dev_init failed\n");
+        return 0;
+    } 
 
     fs_mount(dev_dir, "dev");
+
+    fs_node_t* proc_dir = init_proc();
+    if (!proc_dir) {
+        log_error("proc_init failed\n");
+        return 0;
+    }
+
     fs_mount(proc_dir, "proc");
 
     return 1;
