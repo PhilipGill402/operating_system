@@ -1,5 +1,16 @@
 #include "syscalls.h"
 
+static inline uint32_t read_cr3(void) {
+    uint32_t cr3;
+
+    __asm__ volatile (
+        "mov %%cr3, %0"
+        : "=r"(cr3)
+    );
+
+    return cr3;
+}
+
 static char* trim_path(const char* path) {
     uint32_t last_slash = -1;
 
@@ -128,7 +139,9 @@ int32_t sys_waitpid(uint32_t pid, int* status, int options) {
     current_process->waiting_for_pid = pid;
     current_process->waiting_status_ptr = status;
 
-    schedule();
+    schedule_and_enter();
+
+    return ECHILD;
 }
 
 int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
@@ -164,10 +177,6 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
         
         char* file_name = get_file_name(path);
         
-        file = kmalloc(sizeof(fs_node_t));
-        if (!file)
-            return ENOMEM;
-
         fs_createfile(dir, file_name, 256);
         file = fs_finddir(dir, file_name);
 
@@ -304,12 +313,12 @@ int32_t sys_execve(const char* file_name, const char* argv[]) {
     
     free_exec_args(&args);
     kfree(elf);
-
+    log_debug("exiting execve\n");
     return 1;
 }
 
 int32_t sys_exit(regs_t* reg, int32_t status) {
-    current_process->trapframe = reg;
+    memcpy(current_process->trapframe, reg, sizeof(regs_t)); 
     current_process->saved_kernel_esp = (uint32_t)reg;
     current_process->state = PROC_TERMINATED;
     current_process->exit_status = status;
@@ -318,7 +327,7 @@ int32_t sys_exit(regs_t* reg, int32_t status) {
 
     process_wake_parent(current_process->pid);
 
-    schedule();
+    schedule_and_enter();
 
     return 0;
 }
@@ -397,7 +406,7 @@ int32_t sys_getpid() {
 
 void syscall_handler(regs_t* reg) {
     uint32_t ret = 0;
-    current_process->trapframe = reg;
+    memcpy(current_process->trapframe, reg, sizeof(regs_t));
     
     switch (reg->eax) {
         case SYS_READ:
@@ -410,7 +419,13 @@ void syscall_handler(regs_t* reg) {
             ret = sys_fork(reg);
             break;
         case SYS_EXECVE:
-            ret = sys_execve((char*)reg->ebx, (char*)reg->ecx);
+            ret = sys_execve((char*)reg->ebx, (char**)reg->ecx);
+
+            if (ret >= 0) {
+                memcpy(reg, current_process->trapframe, sizeof(regs_t));
+                return;
+            }
+
             break;
         case SYS_EXIT:
             ret = sys_exit(reg, (int32_t)reg->ebx);
@@ -449,8 +464,14 @@ void syscall_handler(regs_t* reg) {
 
     reg->eax = ret;
     reg->eflags |= 0x200;
-    enter_user_mode_from_trapframe(reg);
-    __builtin_unreachable();
+
+    check_pending_signals(current_process);
+
+    if (current_process->state != PROC_RUNNING) {
+        schedule_from_interrupt(reg);
+        return;
+    }
+
 }
 
 

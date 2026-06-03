@@ -1,5 +1,7 @@
 #include "interrupts/idt.h"
 
+#include <log.h>
+
 struct idt_entry idt[256];
 struct idt_ptr ip;
 
@@ -110,12 +112,31 @@ void interrupt_dispatch(regs_t* regs) {
 
     if (regs->int_no >= 32 && regs->int_no < 48) {
         irq_handler(regs);
+        
+        
+        
+
         return;
     }
 }
 
+static inline uint32_t read_cr2(void) {
+    uint32_t cr2;
+
+    __asm__ volatile (
+        "mov %%cr2, %0"
+        : "=r"(cr2)
+    );
+
+    return cr2;
+}
+
 void exception_handler(regs_t* reg) {
     serial_printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[(int)reg->int_no]);
+
+    serial_printf("PF pid=%d name=%s\n",
+    current_process ? current_process->pid : -1,
+    current_process ? current_process->name : "none");
 
     if (reg->int_no == 14) {
         uint32_t cr2;

@@ -25,7 +25,9 @@ void process_init_trapframe(process_t* process) {
     tf->ss = USER_DS_RING3;
     tf->ds = USER_DS_RING3;
 
-    process->trapframe = tf;
+    process->trapframe = kmalloc(sizeof(regs_t)); 
+    memcpy(process->trapframe, tf, sizeof(regs_t));
+
     process->saved_kernel_esp = (uint32_t)tf;
     process->saved_kernel_ebp = 0;
 
@@ -84,11 +86,13 @@ process_t* process_clone(process_t* process) {
     new->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     
     if (!new->kernel_stack_bottom) {
+        kfree(new);
         return NULL;
     }
     
     if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + KERNEL_STACK_SIZE) {
         log_error("clone: bad parent kernel stack bounds\n");
+        kfree((void*)new->kernel_stack_bottom);
         kfree(new);
         return NULL;
     }
@@ -99,7 +103,16 @@ process_t* process_clone(process_t* process) {
     uint32_t delta = new->kernel_stack_bottom - process->kernel_stack_bottom;
     new->saved_kernel_esp = process->saved_kernel_esp + delta;
     new->saved_kernel_ebp = process->saved_kernel_ebp + delta;
-    new->trapframe = (regs_t*)((uint32_t)process->trapframe + delta);
+    
+    new->trapframe = kzmalloc(sizeof(regs_t));
+    if (!new->trapframe) {
+        kfree((void*)new->kernel_stack_bottom);
+        kfree(new);
+        return NULL;
+    }
+
+    memcpy(new->trapframe, process->trapframe, sizeof(regs_t));
+    new->trapframe->eax = 0;
     
     new->pid = num_processes++;
     new->ppid = process->pid;
@@ -119,6 +132,9 @@ process_t* process_clone(process_t* process) {
     new->page_directory_phys = clone_page_directory(process->page_directory_phys);
     
     if (!new->page_directory_phys) {
+        kfree(new->trapframe);
+        kfree((void*)new->kernel_stack_bottom);
+        kfree(new);
         return NULL;
     }
 

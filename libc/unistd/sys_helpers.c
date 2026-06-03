@@ -1,5 +1,7 @@
 #include <unistd.h>
 
+#include <stdio.h>
+
 int32_t __sys0(uint32_t sys_num) {
     int32_t ret;
     asm volatile (
@@ -45,7 +47,6 @@ int32_t __sys2(uint32_t sys_num, uint32_t arg1, uint32_t arg2) {
         : "memory"
     );
 
-    // TODO: set errno
     if (ret < 0) {
         errno = -ret;
         return -1;

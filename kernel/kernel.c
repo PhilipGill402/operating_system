@@ -99,7 +99,8 @@ void finish_init() {
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {
-        elf_execute(tty_elf); 
+        elf_execute(tty_elf);
+        schedule_and_enter();
     }
 
     for (;;) {}

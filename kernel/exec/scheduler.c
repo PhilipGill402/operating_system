@@ -6,6 +6,7 @@ void scheduler_init() {
     current_processes = queue_create(sizeof(process_t*));
 }
 
+
 void complete_pending_wait(process_t* process) {
     if (!process->wait_has_results) return;
     
@@ -50,9 +51,9 @@ process_t* dequeue_ready() {
             return NULL;
         }
 
-        if (next->state == PROC_READY) return next;
-
         check_pending_signals(next);
+
+        if (next->state == PROC_READY) return next;
 
         enqueue(&current_processes, &next);
     } 
@@ -60,13 +61,50 @@ process_t* dequeue_ready() {
     return NULL;
 }
 
-void schedule() {
+void schedule_and_enter() {
     process_t* next = dequeue_ready();
-     
+         
     if (!next) {
         // TODO: made some sort of idle task 
         return;
     }
+    
+    check_pending_signals(next);
+
+    current_process = next;
+    current_process->state = PROC_RUNNING;
+    current_process->ticks_left = DEFAULT_MAX_TICKS;
+    
+    load_cr3(current_process->page_directory_phys);
+    tss_set_kernel_stack(current_process->kernel_stack_top);
+    complete_pending_wait(next);
+    enter_user_mode_from_trapframe(current_process->trapframe);
+}
+
+void schedule_from_interrupt(regs_t* r) {
+    if (!current_process || !r)
+        return;
+
+    memcpy(current_process->trapframe, r, sizeof(regs_t));
+    
+    if (current_process->state == PROC_RUNNING) {
+        current_process->state = PROC_READY;
+        check_pending_signals(current_process); 
+        enqueue(&current_processes, &current_process);
+    }
+
+    process_t* next = dequeue_ready();
+
+    if (!next) {
+        current_process->state = PROC_RUNNING;
+        current_process->ticks_left = DEFAULT_MAX_TICKS;
+        memcpy(r, current_process->trapframe, sizeof(regs_t));
+        return;
+    }
+
+    log_debug("switching to process %s (%d)\n", next->name, next->pid);
+
+    check_pending_signals(next);
 
     current_process = next;
     current_process->state = PROC_RUNNING;
@@ -74,10 +112,12 @@ void schedule() {
 
     load_cr3(current_process->page_directory_phys);
     tss_set_kernel_stack(current_process->kernel_stack_top);
-    complete_pending_wait(next);
-    enter_user_mode_from_trapframe(current_process->trapframe);
+    complete_pending_wait(current_process);
+    
+    uint32_t saved_ds = r->ds;
+    memcpy(r, current_process->trapframe, sizeof(regs_t));
+    r->ds = saved_ds;
 }
-
 
 void process_wake_parent(uint32_t child_pid) {
     process_t* child = get_process(child_pid);
@@ -95,3 +135,5 @@ void process_wake_parent(uint32_t child_pid) {
         enqueue(&current_processes, &parent);
     }
 }
+
+

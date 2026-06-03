@@ -205,11 +205,6 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         return 0;
     }
     
-    if (!elf_load(buffer, size, process)) {
-        kfree(buffer);
-        return 0;
-    }
-     
     uint32_t old_pd = process->page_directory_phys;
     uint32_t new_pd = process_create_page_directory();
     
@@ -221,12 +216,22 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
 
     process->page_directory_phys = new_pd;
     
+    load_cr3(new_pd);
+
+    if (!elf_load(buffer, size, process)) {
+        process->page_directory_phys = old_pd; 
+        kfree(buffer);
+        load_cr3(old_pd);
+        return 0;
+    }
+    
     Elf32_Ehdr* header = (Elf32_Ehdr*)buffer;
     process->entry = header->e_entry;
     
     if (!process_init_stack(process)) {
         process->page_directory_phys = old_pd;
         kfree(buffer);
+        load_cr3(old_pd);
         return 0;
     }
 
@@ -235,9 +240,11 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
     if (!process_init_heap(process)) {
         process->page_directory_phys = old_pd;
         kfree(buffer);
+        load_cr3(old_pd);
         return 0;
     }
     
+    memset(process->trapframe, 0, sizeof(regs_t));
     strcpy(process->name, elf->name);
     process->trapframe->eip = process->entry;
     process->trapframe->useresp = user_sp;

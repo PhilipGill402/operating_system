@@ -54,6 +54,7 @@ isr\num:
 isr_common_stub:
     pusha
 
+    xorl %eax, %eax
     movw %ds, %ax
     pushl %eax
 

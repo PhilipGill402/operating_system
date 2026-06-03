@@ -126,12 +126,13 @@ void run(vector_t* args) {
     
     if (pid == 0) {
         errno = 0; 
+        
         int ret = execve(path, argv);
         if (ret == -1) {
             perror("execve");
         }
     }
-    
+
     int status;
     waitpid(pid, &status, 0);
 

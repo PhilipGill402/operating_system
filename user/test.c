@@ -6,13 +6,18 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
+    for (;;) {} 
+}
+
+/*
+int main(int argc, char* argv[]) {
     int fd = open("/tmp/whats_up.txt", O_CREAT | O_TRUNC, 0);
 
     if (fd < 0) {
         perror("open");
         return -1;
     }
-
+    
     printf("fd = %d\n", fd);
 
     char* buffer = "whats up world\n";
@@ -50,5 +55,5 @@ int main(int argc, char* argv[]) {
     
     return 0;
 }
-
+*/
 
