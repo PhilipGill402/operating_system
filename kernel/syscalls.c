@@ -313,7 +313,6 @@ int32_t sys_execve(const char* file_name, const char* argv[]) {
     
     free_exec_args(&args);
     kfree(elf);
-    log_debug("exiting execve\n");
     return 1;
 }
 

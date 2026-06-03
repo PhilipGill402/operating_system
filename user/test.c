@@ -6,7 +6,8 @@
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
-    for (;;) {} 
+    char buffer[101];
+    uint32_t bytes_read = read(stdin, buffer, 100);
 }
 
 /*

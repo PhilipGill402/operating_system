@@ -21,22 +21,30 @@ void complete_pending_wait(process_t* process) {
 
 void check_pending_signals(process_t* proc) {
     if (proc->pending_signals & SIGTERM) {
+        log_debug("terminating process %s (%d)\n", proc->name, proc->pid);
+        proc->pending_signals &= SIGTERM;
         proc->exit_status = 128 + SIGTERM; 
         proc->state = PROC_TERMINATED;
         process_wake_parent(proc->pid);
     } 
     
     if (proc->pending_signals & SIGKILL) {
+        log_debug("killing process %s (%d)\n", proc->name, proc->pid);
+        proc->pending_signals &= SIGKILL;
         proc->exit_status = 128 + SIGKILL;
         proc->state = PROC_TERMINATED;
         process_wake_parent(proc->pid);
     } 
     
     if (proc->pending_signals & SIGSTOP) {
+        log_debug("stopping process %s (%d)\n", proc->name, proc->pid);
+        proc->pending_signals &= SIGSTOP;
         proc->state = PROC_BLOCKED;
     } 
 
     if (proc->pending_signals & SIGCONT) {
+        log_debug("continuing process %s (%d)\n", proc->name, proc->pid);
+        proc->pending_signals &= SIGCONT; 
         proc->state = PROC_READY;
     }
 }
@@ -102,7 +110,7 @@ void schedule_from_interrupt(regs_t* r) {
         return;
     }
 
-    log_debug("switching to process %s (%d)\n", next->name, next->pid);
+    //log_debug("switching to process %s (%d)\n", next->name, next->pid);
 
     check_pending_signals(next);
 
