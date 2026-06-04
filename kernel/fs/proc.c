@@ -139,7 +139,7 @@ int32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buff
 
     bytes_written = offset + size < len ? offset + size : len - offset;
     memcpy(buffer, intern_buffer + offset, bytes_written);
-
+    
     return bytes_written;
 }
 
