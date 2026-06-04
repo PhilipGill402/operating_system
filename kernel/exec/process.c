@@ -132,6 +132,7 @@ process_t* process_clone(process_t* process) {
     new->exit_status = 0;
     new->waited_on = 0;
     new->waiting_for_pid = 0;
+    new->wait_result_pid = 0;
     new->wait_result_status = 0;
     new->waiting_status_ptr = NULL;
     new->wait_has_results = 0;
@@ -288,6 +289,9 @@ void process_destroy(process_t* process) {
     kfree(process->cwd);
     kfree(process->kernel_stack_bottom);
     kfree(process);
+    
+    process_table[process->pid] = NULL;
+
     process = NULL;
 }
 

@@ -335,6 +335,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->exit_status = 0;
     process->waited_on = 0;
     process->waiting_for_pid = 0;
+    process->wait_result_pid = 0; 
     process->wait_result_status = 0; 
     process->waiting_status_ptr = NULL;
     process->wait_has_results = 0;

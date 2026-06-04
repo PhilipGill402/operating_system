@@ -13,8 +13,11 @@ void complete_pending_wait(process_t* process) {
     if (process->waiting_status_ptr) {
         *(process->waiting_status_ptr) = process->wait_result_status;
     }
+    
+    process->trapframe->eax = process->wait_result_pid;
 
     process->wait_has_results = 0;
+    process->wait_result_pid = 0; 
     process->waiting_status_ptr = NULL;
     process->waiting_for_pid = 0;
 }
@@ -75,7 +78,6 @@ void scheduler_idle_loop(void) {
 
     for (;;) {
         asm volatile("sti; hlt");
-        //log_debug("looping\n");
         process_t* next = dequeue_ready();
 
         if (!next) {
@@ -176,10 +178,12 @@ void process_wake_parent(uint32_t child_pid) {
     if (parent->state == PROC_BLOCKED && parent->waiting_for_pid == child_pid) {
         parent->state = PROC_READY;
         parent->waiting_for_pid = 0;
+        parent->wait_result_pid = child_pid;
         parent->wait_result_status = child->exit_status;
         parent->wait_has_results = 1;
 
         enqueue(&current_processes, &parent);
+        process_destroy(child);
     }
 }
 

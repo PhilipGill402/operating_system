@@ -53,11 +53,41 @@ static int str_to_uint(const char* str, uint32_t* out) {
 }
 
 fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
-    uint32_t seen = 0; 
-    for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
-        process_t* proc = process_table[i];
+    process_t* proc = NULL;
 
-        if (!proc) continue;
+    for (uint32_t i = 0, seen = 0; i < MAX_PROCESSES; i++) {
+        if (!process_table[i])
+            continue;
+        
+        if (seen == index) {
+            proc = process_table[i];
+            break;
+        }
+
+        seen++;
+    }
+
+    if (!proc)
+        return NULL;
+
+    fs_dirent_t* dent = kzmalloc(sizeof(fs_dirent_t));
+    if (!dent)
+        return NULL;
+
+    uint_to_str(proc->pid, dent->name);
+    dent->inode = proc->pid;
+    
+    return dent;
+
+
+/*
+    for (uint32_t i = 0, seen = 0; i < MAX_PROCESSES; i++, seen++) {
+        process_t* proc = process_table[i];
+        
+        log_debug("PID: %d at %x\n", i, proc); 
+        
+        if (!proc)
+            continue;
 
         if (seen == index) {
             fs_dirent_t* dent = kzmalloc(sizeof(fs_dirent_t));
@@ -68,11 +98,9 @@ fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
             
             return dent;
         }
-
-        seen++;
     }
-
     return NULL;
+*/
 }
 
 fs_node_t* proc_parent(fs_node_t* node) {
@@ -95,7 +123,7 @@ fs_node_t* proc_parent(fs_node_t* node) {
 int32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !buffer) return 0;
     if ((node->flags & (FS_FILE | FS_PROC)) != (FS_FILE | FS_PROC)) return 0;
-
+    
     process_t* proc = process_table[node->inode];
     if (!proc) return 0;
     
@@ -123,6 +151,7 @@ fs_node_t* proc_finddir(fs_node_t* node, char* name) {
     if (!str_to_uint(name, &pid)) {
         return NULL;
     }
+    
     process_t* process = process_table[pid];
     if (!process) return NULL;
 

@@ -118,28 +118,32 @@ int32_t sys_close(uint32_t fd) {
 
 int32_t sys_waitpid(uint32_t pid, int* status, int options) {
     (void)options;
+    
+    while (1) {
+        process_t* child = get_process(pid);
 
-    process_t* child = get_process(pid);
-
-    if (!child) return ESRCH;
-
-    if (child->state == PROC_TERMINATED && !child->waited_on) {
-        int child_status = child->exit_status;
+        if (!child)
+            return ESRCH;
         
-        if (status) *status = child_status;
+        if (child->state == PROC_TERMINATED && !child->waited_on) {
+            int child_status = child->exit_status;
+            
+            if (status)
+                *status = child_status;
 
-        child->waited_on = 1;
+            child->waited_on = 1;
 
-        process_destroy(child);
+            process_destroy(child);
 
-        return pid;
+            return pid;
+        }
+
+        current_process->state = PROC_BLOCKED;
+        current_process->waiting_for_pid = pid;
+        current_process->waiting_status_ptr = status;
+
+        schedule_and_enter();
     }
-
-    current_process->state = PROC_BLOCKED;
-    current_process->waiting_for_pid = pid;
-    current_process->waiting_status_ptr = status;
-
-    schedule_and_enter();
 
     return ECHILD;
 }
@@ -154,13 +158,16 @@ int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
     uint32_t num_entries = 0;
     for (uint32_t i = 0; i < count; i++) {
         fs_dirent_t* fs_dent = fs_readdir(file, file_desc.offset++);
-        if (!fs_dent) break;
+        if (!fs_dent) 
+            continue;
 
         sys_dirent_t dent;
         strcpy(dent.name, fs_dent->name);
         dent.inode = fs_dent->inode;
 
         dents[num_entries++] = dent;
+
+        kfree(fs_dent);
     }
 
     return num_entries;
