@@ -327,7 +327,7 @@ int32_t sys_execve(const char* file_name, const char* argv[]) {
         // this could be wrong too, check later
         return EFAULT;
     }
-
+    
     if (!process_exec_from_elf(current_process, elf, &args)) {
         free_exec_args(&args); 
         kfree(elf);
@@ -378,7 +378,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
 
     fs_node_t* start = current_process->cwd;
     if (!start) return ENOENT;
-    
+
     fs_node_t* path[10];
     int idx = 0;
 
@@ -420,7 +420,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
         used += len;
         buffer[used] = '\0';
     }
-    
+
     return used;
 }
 

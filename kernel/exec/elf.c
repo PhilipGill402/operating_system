@@ -234,7 +234,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         load_cr3(old_pd);
         return 0;
     }
-
+    
     uint32_t user_sp = process_add_argv_to_stack(process, args);
         
     if (!process_init_heap(process)) {

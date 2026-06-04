@@ -6,12 +6,28 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+int check_builtins(int argc, char* argv[]) {
+    if (argc == 0)
+        return 1;
+
+    if (strcmp(argv[0], "cd") == 0) {
+        if (argc >= 2)
+            chdir(argv[1]);
+        else 
+            printf("'cd' requires an argument\n");
+
+        return 1;
+    }
+
+    return 0;
+}
+
 int main() {
     char buffer[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
-    char* user_argv[10];
     
     while (1) {
+        char* user_argv[10] = { 0 };
         errno = 0; 
         int ret = getcwd(cwd, MAX_BUFFER_LENGTH);
         if (ret == -1) {
@@ -24,11 +40,16 @@ int main() {
         int32_t bytes = read(stdin, buffer, MAX_BUFFER_LENGTH - 1); 
 
         char* token = strtok(buffer, ' ');
-        int argc = 0;
+        int user_argc = 0;
         
         while (token != NULL) {
-            user_argv[argc++] = token;
+            user_argv[user_argc++] = token;
             token = strtok(NULL, ' ');
+        }
+        
+        // if command is a builtin one then skip
+        if (check_builtins(user_argc, user_argv)) {
+            continue; 
         }
 
         // try to run the program, if not check the bin folder
@@ -60,7 +81,7 @@ int main() {
 
         int status;
         waitpid(child_pid, &status, 0);
-
+        
         free(path); 
     }
 
