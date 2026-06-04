@@ -92,7 +92,7 @@ fs_node_t* proc_parent(fs_node_t* node) {
     
 }
 
-uint32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+int32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !buffer) return 0;
     if ((node->flags & (FS_FILE | FS_PROC)) != (FS_FILE | FS_PROC)) return 0;
 
@@ -101,7 +101,7 @@ uint32_t proc_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buf
     
     char intern_buffer[256];
 
-    uint32_t bytes_written = snprintf(intern_buffer, size, "PID: %d\tPPID: %d\tStatus: %s\tName: %s", proc->pid, proc->ppid, proc_state_to_str(proc->state), proc->name);
+    int32_t bytes_written = snprintf(intern_buffer, size, "PID: %d\tPPID: %d\tStatus: %s\tName: %s", proc->pid, proc->ppid, proc_state_to_str(proc->state), proc->name);
     intern_buffer[bytes_written] = '\0';
     
     size_t len = strlen(intern_buffer);

@@ -33,7 +33,7 @@ void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
     return node->createfile(node, name, size);
 }
 
-uint32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+int32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     if (!node) {
         log_error("node is at %x\n", node);
         return 0;
@@ -49,7 +49,7 @@ uint32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t s
     return node->writefile(node, buffer, offset, size);
 }
 
-uint32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+int32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->read) {
         log_error("node is at %p or node->read is null\n", node); 
         return 0;
@@ -72,7 +72,7 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
         log_error("node is at %x or node->finddir is null\n", node);
         return NULL;
     }
-
+    
     return node->finddir(node, name);
 }
 
@@ -125,7 +125,7 @@ uint8_t fs_init(multiboot_info_t* mbi) {
         log_error("initrd_init failed\n");
         return 0;
     }
-    fs_mount(initrd_root, "initrd");
+    fs_mount(initrd_root, "bin");
 
     fs_node_t* ramfs = ramfs_init();
     if (!ramfs) {
@@ -157,7 +157,7 @@ uint8_t fs_init(multiboot_info_t* mbi) {
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     if (!start || !path) 
         return NULL;
-
+        
     fs_node_t* current = start;
     if (!current)
         return NULL;

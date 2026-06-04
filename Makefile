@@ -49,7 +49,7 @@ OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
 LIBC_HEADERS := $(shell find $(LIBC_DIR)/include -type f -name '*.h')
 
-USER_DIR := user
+USER_DIR := bin 
 
 .PHONY: all kernel libc run iso clean dirs
 
@@ -76,7 +76,7 @@ kernel: $(KERNEL_BIN)
 user:
 	$(MAKE) -C $(USER_DIR)
 
-img: 
+img: user
 	python3 initrd.py	
 
 $(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)

@@ -141,8 +141,8 @@ void keyboard_callback(regs_t* r) {
     char c = shift_down ? scancode_set_shift[scancode] : scancode_set[scancode];
 
     if (ctrl_down && c == 'c') {
-        current_process->pending_signals |= SIGKILL;
-        current_process->ticks_left = 0;
+        process_send_signal(current_process, SIGKILL); 
+
         return;
     }
 

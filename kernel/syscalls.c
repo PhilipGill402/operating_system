@@ -255,7 +255,24 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     
     if (!file) return ENOENT;
     
-    uint32_t bytes_read = fs_read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
+    int32_t bytes_read = fs_read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
+    
+    // TODO: Implement this later
+    /*
+    if (bytes_read == EAGAIN) {
+        current_process->state = PROC_BLOCKED;
+        current_process->interrupted_by_signal = 0;
+        
+        enqueue(&current_processes, &current_process);
+        schedule_and_enter();
+
+        if (current_process->interrupted_by_signal) {
+            current_process->interrupted_by_signal = 0;
+            return EINTR;
+        }
+    }
+    */
+
     current_process->fds[fd].offset += bytes_read;
 
     return bytes_read;
@@ -290,9 +307,10 @@ int32_t sys_fork() {
 }
 
 int32_t sys_execve(const char* file_name, const char* argv[]) {
-    fs_node_t* elf = fs_finddir(current_process->cwd, file_name);
+    fs_node_t* elf = resolve_path(file_name, current_process->cwd); 
     
     if (!elf) return ENOENT;
+
     if (elf->flags == FS_DIR) return EISDIR;
     
     cmd_args_t args = { 0 };
@@ -344,7 +362,7 @@ int32_t sys_chdir(const char* path) {
 
     current_process->cwd = new_dir;
     
-    return 1;
+    return 0;
 }
 
 int32_t sys_getcwd(char* buffer, size_t size) {
@@ -404,7 +422,7 @@ int32_t sys_getpid() {
 }
 
 void syscall_handler(regs_t* reg) {
-    uint32_t ret = 0;
+    int32_t ret = 0;
     memcpy(current_process->trapframe, reg, sizeof(regs_t));
     
     switch (reg->eax) {
@@ -419,12 +437,12 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_EXECVE:
             ret = sys_execve((char*)reg->ebx, (char**)reg->ecx);
-
+            
             if (ret >= 0) {
                 memcpy(reg, current_process->trapframe, sizeof(regs_t));
                 return;
             }
-
+            
             break;
         case SYS_EXIT:
             ret = sys_exit(reg, (int32_t)reg->ebx);

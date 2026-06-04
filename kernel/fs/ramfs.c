@@ -66,7 +66,7 @@ void ramfs_createfile(fs_node_t* node, char* name, uint32_t size) {
     ramfs->children[ramfs->child_count++] = child;
 }
 
-uint32_t ramfs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+int32_t ramfs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     if (!node || !node->device)
         return 0;
 
@@ -75,7 +75,7 @@ uint32_t ramfs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_
     if (offset > ramfs->capacity)
         return 0;
 
-    uint32_t write_size = offset + size < ramfs->capacity ? size : ramfs->capacity - offset;
+    int32_t write_size = offset + size < ramfs->capacity ? size : ramfs->capacity - offset;
     
     uint8_t* dst = ramfs->data + offset;
     memcpy((void*)dst, (void*)buffer, write_size);
@@ -85,7 +85,7 @@ uint32_t ramfs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_
     return write_size;
 }
 
-uint32_t ramfs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+int32_t ramfs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->device)
         return 0;
 
@@ -94,7 +94,7 @@ uint32_t ramfs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* bu
     if (offset > ramfs->capacity)
         return 0;
 
-    uint32_t read_size = offset + size < ramfs->size ? size : ramfs->size - offset;
+    int32_t read_size = offset + size < ramfs->size ? size : ramfs->size - offset;
 
     uint8_t* src = ramfs->data + offset;
     memcpy((void*)buffer, (void*)src, read_size);

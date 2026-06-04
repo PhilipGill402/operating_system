@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <errno.h>
+
 #include "exec/process.h"
 #include "exec/scheduler.h"
 #include "memory/physical_allocator.h"

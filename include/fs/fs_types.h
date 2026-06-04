@@ -29,13 +29,13 @@ typedef struct fs_node_t{
 
     fs_node_t* mount_parent;
 
-    uint32_t (*read)(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+    int32_t (*read)(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
     fs_dirent_t* (*readdir)(fs_node_t* node, uint32_t index);
     fs_node_t* (*finddir)(fs_node_t* node, char* name);
     fs_node_t* (*parent)(fs_node_t* node);
     void (*createdir)(fs_node_t* node, char* name);
     void (*createfile)(fs_node_t* node, char* name, uint32_t size);
-    uint32_t (*writefile)(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
+    int32_t (*writefile)(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
 } fs_node_t;
 
 typedef struct {

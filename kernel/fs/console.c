@@ -1,6 +1,6 @@
 #include "fs/console.h"
 
-uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+int32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     (void)node;
     (void)offset;
 
@@ -16,7 +16,7 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
 
     asm volatile("cli" ::: "memory");
 
-    uint32_t len = keyboard_buffer.length;
+    int32_t len = (int32_t)keyboard_buffer.length;
     if (len >= size)
         len = size - 1;
 
@@ -35,7 +35,7 @@ uint32_t console_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* 
     return len;
 }
 
-uint32_t console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+int32_t console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     (void)node;
     (void)offset;
 
@@ -43,7 +43,7 @@ uint32_t console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint3
         terminal_printf("%c", buffer[i]); 
     }
 
-    return size;
+    return (int32_t)size;
 }
 
 fs_node_t* create_console_node(fs_node_t* parent) {

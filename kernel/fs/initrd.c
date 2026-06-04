@@ -7,10 +7,10 @@ uint32_t num_nodes;
 //forward declaration
 fs_node_t* initrd_parent(fs_node_t* node);
 
-uint32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+int32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     initrd_node_t* file = &node_table[node->inode];
     
-    uint32_t write_size = offset + size > node->size ? node->size - offset : size;
+    int32_t write_size = offset + size > node->size ? node->size - offset : size;
     
     if (offset + size > node->size) 
         write_size = node->size - offset;
@@ -71,12 +71,12 @@ void initrd_createfile(fs_node_t* node, char* name, uint32_t size) {
     superblock->node_count++;
 }
 
-uint32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+int32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (offset >= node->size) {
         return 0;
     }
 
-    uint32_t bytes_to_read = size < (node->size - offset) ? size : (node->size - offset);
+    int32_t bytes_to_read = size < (node->size - offset) ? size : (node->size - offset);
     
     if (node->inode > num_nodes) {
         log_error("invalide file id\n");
@@ -220,7 +220,7 @@ fs_node_t* initrd_init(uint32_t addr) {
         return NULL;
     }
 
-    if (strcmp(root.name, "initrd")) {
+    if (strcmp(root.name, "bin")) {
         log_error("root name is not correct\n");
         return NULL;
     }

@@ -92,6 +92,7 @@ typedef struct {
     fs_node_t* cwd;
 
     uint32_t pending_signals;
+    uint8_t interrupted_by_signal;
 } process_t;
 
 typedef struct {

@@ -14,6 +14,18 @@ process_t* get_process(uint32_t pid) {
     return process_table[pid]; 
 }
 
+void process_send_signal(process_t* proc, uint32_t sig) {
+    if (!proc)
+        return;
+
+    if (!(sig & SIGTERM) && !(sig & SIGKILL) && !(sig & SIGSTOP) && !(sig & SIGCONT))
+        return;
+
+    proc->pending_signals |= sig;
+    proc->interrupted_by_signal = 1;
+    proc->state = PROC_READY;
+}
+
 void process_init_trapframe(process_t* process) {
     regs_t* tf = (regs_t*)(process->kernel_stack_top - sizeof(regs_t));
     memset(tf, 0, sizeof(regs_t));

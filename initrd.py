@@ -87,7 +87,7 @@ def parse_directory(dir_name, parent_id):
     
     # since we must change to the fs folder we dont want that as the name of our root dir
     if id == 0:
-        dir_name = "initrd"
+        dir_name = "bin"
 
     nodes.append(Node(id, 2, parent_id, dir_name, 0, 0))
 

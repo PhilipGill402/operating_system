@@ -143,52 +143,63 @@ void print_str(void* str) {
     printf("%r", *(string_t*)str);
 }
 
-int main(int argc, char* argv[]) {
-    string_t line = string_create();
+int main() {
     char buffer[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
+    char* user_argv[10];
     
     while (1) {
-        getcwd(cwd, MAX_BUFFER_LENGTH); 
+        errno = 0; 
+        int ret = getcwd(cwd, MAX_BUFFER_LENGTH);
+        if (ret == -1) {
+            perror("ret");
+        }
+
         printf("%s >> ", cwd);
         cwd[0] = '\0';
         
         int32_t bytes = read(stdin, buffer, MAX_BUFFER_LENGTH - 1); 
 
-        /*
-        int32_t bytes;
-        do {
-            bytes = read(stdin, buffer, MAX_BUFFER_LENGTH - 1);
-        } while (bytes == -1);
-        */
+        char* token = strtok(buffer, ' ');
+        int argc = 0;
         
-        line = string_literal(buffer);
-        vector_t args = string_tokenize(&line, ' ');
-        string_t cmd = *(string_t*)vector_get(&args, 0);
-        
-        if (string_compare_literal(&cmd, "cd") == 0) {
-            cd(&args); 
-        } else if (string_compare_literal(&cmd, "ls") == 0) {
-            ls(&args);
-        } else if (string_compare_literal(&cmd, "exit") == 0) {
-            break;
-        } else if (string_compare_literal(&cmd, "run") == 0) {
-            run(&args);
-        } else if (string_compare_literal(&cmd, "cat") == 0) {
-            cat(&args);
-        } else if (string_compare_literal(&cmd, "ps") == 0) {
-            ps(&args);
-        } else {
-            printf("Couldn't recognize '%r' command\n", cmd);
+        while (token != NULL) {
+            user_argv[argc++] = token;
+            token = strtok(NULL, ' ');
         }
-    
-        for (uint32_t i = 0; i < vector_size(&args); i++) {
-            string_t str = *(string_t*)vector_get(&args, i);
-            string_free(&str);
-        }
-    }
 
-    
+        // try to run the program, if not check the bin folder
+        char* path = malloc(MAX_BUFFER_LENGTH);
+        errno = 0;
+        int fd = open(user_argv[0], O_RDONLY, 0);
+        if (fd == -1 && errno == ENOENT) {
+            strcpy(path, "/bin/"); 
+            strcat(path, user_argv[0]);
+        } else if (fd == -1) {
+            perror("open");
+            free(path);
+            continue;
+        } else {
+            strcpy(path, user_argv[0]);
+        }
+
+        uint32_t pid = fork();
+        if (pid == 0) {
+            errno = 0; 
+             
+            int ret = execve(path, user_argv);
+            
+            if (ret == -1) {
+                perror("execve");
+                exit(-1);
+            }
+        }
+
+        int status;
+        waitpid(pid, &status, 0);
+
+        free(path); 
+    }
 
     return 0;
 }
