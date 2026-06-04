@@ -30,9 +30,12 @@ LIBK_INC := $(LIBK_DIR)/include
 CRT0 := $(LIBC_DIR)/build/crt0.o
 SYSROOT := sysroot
 
+SYSROOT_LIBC := $(SYSROOT)/usr/lib/libc.a
+SYSROOT_CRT0 := $(SYSROOT)/usr/lib/crt0.o
+SYSROOT_STAMP := $(SYSROOT)/.libc-installed
+
 KERNEL_BIN := kernel.bin
 ISO := myos.iso
-
 FS := initrd.img
 
 CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBK_INC) -g
@@ -49,42 +52,44 @@ OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
 
 LIBC_HEADERS := $(shell find $(LIBC_DIR)/include -type f -name '*.h')
 
-USER_DIR := bin 
+USER_DIR := bin
 
-.PHONY: all kernel libc run iso clean dirs
+.PHONY: all run iso clean user libc libk
 
 all: kernel
 
-dirs:
-	mkdir -p $(BUILD_DIR)
+kernel: $(KERNEL_BIN)
 
-# Build libc only when explicitly requested or when kernel is requested
-libc:
+libc: $(SYSROOT_STAMP)
+
+$(SYSROOT_STAMP): $(LIBC) $(CRT0) $(LIBC_HEADERS)
 	$(MAKE) -C $(LIBC_DIR)
 	mkdir -p $(SYSROOT)/usr/include
 	mkdir -p $(SYSROOT)/usr/lib
-	cp -R $(LIBC_INC)/* $(SYSROOT)/usr/include/
-	cp $(LIBC) $(SYSROOT)/usr/lib/
-	cp $(CRT0) $(SYSROOT)/usr/lib/
+	cp -Ru $(LIBC_INC)/* $(SYSROOT)/usr/include/
+	cp -u $(LIBC) $(SYSROOT)/usr/lib/
+	cp -u $(CRT0) $(SYSROOT)/usr/lib/
+	touch $@
 
-libk:
+$(LIBC) $(CRT0):
+	$(MAKE) -C $(LIBC_DIR)
+
+libk: $(LIBK)
+
+$(LIBK):
 	$(MAKE) -C $(LIBK_DIR)
 
-# Build kernel only when explicitly requested
-kernel: $(KERNEL_BIN)
-
-user:
+user: libc
 	$(MAKE) -C $(USER_DIR)
 
-img: user
-	python3 initrd.py	
+$(FS): user
+	python3 initrd.py
+
+img: $(FS)
 
 $(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBK) $(LIBS)
 	grub-file --is-x86-multiboot $@
-
-$(LIBK):
-	$(MAKE) -C $(LIBK_DIR)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(dir $@)
@@ -94,24 +99,23 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) $< -o $@
 
-# Only build ISO when explicitly requested
-iso: kernel img libc user
-	rm -rf $(ISO_DIR)	
+iso: kernel libc user $(FS)
+	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
 	cp grub.cfg $(ISO_DIR)/boot/grub
 	cp $(FS) $(ISO_DIR)/boot
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
-# Run only; assumes kernel was already built earlier
 run:
 	qemu-system-i386 -cdrom $(ISO) -serial stdio -monitor none
 
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean
+	$(MAKE) -C $(USER_DIR) clean
 	rm -rf $(BUILD_DIR)
-	rm initrd.img
-	rm -rf sysroot
-	rm $(KERNEL_BIN)
-	rm $(ISO)
-
+	rm -f $(FS)
+	rm -rf $(SYSROOT)
+	rm -f $(KERNEL_BIN)
+	rm -f $(ISO)
+	rm -rf $(ISO_DIR)

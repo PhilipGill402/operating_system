@@ -3,6 +3,7 @@
 #include <vector.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #define MAX_BUFFER_LENGTH 256
 
@@ -17,6 +18,11 @@ int check_builtins(int argc, char* argv[]) {
             printf("'cd' requires an argument\n");
 
         return 1;
+    } else if (strcmp(argv[0], "exit") == 0) {
+        if (argc >= 2)
+            exit(atoi(argv[1]));
+        else
+            exit(0);
     }
 
     return 0;
