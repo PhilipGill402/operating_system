@@ -19,6 +19,7 @@
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
+#include "hardware.h"
 
 #include "interrupts/keyboard.h"
 
@@ -90,6 +91,11 @@ void finish_init() {
     
     init_heap();
     
+    char* vendor = cpu_get_vendor();
+    char* brand = cpu_get_brand();
+    log_debug("CPU: %s\n", vendor);
+    log_debug("CPU: %s\n", brand);
+
     fs_init(mbi);
 
     scheduler_init();

@@ -256,6 +256,8 @@ void* sys_brk(void* new_addr) {
 }
 
 int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
+    if (!buffer) return EFAULT; 
+
     if (fd >= MAX_FDS) return EBADF;
 
     fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
@@ -279,7 +281,7 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
         }
     }
     */
-
+    
     current_process->fds[fd].offset += bytes_read;
 
     return bytes_read;

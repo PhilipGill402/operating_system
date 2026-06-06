@@ -10,7 +10,7 @@
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "fs/dev.h"
-#include "fs/proc.h"
+#include "fs/procfs/procfs.h"
 #include "fs/ramfs.h"
 #include "fs/vfs.h"
 #include "fs/initrd.h"

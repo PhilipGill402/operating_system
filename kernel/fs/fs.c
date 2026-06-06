@@ -51,11 +51,10 @@ int32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t si
 
 int32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
     if (!node || !node->read) {
-        log_error("node is at %p or node->read is null\n", node); 
+        log_error("node is at %x or node->read is null\n", node);
         return 0;
     }
         
-    
     return node->read(node, offset, size, buffer);
 }
 

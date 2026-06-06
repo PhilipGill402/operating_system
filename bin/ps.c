@@ -27,8 +27,10 @@ int main(int argc, char* argv[]) {
         uint32_t bytes_read = read(proc_fd, buffer, 50);
         buffer[bytes_read] = '\0';
 
-        if (bytes_read == 0) printf("no bytes read");
-        else printf("%s\n", buffer);
+        if (bytes_read == 0)
+            printf("no bytes read\n");
+        else
+            printf("%s\n", buffer);
 
         free(buffer);
         free(file);
