@@ -1,5 +1,7 @@
 #include "fs/procfs/procfs.h"
 
+#include <log.h>
+
 fs_node_t* proc_dir;
 static uint32_t proc_inode_count = 0;
 
@@ -200,7 +202,6 @@ fs_dirent_t* proc_readdir(fs_node_t* node, uint32_t index) {
     for (uint32_t i = 0; i < dir->child_count; i++, seen++) {
         if (seen == index) {
             file = dir->children[i];
-            
             strcpy(dent->name, file->name);
             dent->inode = file->inode;
 
@@ -276,7 +277,7 @@ fs_node_t* proc_finddir(fs_node_t* node, char* name) {
 
     for (uint32_t i = 0; i < dir->child_count; i++) {
         if (strcmp(dir->children[i]->name, name) == 0) {
-            return create_node_from_proc_file(dir->children[i], proc_inode_count++); // CHANGE INODE        
+            return create_node_from_proc_file(dir->children[i], dir->children[i]->inode); // CHANGE INODE        
         }
     } 
 

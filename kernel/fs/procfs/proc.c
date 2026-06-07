@@ -44,10 +44,10 @@ proc_file_t* create_proc_file(fs_node_t* parent, uint32_t pid, uint32_t inode) {
 
 
     file->parent = fs_node_clone(parent);
-    file->name = kmalloc(10);
-    if (!file)
+    if (!file->parent)
         return NULL;
-    snprintf(file->name, 10, "%d"); 
+    int bytes_written = snprintf(file->name, sizeof(file->name), "%d", pid);
+    file->name[bytes_written] = '\0';
     
     file->pid = pid;
     file->inode = inode;

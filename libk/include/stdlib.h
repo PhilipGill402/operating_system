@@ -1,6 +1,8 @@
 #ifndef STDLIB_H_
 #define STDLIB_H_
 
+#include <stdint.h>
+
 #include <sys/cdefs.h>
 
 __attribute__((__noreturn__))

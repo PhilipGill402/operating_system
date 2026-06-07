@@ -91,10 +91,7 @@ void finish_init() {
     
     init_heap();
     
-    char* vendor = cpu_get_vendor();
-    char* brand = cpu_get_brand();
-    log_debug("CPU: %s\n", vendor);
-    log_debug("CPU: %s\n", brand);
+    
 
     fs_init(mbi);
 
