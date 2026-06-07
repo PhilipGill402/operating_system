@@ -6,19 +6,25 @@ static inline uint64_t frame_to_kb(uint32_t frame) {
     return ((uint64_t)frame * PAGE_SIZE) / 1024;
 }
 
+static inline uint64_t bytes_to_kb(uint32_t bytes) {
+    return bytes / 1024;
+}
+
 static int32_t get_meminfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t offset, uint32_t size) {
     char* fmt =
-        "Total Memory:\t%l kB\n"
-        "Free Memory:\t%l kB\n"
-        "Used Memory:\t%l kB\n"
-        "Page Size:\t%d kB\n";
+        "Total Memory:\t\t%l kB\n"
+        "Free Memory:\t\t%l kB\n"
+        "Used Memory:\t\t%l kB\n"
+        "Page Size:\t\t%d kB\n"
+        "Kernel Heap Size:\t%l kB\n";
     
     uint64_t total_kb = frame_to_kb(pmm.total_frames);
     uint64_t used_kb = frame_to_kb(pmm.used_frames);
     uint64_t free_kb = frame_to_kb(pmm.free_frames);
+    uint64_t heap_size = bytes_to_kb(KHEAP_END - KHEAP_START);
      
     char intern_buffer[256];
-    uint32_t bytes_written = snprintf(intern_buffer, 256, fmt, total_kb, free_kb, used_kb, 4,);
+    uint32_t bytes_written = snprintf(intern_buffer, 256, fmt, total_kb, free_kb, used_kb, 4, heap_size);
     intern_buffer[bytes_written] = '\0';
 
     uint32_t len = strlen(intern_buffer);
@@ -28,7 +34,7 @@ static int32_t get_meminfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t off
 
     bytes_written = offset + size < len ? offset + size : len - offset;
     
-    snprintf(buffer, bytes_written, fmt, total_kb, free_kb, used_kb, 4, num_allocs, num_frees);
+    snprintf(buffer, bytes_written, fmt, total_kb, free_kb, used_kb, 4, heap_size);
 
     return bytes_written;
 }
