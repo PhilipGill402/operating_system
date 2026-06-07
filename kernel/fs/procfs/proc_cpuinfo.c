@@ -3,12 +3,10 @@
 static int32_t get_cpuinfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t offset, uint32_t size) {
     char* vendor = cpu_get_vendor();
     char* brand = cpu_get_brand();
-    log_debug("CPU: %s\n", vendor);
-    log_debug("CPU: %s\n", brand);
     
     char* fmt =
-        "vendor_id\t: %s\n"
-        "model name\t: %s\n";
+        "vendor_id:\t%s\n"
+        "model name:\t%s\n";
 
     char intern_buffer[64];
     uint32_t bytes_written = snprintf(intern_buffer, 64, fmt, vendor, brand);

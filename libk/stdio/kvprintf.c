@@ -23,6 +23,29 @@ static void uint_to_str(uint32_t num, char* str) {
     }
 }
 
+static void uint64_to_str(uint64_t num, char* str) {
+    int i = 0;
+
+    if (num == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return;
+    }
+
+    while (num > 0) {
+        str[i++] = (num % 10) + '0';
+        num /= 10;
+    }
+
+    str[i] = '\0';
+
+    for (int j = 0, k = i - 1; j < k; j++, k--) {
+        char temp = str[j];
+        str[j] = str[k];
+        str[k] = temp;
+    }
+}
+
 static void int_to_str(int num, char* str) {
     unsigned int value;
     int i = 0;
@@ -187,6 +210,25 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
             char str[20];
 
             uint_to_str(num, str);
+
+            size_t len = strlen(str);
+
+            if (maxrem < len) return -1;
+
+            for (size_t i = 0; i < len; i++) {
+                putc(str[i], ctx);
+            }
+
+            written += len;
+        }
+
+        else if (*format == 'l') {
+            format++;
+
+            uint64_t num= va_arg(args, uint64_t);
+            char str[32];
+
+            uint64_to_str(num, str);
 
             size_t len = strlen(str);
 

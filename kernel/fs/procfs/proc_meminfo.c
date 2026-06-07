@@ -1,18 +1,22 @@
 #include "fs/procfs/proc_meminfo.h"
 
+static inline uint64_t frame_to_kb(uint32_t frame) {
+    return ((uint64_t)frame * PAGE_SIZE) / 1024;
+}
+
 static int32_t get_meminfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t offset, uint32_t size) {
     char* fmt =
-        "Total Memory:\t %d kB\n"
-        "Free Memory:\t %d kB\n"
-        "Used Memory:\t %d kB\n"
-        "Page Size:\t %d kB\n";
+        "Total Memory:\t%l kB\n"
+        "Free Memory:\t%l kB\n"
+        "Used Memory:\t%l kB\n"
+        "Page Size:\t%d kB\n";
     
-    uint32_t total_frames = pmm.total_frames;
-    uint32_t used_frames = pmm.used_frames;
-    uint32_t free_frames = pmm.free_frames;
-
+    uint64_t total_kb = frame_to_kb(pmm.total_frames);
+    uint64_t used_kb = frame_to_kb(pmm.used_frames);
+    uint64_t free_kb = frame_to_kb(pmm.free_frames);
+     
     char intern_buffer[256];
-    uint32_t bytes_written = snprintf(intern_buffer, 256, fmt, total_frames, used_frames, free_frames, 4096);
+    uint32_t bytes_written = snprintf(intern_buffer, 256, fmt, total_kb, free_kb, used_kb, 4);
     intern_buffer[bytes_written] = '\0';
 
     uint32_t len = strlen(intern_buffer);
@@ -22,7 +26,7 @@ static int32_t get_meminfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t off
 
     bytes_written = offset + size < len ? offset + size : len - offset;
     
-    snprintf(buffer, bytes_written, fmt, total_frames, used_frames, free_frames, 4096);
+    snprintf(buffer, bytes_written, fmt, total_kb, free_kb, used_kb, 4);
 
     return bytes_written;
 }

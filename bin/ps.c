@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <ctype.h>
 
 
 int main(int argc, char* argv[]) {
@@ -18,6 +19,12 @@ int main(int argc, char* argv[]) {
         
         char* file = malloc(64);
         strcpy(file, "/proc/");
+        
+        // make sure we only get processes
+        if (!isdigit(entries[i].name[0])) {
+            continue;
+        }
+
         strcat(file, entries[i].name);
         
         uint32_t proc_fd = open(file, O_RDONLY, 0);

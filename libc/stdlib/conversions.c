@@ -6,7 +6,7 @@ static inline int is_char_num(char c) {
 
 int atoi(const char* str) {
     int num = 0; 
-
+    
     for (uint32_t i = 0; str[i] != '\0' && is_char_num(str[i]); i++) {
         num = num * 10 + (str[i] - '0'); 
     }
