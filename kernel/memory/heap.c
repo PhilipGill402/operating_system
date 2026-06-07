@@ -1,6 +1,14 @@
 #include "memory/heap.h"
 
+#ifdef MALLOC_DEBUG
+#undef kmalloc
+#undef kzmalloc
+#undef kfree
+#endif
+
 static heap_t heap;
+static uint32_t num_allocs = 0;
+static uint32_t num_frees = 0;
 
 static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
@@ -91,7 +99,9 @@ void coalesce(kblock_t* block){
     
     if (!next->allocated){
         block->size += next->size;
+        write_canary(block);
     }
+
 }
 
 /* Main Functions */
@@ -120,7 +130,7 @@ void init_heap(){
 
 void* kmalloc(size_t size){
     //align to 8 byte increments
-    size_t total_size = align_up(sizeof(kblock_t) + size, 8);
+    size_t total_size = align_up(sizeof(kblock_t) + size + sizeof(uint32_t), HEAP_ALIGN);
     
     //makes sure the requested size is not bigger than the arena
     if (total_size > (heap.size - sizeof(kblock_t))){
@@ -141,6 +151,9 @@ void* kmalloc(size_t size){
                 //changes the block's properties to properly allocate it
                 block->size = total_size;
                 block->allocated = true;
+                block->file = "unknown";
+                block->line = 0;
+                write_canary(block);
                 
                 //divides the old block into the the new one and the remainder
                 kblock_t* new_block = (kblock_t*)((uint8_t*)block + block->size);
@@ -148,9 +161,15 @@ void* kmalloc(size_t size){
                 //sets the size of the new block and sets its allocation flag to false
                 new_block->size = unneeded;
                 new_block->allocated = false;
+                new_block->file = "free";
+                new_block->line = 0;
+                write_canary(new_block);
             } else {
                 //if there is not enough remaining bytes then just go ahead and return the entire block
                 block->allocated = true;
+                block->file = "unknown";
+                block->line = 0;
+                write_canary(block);
             }
             
             //returns the first address after the block header
@@ -181,6 +200,7 @@ void kfree(void* ptr) {
     
     //combines the current block with the next if the next isn't allocated
     coalesce(block);
+    write_canary(block);
 }
 
 void* kzmalloc(size_t size) {
@@ -291,6 +311,8 @@ void heap_dump(void) {
 }
 
 void* kmalloc_debug(size_t size, const char* file, int line) {
+    num_allocs++; 
+    log_debug("Malloc called at %s:%d for %u bytes\n", file, line, size); 
     if (size == 0) {
         return NULL;
     }
@@ -377,6 +399,7 @@ void* kzmalloc_debug(size_t size, const char* file, int line) {
 }
 
 void kfree_debug(void* ptr, const char* file, int line) {
+    num_frees++; 
     if (!ptr) {
         return;
     }
@@ -421,8 +444,9 @@ void kfree_debug(void* ptr, const char* file, int line) {
     block->file = "free";
     block->line = 0;
 
-    //coalesce(block);
-
+    coalesce(block);
+    write_canary(block);
+    
     if (!heap_check("after kfree")) {
         log_error("heap corrupted immediately after kfree at %s:%d\n", file, line);
         heap_dump();

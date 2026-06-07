@@ -15,6 +15,7 @@ fs_node_t* fs_node_clone(fs_node_t* node) {
 
     memcpy(clone, node, sizeof(fs_node_t));
     strcpy(clone->name, node->name);
+    log_debug("%u : %u\n", sizeof(clone->name), sizeof(node->name));
     
     return clone;
 }

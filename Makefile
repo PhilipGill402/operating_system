@@ -58,6 +58,9 @@ USER_DIR := bin
 
 all: kernel
 
+debug: CFLAGS += -DMALLOC_DEBUG
+debug: kernel
+
 kernel: $(KERNEL_BIN)
 
 libc: $(SYSROOT_STAMP)

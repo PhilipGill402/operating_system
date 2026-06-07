@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "paging.h"
+#include "memory/paging.h"
 
 // same as KERNEL_VIRT_MEM
 #define KHEAP_START 0xC2000000
@@ -15,10 +15,6 @@
 #define PAGE_SIZE 4096
 
 #define KHEAP_CANARY 0xDEADBEEF
-
-void kheap_init();
-void* kmalloc(size_t size);
-void* kzmalloc(size_t size);
 
 typedef uintptr_t word_t;
 
@@ -37,18 +33,25 @@ typedef struct heap_t {
     uint8_t* end;
 } heap_t;
 
-//void* kmalloc_debug(size_t size, const char* file, int line);
-//void kfree_debug(void* ptr, const char* file, int line);
-
-//#define kmalloc(size)   kmalloc_debug(size, __FILE__, __LINE__)
-//#define kzmalloc(size)  kzmalloc_debug(size, __FILE__, __LINE__)
-//#define kfree(ptr)      kfree_debug(ptr, __FILE__, __LINE__)
-
-void init_heap();
 void* kmalloc(size_t size);
 void* kzmalloc(size_t size);
 void kfree(void* ptr);
+
+void* kmalloc_debug(size_t size, const char* file, int line);
+void* kzmalloc_debug(size_t size, const char* file, int line);
+void kfree_debug(void* ptr, const char* file, int line);
+
+#ifdef MALLOC_DEBUG
+
+#define kmalloc(size)   kmalloc_debug(size, __FILE__, __LINE__)
+#define kzmalloc(size)  kzmalloc_debug(size, __FILE__, __LINE__)
+#define kfree(ptr)      kfree_debug(ptr, __FILE__, __LINE__)
+
+#endif
+
 void* krealloc(void* ptr, size_t size);
+
+void init_heap();
 
 #endif // !INCLUDE_HEAP_H_
 
