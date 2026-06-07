@@ -298,10 +298,13 @@ fs_node_t* proc_finddir(fs_node_t* node, char* name) {
 
 
 fs_node_t* init_proc() {
-    proc_dir = create_root_dir("proc", fs_root, inode_count++);
+    proc_dir = create_root_dir("proc", fs_root, proc_inode_count++);
     
-    proc_file_t* cpuinfo = create_cpuinfo_file(proc_dir, inode_count++);
+    proc_file_t* cpuinfo = create_cpuinfo_file(proc_dir, proc_inode_count++);
     proc_add_child(proc_dir, cpuinfo);
+
+    proc_file_t* meminfo = create_meminfo_file(proc_dir, proc_inode_count++);
+    proc_add_child(proc_dir, meminfo);
 
     return proc_dir;
 }

@@ -8,6 +8,7 @@
 #include "fs/procfs/procfs_defs.h"
 #include "fs/procfs/proc.h"
 #include "fs/procfs/proc_cpuinfo.h"
+#include "fs/procfs/proc_meminfo.h"
 
 fs_node_t* init_proc();
 
