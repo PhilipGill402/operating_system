@@ -4,6 +4,18 @@ volatile uint32_t ticks = 0;
 
 void timer_callback(regs_t* r) {
     ticks++;
+    
+
+    if (framebuffer_initialized && ticks % 50 == 0) {
+        cursor_on = !cursor_on;
+        
+        /* --- CHANGE THIS TOO SLOW --- */
+        framebuffer_clear_cursor();
+
+        if (cursor_on) {
+            framebuffer_draw_cursor();
+        }
+    }
 
     if (!current_process) {
         pic_send_eoi(IRQ_TIMER);

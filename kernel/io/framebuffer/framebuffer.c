@@ -51,11 +51,11 @@ static void framebuffer_scroll() {
     framebuffer.y = framebuffer.height - FONT_HEIGHT;
 }
 
-static inline void framebuffer_draw_cursor() {
+void framebuffer_draw_cursor() {
     framebuffer_draw_rect(framebuffer.x, framebuffer.y, FONT_WIDTH, FONT_HEIGHT, FB_WHITE);
 }
 
-static inline void framebuffer_clear_cursor() {
+void framebuffer_clear_cursor() {
     framebuffer_draw_rect(framebuffer.x, framebuffer.y, FONT_WIDTH, FONT_HEIGHT, FB_BLACK);
 }
 
@@ -90,8 +90,9 @@ void framebuffer_putchar(char c, void* ctx) {
             }
         }
     }
-
-    framebuffer_draw_cursor();
+    
+    if (cursor_on)
+        framebuffer_draw_cursor();
 }
 
 int32_t framebuffer_init(multiboot_info_t* mbi) {
@@ -119,6 +120,10 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     io_put_char = framebuffer_putchar;
 
     framebuffer_draw_cursor();
+
+    cursor_on = 1;
+    
+    framebuffer_initialized = 1;
     
     return 1;
 }

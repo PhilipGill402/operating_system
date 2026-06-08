@@ -48,5 +48,7 @@ typedef struct {
 uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color);
 
 extern framebuffer_t framebuffer;
+extern uint8_t framebuffer_initialized;
+extern volatile uint8_t cursor_on;
 
 #endif // !INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_

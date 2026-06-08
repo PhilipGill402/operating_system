@@ -7,6 +7,7 @@
 #include "interrupts/registers.h"
 #include "exec/process.h"
 #include "interrupts/pic.h"
+#include "io/framebuffer/framebuffer.h"
 
 extern volatile uint32_t ticks;
 

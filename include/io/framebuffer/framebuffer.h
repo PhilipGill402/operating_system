@@ -14,5 +14,7 @@
 
 int32_t framebuffer_init(multiboot_info_t* mbi);
 void framebuffer_putchar(char c, void* ctx);
+void framebuffer_draw_cursor();
+void framebuffer_clear_cursor();
 
 #endif

@@ -1,6 +1,8 @@
 #include "io/framebuffer/framebuffer_defs.h"
 
 framebuffer_t framebuffer;
+uint8_t framebuffer_initialized = 0;
+volatile uint8_t cursor_on = 0;
 
 uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color) {
     if (x >= framebuffer.width || y >= framebuffer.height)
