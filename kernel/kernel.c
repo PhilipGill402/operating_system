@@ -8,6 +8,7 @@
 
 #include "io/vga.h"
 #include "io/serial.h"
+#include "io/framebuffer.h"
 #include "gdt.h"
 #include "multiboot.h"
 #include "memory/physical_allocator.h"
@@ -62,8 +63,7 @@ void kernel_init(uint32_t mbi_phys) {
     for (uint32_t page = start; page < end; page += PAGE_SIZE) {
         map_boot_page(page);
     }
-    
-    
+
 
     pmm_init(mbi);
     paging_init_temp_regions();
@@ -90,8 +90,12 @@ void finish_init() {
     pit_init(100);
     
     init_heap();
+
+    if (!(mbi->flags & (1 << 12))) {
+        log_error("no framebuffer info\n");
+    }
     
-    
+    framebuffer_init(mbi);
 
     fs_init(mbi);
 

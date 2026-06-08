@@ -1,6 +1,7 @@
 .set ALIGN,     1<<0
 .set MEMINFO,   1<<1
-.set FLAGS,     ALIGN | MEMINFO
+.set VIDEO,    1 << 2
+.set FLAGS,     ALIGN | MEMINFO | VIDEO
 .set MAGIC,     0x1BADB002
 .set CHECKSUM,  -(MAGIC + FLAGS)
 
@@ -9,6 +10,17 @@
 .long MAGIC
 .long FLAGS
 .long CHECKSUM
+
+.long 0
+.long 0
+.long 0
+.long 0
+.long 0
+
+.long 0        /* 0 = linear graphics mode */
+.long 1024     /* framebuffer width */
+.long 768      /* framebuffer height */
+.long 32       /* bits per pixel */
 
 .section .bootstrap_stack, "aw", @nobits
 stack_bottom:
