@@ -20,14 +20,14 @@ int32_t write_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32
     if (!file || !buffer)
         return 0;
     
-    uint32_t fb_len = framebuffer.width * framebuffer.height * framebuffer.pitch;
+    uint32_t fb_len = framebuffer.height * framebuffer.pitch;
     if (offset >= fb_len)
         return 0;
     
-    uint32_t bytes_to_write = offset + size < fb_len ? offset + size : fb_len - offset;
+    uint32_t bytes_to_write = offset + size < fb_len ? size : fb_len - offset;
     uint8_t* addr = framebuffer.addr + offset;
     
-    memcpy(addr, buffer, size);
+    memcpy(addr, buffer, bytes_to_write);
 
     return bytes_to_write;
 }

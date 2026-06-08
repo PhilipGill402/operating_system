@@ -1,7 +1,5 @@
 #include "io/framebuffer/framebuffer.h"
 
-
-
 static inline uint32_t fb_get_color(fb_color_t color) {
     return *(uint32_t*)(&color);
 }
@@ -40,22 +38,35 @@ static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t f
 
 void framebuffer_putchar(char c, void* ctx) {
     (void)ctx;
-    
+
     if (c == '\n') {
         framebuffer.y += 10;
         framebuffer.x = 5;
-
-        return;
-    } 
-
-
-    framebuffer_draw_char(c, framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
-
-    framebuffer.x += 8;
-
-    if (framebuffer.x >= framebuffer.width) {
+    } else if (c == '\t') {
+        framebuffer.x = (framebuffer.x + 64) & ~(64 - 8);
+    } else if (c == '\b' && framebuffer.x >= 8) {
+        framebuffer.x -= 8;
+        framebuffer_draw_char(' ', framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
+    } else if (c == '\r') {
+        framebuffer.x = 5;
+    } else if (c == '\n') {
         framebuffer.x = 5;
         framebuffer.y += 10;
+        if (framebuffer.y >= framebuffer.height) {
+            log_error("need to implement scrolling\n");
+        }
+    } else if (c >= ' ') {
+        framebuffer_draw_char(c, framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
+        framebuffer.x += 8;
+
+        if (framebuffer.x >= framebuffer.width) {
+            framebuffer.x = 5;
+            framebuffer.y += 10;
+            
+            if (framebuffer.y >= framebuffer.height) {
+                log_error("need to implement scrolling\n");
+            }
+        }
     }
 }
 
@@ -82,7 +93,8 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.y = 5;
     
     io_put_char = framebuffer_putchar;
-
+    
+    /*
     fs_node_t* img = resolve_path("/bin/test.bmp", fs_root);
     if (!img) {
         log_error("failed to find img\n");
@@ -97,7 +109,8 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     
     int32_t bytes_read = fs_read(img, 0, 24630, buffer);
     framebuffer_draw_bitmap(buffer, 100, 100);
-    
+    */
+
     return 1;
 }
 
