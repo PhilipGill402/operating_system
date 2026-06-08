@@ -7,6 +7,7 @@
 
 #include "io/io.h"
 #include "io/framebuffer/framebuffer_defs.h"
+#include "io/framebuffer/framebuffer_graphics.h"
 #include "multiboot.h"
 #include "memory/paging.h"
 #include "io/font8x8.h"

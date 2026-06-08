@@ -51,8 +51,18 @@ static void framebuffer_scroll() {
     framebuffer.y = framebuffer.height - FONT_HEIGHT;
 }
 
+static inline void framebuffer_draw_cursor() {
+    framebuffer_draw_rect(framebuffer.x, framebuffer.y, FONT_WIDTH, FONT_HEIGHT, FB_WHITE);
+}
+
+static inline void framebuffer_clear_cursor() {
+    framebuffer_draw_rect(framebuffer.x, framebuffer.y, FONT_WIDTH, FONT_HEIGHT, FB_BLACK);
+}
+
 void framebuffer_putchar(char c, void* ctx) {
     (void)ctx;
+    
+    framebuffer_clear_cursor();
 
     if (c == '\n') {
         framebuffer.y += FONT_HEIGHT;
@@ -80,6 +90,8 @@ void framebuffer_putchar(char c, void* ctx) {
             }
         }
     }
+
+    framebuffer_draw_cursor();
 }
 
 int32_t framebuffer_init(multiboot_info_t* mbi) {
@@ -105,24 +117,9 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.y = FB_PADDING;
     
     io_put_char = framebuffer_putchar;
-    
-    /*
-    fs_node_t* img = resolve_path("/bin/test.bmp", fs_root);
-    if (!img) {
-        log_error("failed to find img\n");
-        return 1;
-    }
 
-    uint8_t* buffer = kmalloc(25000);
-    if (!buffer) {
-        log_error("failed to allocate buffer\n");
-        return 1;
-    }
+    framebuffer_draw_cursor();
     
-    int32_t bytes_read = fs_read(img, 0, 24630, buffer);
-    framebuffer_draw_bitmap(buffer, 100, 100);
-    */
-
     return 1;
 }
 
