@@ -36,35 +36,47 @@ static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t f
     return 1;
 }
 
+static void framebuffer_scroll() {
+    
+    // skip first line
+    uint8_t* copy = framebuffer.addr + (framebuffer.pitch * FONT_HEIGHT);
+    uint32_t len = (framebuffer.height - FONT_HEIGHT) * framebuffer.pitch;
+
+    //get last line
+    uint8_t* last_line = framebuffer.addr + (framebuffer.pitch * (framebuffer.height - FONT_HEIGHT));
+
+    memmove(framebuffer.addr, copy, len);
+    memset(last_line, 0, framebuffer.pitch * FONT_HEIGHT);
+
+    framebuffer.y = framebuffer.height - FONT_HEIGHT;
+}
+
 void framebuffer_putchar(char c, void* ctx) {
     (void)ctx;
 
     if (c == '\n') {
-        framebuffer.y += 10;
-        framebuffer.x = 5;
+        framebuffer.y += FONT_HEIGHT;
+        framebuffer.x = FONT_WIDTH;
+        if (framebuffer.y >= framebuffer.height - FONT_HEIGHT) {
+            framebuffer_scroll();
+        }
     } else if (c == '\t') {
         framebuffer.x = (framebuffer.x + 64) & ~(64 - 8);
-    } else if (c == '\b' && framebuffer.x >= 8) {
-        framebuffer.x -= 8;
+    } else if (c == '\b' && framebuffer.x >= FONT_WIDTH + FB_PADDING) {
+        framebuffer.x -= FONT_WIDTH;
         framebuffer_draw_char(' ', framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
     } else if (c == '\r') {
-        framebuffer.x = 5;
-    } else if (c == '\n') {
-        framebuffer.x = 5;
-        framebuffer.y += 10;
-        if (framebuffer.y >= framebuffer.height) {
-            log_error("need to implement scrolling\n");
-        }
+        framebuffer.x = FB_PADDING;
     } else if (c >= ' ') {
         framebuffer_draw_char(c, framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
-        framebuffer.x += 8;
+        framebuffer.x += FONT_WIDTH;
 
         if (framebuffer.x >= framebuffer.width) {
-            framebuffer.x = 5;
-            framebuffer.y += 10;
+            framebuffer.x = FB_PADDING;
+            framebuffer.y += FONT_HEIGHT;
             
             if (framebuffer.y >= framebuffer.height) {
-                log_error("need to implement scrolling\n");
+                framebuffer_scroll();
             }
         }
     }
@@ -89,8 +101,8 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.height = mbi->framebuffer_height;
     framebuffer.pitch = mbi->framebuffer_pitch;
     framebuffer.bpp = mbi->framebuffer_bpp;
-    framebuffer.x = 5;
-    framebuffer.y = 5;
+    framebuffer.x = FB_PADDING;
+    framebuffer.y = FB_PADDING;
     
     io_put_char = framebuffer_putchar;
     

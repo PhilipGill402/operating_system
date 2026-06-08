@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define FONT_HEIGHT 10
+#define FONT_WIDTH  8
+
 extern char font8x8_basic[128][8];
 
 #endif

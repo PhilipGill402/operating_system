@@ -11,8 +11,6 @@
 #include "memory/paging.h"
 #include "io/font8x8.h"
 
-#include "fs/fs.h"
-
 int32_t framebuffer_init(multiboot_info_t* mbi);
 void framebuffer_putchar(char c, void* ctx);
 

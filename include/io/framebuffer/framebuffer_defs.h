@@ -6,6 +6,8 @@
 
 #define FRAMEBUFFER_VIRT 0xD0000000
 
+#define FB_PADDING      5
+
 #define FB_BLACK        0x00000000
 #define FB_WHITE        0x00FFFFFF
 
