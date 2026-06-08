@@ -6,9 +6,10 @@
 #include <stack.h>
 #include <log.h>
 
+#include "io/io.h"
 #include "io/vga.h"
 #include "io/serial.h"
-#include "io/framebuffer.h"
+#include "io/framebuffer/framebuffer.h"
 #include "gdt.h"
 #include "multiboot.h"
 #include "memory/physical_allocator.h"
@@ -48,7 +49,6 @@ void switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
 
 void kernel_init(uint32_t mbi_phys) {
     serial_init(); 
-    terminal_initialize();
 
     // mapping mbi into virtual memory
     uint32_t mbi_page_phys = mbi_phys & 0xFFFFF000;
@@ -88,16 +88,20 @@ void finish_init() {
     pic_clear_mask(0);
     pic_clear_mask(1);
     pit_init(100);
-    
+     
     init_heap();
-
-    if (!(mbi->flags & (1 << 12))) {
-        log_error("no framebuffer info\n");
-    }
     
-    framebuffer_init(mbi);
-
     fs_init(mbi);
+
+    // GRUB multiboot supports use of the framebuffer
+    if (mbi->flags & (1 << 12)) {
+        framebuffer_init(mbi);
+    }
+
+    if (!io_put_char) {
+        terminal_initialize();
+        io_put_char = terminal_putchar;
+    }
 
     scheduler_init();
     
@@ -115,5 +119,4 @@ void finish_init() {
 
 void kernel_main(uint32_t mbi_phys) {
     kernel_init(mbi_phys);
-
 }

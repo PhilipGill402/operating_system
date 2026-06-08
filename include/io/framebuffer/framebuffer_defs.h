@@ -1,13 +1,8 @@
-#ifndef INCLUDE_IO_FRAMEBUFFER_H_
-#define INCLUDE_IO_FRAMEBUFFER_H_
+#ifndef INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_
+#define INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_
 
+#include <stddef.h>
 #include <stdint.h>
-
-#include <log.h>
-
-#include "multiboot.h"
-#include "memory/paging.h"
-#include "io/font8x8.h"
 
 #define FRAMEBUFFER_VIRT 0xD0000000
 
@@ -33,10 +28,12 @@
 
 typedef struct {
     uint8_t* addr;
+    uint8_t bpp;
     uint32_t width;
     uint32_t height;
     uint32_t pitch;
-    uint8_t bpp;
+    uint32_t x;
+    uint32_t y;
 } framebuffer_t;
 
 typedef struct {
@@ -46,6 +43,8 @@ typedef struct {
     uint8_t unused;
 } __attribute__((packed)) fb_color_t;
 
-void framebuffer_init(multiboot_info_t* mbi);
+uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color);
 
-#endif
+extern framebuffer_t framebuffer;
+
+#endif // !INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_

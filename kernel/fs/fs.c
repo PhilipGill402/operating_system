@@ -54,7 +54,7 @@ int32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer
         log_error("node is at %x or node->read is null\n", node);
         return 0;
     }
-        
+
     return node->read(node, offset, size, buffer);
 }
 

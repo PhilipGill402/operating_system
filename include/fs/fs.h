@@ -9,7 +9,7 @@
 #include "memory/paging.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
-#include "fs/dev.h"
+#include "fs/devfs/devfs.h"
 #include "fs/procfs/procfs.h"
 #include "fs/ramfs.h"
 #include "fs/vfs.h"

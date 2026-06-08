@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
+#include "io/io.h"
 #include "interrupts/idt.h"
 #include "interrupts/port.h"
 #include "exec/process.h"

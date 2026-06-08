@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <log.h>
+#include "io/io.h"
 #include "fs/fs_types.h"
 #include "memory/heap.h"
 #include "interrupts/keyboard.h"

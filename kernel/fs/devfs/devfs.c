@@ -1,6 +1,72 @@
-#include "fs/dev.h"
+#include "fs/devfs/devfs.h"
 
 fs_node_t* dev_dir;
+
+int32_t dev_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+int32_t dev_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
+fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index);
+fs_node_t* dev_finddir(fs_node_t* node, char* name);
+fs_node_t* dev_parent(fs_node_t* node);
+
+fs_node_t* dev_file_to_node(dev_file_t* file) {
+    if (!file)
+        return NULL;
+
+    fs_node_t* node = kzmalloc(sizeof(fs_node_t));
+
+    if (!node) {
+        kfree(node);
+        return NULL;
+    }
+
+    strcpy(node->name, file->name);
+    node->flags = FS_FILE;
+    node->inode = file->inode;
+    node->size = 0;
+    node->device = file;
+    
+    node->read = dev_read;
+    node->readdir = NULL;
+    node->finddir = NULL;
+    node->parent = dev_parent;
+    node->createdir = NULL;
+    node->createfile = NULL;
+    node->writefile = dev_writefile;
+    
+    return node;
+}
+
+int32_t dev_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
+    if (!node || !buffer)
+        return 0;
+    
+    if (node->flags != FS_FILE)
+        return 0;
+    
+    dev_file_t* file = (dev_file_t*)node->device;
+    if (!file)
+        return 0;
+    
+    int32_t len = file->get_data(file, buffer, offset, size);    
+    
+    return len;
+}
+
+int32_t dev_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
+    if (!node || !buffer)
+        return 0;
+    
+    if (node->flags != FS_FILE)
+        return 0;
+    
+    dev_file_t* file = (dev_file_t*)node->device;
+    if (!file)
+        return 0;
+    
+    int32_t len = file->write_data(file, buffer, offset, size);    
+    
+    return len;
+}
 
 fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
     fs_dirent_t* dirent = kmalloc(sizeof(fs_dirent_t)); 
@@ -13,7 +79,7 @@ fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index) {
     }
         
 
-    fs_node_t* child = dir->children[index];
+    dev_file_t* child = dir->children[index];
     strcpy(dirent->name, child->name);
     dirent->inode = child->inode;
 
@@ -33,12 +99,9 @@ fs_node_t* dev_finddir(fs_node_t* node, char* name) {
     } 
         
     for (uint32_t i = 0; i < dir->child_count; i++) {
-        fs_node_t* child = dir->children[i];
+        dev_file_t* child = dir->children[i];
         if (strcmp(child->name, name) == 0) {
-            memcpy(ret, child, sizeof(fs_node_t));
-            strcpy(ret->name, child->name); 
-
-            return ret;
+            return dev_file_to_node(child);
         }
     }
     
@@ -56,11 +119,7 @@ fs_node_t* dev_parent(fs_node_t* node) {
 
     if (!dir) return NULL;
     
-    fs_node_t* ret = kmalloc(sizeof(fs_node_t));
-    memcpy(ret, dir->parent, sizeof(fs_node_t));
-    strcpy(ret->name, dir->parent->name);
-    
-    return ret;
+    return fs_node_clone(dir->parent);
 }
 
 fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
@@ -95,7 +154,7 @@ fs_node_t* create_dev_dir(const char* name, fs_node_t* parent, uint32_t inode) {
     return node;
 }
 
-int dev_add_child(fs_node_t* dir, fs_node_t* child) {
+int dev_add_child(fs_node_t* dir, dev_file_t* child) {
     if (!dir || !child) {
         log_error("dir is at %x and child is at %x\n", dir, child);
         return 0;
@@ -108,7 +167,6 @@ int dev_add_child(fs_node_t* dir, fs_node_t* child) {
         log_error("device is at %x or device->child_count >= 16\n", device);
         return 0;
     }
-        
 
     device->children[device->child_count++] = child;
 
@@ -117,9 +175,19 @@ int dev_add_child(fs_node_t* dir, fs_node_t* child) {
 
 fs_node_t* init_dev() {
     dev_dir = create_dev_dir("dev", fs_root, inode_count++);
-    console_node = create_console_node(dev_dir);
 
-    if (!dev_add_child(dev_dir, console_node))
+    dev_file_t* console_file = create_console_file(dev_dir, inode_count++);
+    if (!console_file)
+        log_error("failed to init console\n");
+
+    if (!dev_add_child(dev_dir, console_file))
+        log_error("failed to init devices\n");
+
+    dev_file_t* fb_file = create_fb_file(dev_dir, inode_count++);
+    if (!fb_file)
+        log_error("failed to init framebuffer file\n");
+
+    if (!dev_add_child(dev_dir, fb_file))
         log_error("failed to init devices\n");
 
     return dev_dir;

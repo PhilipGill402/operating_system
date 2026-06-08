@@ -1,6 +1,6 @@
-#include "io/framebuffer.h"
+#include "io/framebuffer/framebuffer.h"
 
-static framebuffer_t framebuffer;
+
 
 static inline uint32_t fb_get_color(fb_color_t color) {
     return *(uint32_t*)(&color);
@@ -15,27 +15,6 @@ static fb_color_t fb_color_create(uint8_t r, uint8_t g, uint8_t b) {
     };
 
     return color;
-}
-
-static uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color) {
-    if (x >= framebuffer.width || y >= framebuffer.height)
-        return 0;
-
-    uint32_t* pixel = (uint32_t*)(framebuffer.addr + y * framebuffer.pitch + x * 4);
-    *pixel = color;
-
-    return 1;
-}
-
-static uint32_t framebuffer_draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
-    for (uint32_t x_off = 0; x_off < width; x_off++) {
-        for (uint32_t y_off = 0; y_off < height; y_off++) {
-            if (!framebuffer_set_pixel(x + x_off, y + y_off, color))
-                return 0;
-        }
-    }
-
-    return 1;
 }
 
 static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg) {
@@ -59,12 +38,33 @@ static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t f
     return 1;
 }
 
-void framebuffer_init(multiboot_info_t* mbi) {
+void framebuffer_putchar(char c, void* ctx) {
+    (void)ctx;
+    
+    if (c == '\n') {
+        framebuffer.y += 10;
+        framebuffer.x = 5;
+
+        return;
+    } 
+
+
+    framebuffer_draw_char(c, framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
+
+    framebuffer.x += 8;
+
+    if (framebuffer.x >= framebuffer.width) {
+        framebuffer.x = 5;
+        framebuffer.y += 10;
+    }
+}
+
+int32_t framebuffer_init(multiboot_info_t* mbi) {
     uint64_t fb_phys = mbi->framebuffer_addr;
     
     if (fb_phys > 0xFFFFFFFF) {
         log_error("framebuffer above 4 GB not supported\n");
-        return;
+        return 0;
     }
 
     uint32_t fb_size = mbi->framebuffer_pitch * mbi->framebuffer_height;
@@ -78,8 +78,26 @@ void framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.height = mbi->framebuffer_height;
     framebuffer.pitch = mbi->framebuffer_pitch;
     framebuffer.bpp = mbi->framebuffer_bpp;
+    framebuffer.x = 5;
+    framebuffer.y = 5;
     
-    if (!framebuffer_draw_char('a', 100, 100, FB_WHITE, FB_BLACK))
-        log_error("couln't draw char\n");
+    io_put_char = framebuffer_putchar;
+
+    fs_node_t* img = resolve_path("/bin/test.bmp", fs_root);
+    if (!img) {
+        log_error("failed to find img\n");
+        return 1;
+    }
+
+    uint8_t* buffer = kmalloc(25000);
+    if (!buffer) {
+        log_error("failed to allocate buffer\n");
+        return 1;
+    }
+    
+    int32_t bytes_read = fs_read(img, 0, 24630, buffer);
+    framebuffer_draw_bitmap(buffer, 100, 100);
+    
+    return 1;
 }
 
