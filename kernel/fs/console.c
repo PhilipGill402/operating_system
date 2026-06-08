@@ -40,7 +40,7 @@ int32_t console_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32
     (void)offset;
 
     for (uint32_t i = 0; i < size; i++) {
-        terminal_printf("%c", buffer[i]); 
+        io_put_char(buffer[i], NULL); 
     }
 
     return (int32_t)size;
