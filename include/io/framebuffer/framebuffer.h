@@ -10,6 +10,7 @@
 #include "io/framebuffer/framebuffer_graphics.h"
 #include "multiboot.h"
 #include "memory/paging.h"
+#include "memory/heap.h"
 #include "io/font8x8.h"
 
 int32_t framebuffer_init(multiboot_info_t* mbi);

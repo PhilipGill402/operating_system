@@ -4,11 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 #include "exec/tss.h"
+#include "memory_mapping.h"
 
 #define PAGE_SIZE 4096
-#define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
-#define KERNEL_STACK_BOTTOM 0xC0C00000
-#define KERNEL_STACK_TOP (KERNEL_STACK_BOTTOM + KERNEL_STACK_SIZE)
 
 #define KERNEL_CS 0x08
 #define KERNEL_DS 0x10

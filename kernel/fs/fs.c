@@ -92,11 +92,17 @@ uint8_t fs_init(multiboot_info_t* mbi) {
     uint32_t start = mods_start & ~(PAGE_SIZE - 1);
     uint32_t end = (mods_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
-    for (uint32_t page = start; page < end; page += PAGE_SIZE) {
-        map_page(page + KERNEL_BASE, page, PAGE_WRITE);
+    if (end > MULTIBOOT_VIRT_END) {
+        log_error("multiboot module table mapping too large\n");
+        return 0;
     }
 
-    multiboot_module_t* modules = (multiboot_module_t*)(mbi->mods_addr + KERNEL_BASE);
+    for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
+        map_page(MULTIBOOT_VIRT_START + offset, page, PAGE_WRITE);
+    }
+    
+    uint32_t mods_offset = mods_start & (PAGE_SIZE - 1);
+    multiboot_module_t* modules = (multiboot_module_t*)(MULTIBOOT_VIRT_START + mods_offset);
     multiboot_module_t* initrd_mod = &modules[0];
     
     uint32_t mod_start = initrd_mod->mod_start;
@@ -105,11 +111,16 @@ uint8_t fs_init(multiboot_info_t* mbi) {
     start = mod_start & ~(PAGE_SIZE - 1);
     end = (mod_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
-    for (uint32_t page = start; page < end; page += PAGE_SIZE) {
-        map_page(page + KERNEL_BASE, page, PAGE_WRITE);
+    if (end > INITRD_VIRT_END) {
+        log_error("initrd module mapping too large\n");
+        return 0;
     }
 
-    uint32_t initrd_location = mod_start + KERNEL_BASE;
+    for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
+        map_page(INITRD_VIRT_ADDRESS + offset, page, PAGE_WRITE);
+    }
+
+    uint32_t initrd_location = INITRD_VIRT_ADDRESS + (mod_start & 0xFFF);
     
     fs_root = vfs_init();
     if (!fs_root) {

@@ -8,6 +8,9 @@
 #include "fs/fs_types.h"
 #include "memory/heap.h"
 
+#define INITRD_VIRT_ADDRESS     0xC1200000
+#define INITRD_VIRT_END         0xC2000000
+
 #define INITRD_MAGIC 0x52445449
 #define INITRD_NAME_MAX 64
 #define INITRD_INVALID_NODE 0xFFFFFFFF

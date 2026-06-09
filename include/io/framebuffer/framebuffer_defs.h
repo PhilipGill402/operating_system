@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define FRAMEBUFFER_VIRT 0xD0000000
+#include "memory_mapping.h"
 
 #define FB_PADDING      5
 
@@ -29,8 +29,9 @@
 #define FB_PINK         0x00FFC0CB
 
 typedef struct {
-    uint8_t* addr;
     uint8_t bpp;
+    uint32_t* backbuffer;
+    uint8_t* addr;
     uint32_t width;
     uint32_t height;
     uint32_t pitch;

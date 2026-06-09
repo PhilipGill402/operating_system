@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include <log.h>
+#include <string.h>
 
 #include "io/framebuffer/framebuffer_defs.h"
 
@@ -32,5 +33,7 @@ typedef struct bmp_info_header {
 
 uint32_t framebuffer_draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color);
 uint32_t framebuffer_draw_bitmap(uint8_t* bytes, uint32_t x, uint32_t y);
+void framebuffer_clear(uint32_t color);
+void framebuffer_present();
 
 #endif // !INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_GRAPHICS_H_

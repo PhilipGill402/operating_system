@@ -6,28 +6,19 @@
 #include <string.h>
 #include <log.h>
 #include "physical_allocator.h"
+#include "memory_mapping.h"
 
 #define PAGE_SIZE 4096
-#define KERNEL_BASE 0xC0000000
 #define PAGE_PRESENT 0x001
 #define PAGE_WRITE 0x002
 #define PAGE_USER 0x004
 
-#define TEMP_PT_VIRT_0 0xC0400000
 #define TEMP_PD_INDEX_0 769
-#define TEMP_PT_VIRT_1 0xC0800000
 #define TEMP_PD_INDEX_1 770
-#define TEMP_PT_VIRT_2 0xC0C00000
 #define TEMP_PD_INDEX_2 771
-#define TEMP_PT_VIRT_3 0xC1000000
 #define TEMP_PD_INDEX_3 772
-#define TEMP_PT_VIRT_4 0xC1400000
 #define TEMP_PD_INDEX_4 773
-#define TEMP_PT_VIRT_5 0xC1800000
 #define TEMP_PD_INDEX_5 774
-
-#define KERNEL_VIRT_START 0xC2000000
-#define KERNEL_VIRT_END   0xE0000000
 
 extern uint32_t next_free_virt; 
 
@@ -47,6 +38,7 @@ static inline void load_cr3(uint32_t phys) {
     __asm__ __volatile__("mov %0, %%cr3" : : "r"(phys) : "memory");
 }
 
+void* map_phys_range_to_virt(uint32_t virt_base, uint32_t virt_limit, uint32_t phys_start, uint32_t length, uint32_t flags);
 void map_boot_page(uint32_t phys_addr);
 void paging_init_temp_regions();
 void transition_page_directory();

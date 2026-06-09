@@ -1,14 +1,31 @@
 #include "memory/paging.h"
 
-uint32_t* temp_page_table0 = NULL;
-uint32_t* temp_page_table1 = NULL;
-uint32_t* temp_page_table2 = NULL;
-uint32_t* temp_page_table3 = NULL;
-uint32_t* temp_page_table4 = NULL;
-uint32_t* temp_page_table5 = NULL;
+static uint32_t* temp_page_table = NULL;
 uint32_t* kernel_page_directory = (uint32_t*)&boot_page_directory;
 uint32_t kernel_page_directory_phys = (uint32_t)&boot_page_directory - KERNEL_BASE;
 uint32_t next_free_virt = KERNEL_VIRT_START;
+
+static uint32_t align_up(uint32_t value, uint32_t align) {
+    return (value + align - 1) & ~(align - 1);
+}
+
+void* map_phys_range_to_virt(uint32_t virt_base, uint32_t virt_limit, uint32_t phys_start, uint32_t length, uint32_t flags) {
+    uint32_t phys_offset = phys_start & (PAGE_SIZE - 1);
+    uint32_t phys_page = phys_start & ~(PAGE_SIZE - 1);
+    uint32_t map_size = align_up(length + phys_offset, PAGE_SIZE);
+
+    if (virt_base + map_size > virt_limit) {
+        log_error("map_phys_range_to_virt: range too large virt=%x size=%x limit=%x\n",
+                  virt_base, map_size, virt_limit);
+        return NULL;
+    }
+
+    for (uint32_t off = 0; off < map_size; off += PAGE_SIZE) {
+        map_page(virt_base + off, phys_page + off, PAGE_PRESENT | flags);
+    }
+
+    return (void*)(virt_base + phys_offset);
+}
 
 void map_boot_page(uint32_t phys_addr) {
     if (phys_addr >= 0x400000) {
@@ -24,34 +41,29 @@ void map_boot_page(uint32_t phys_addr) {
 }
 
 void create_temp_page_table(uint32_t* virt_page_directory, uint32_t pd_idx) {
-    if (virt_page_directory[pd_idx] & PAGE_PRESENT) {
-        log_error("Couldn't allocate temp page table\n");
+    uint32_t pt_phys = pmm_alloc_frame();
+    if (!pt_phys) {
+        log_error("failed to allocate frame\n"); 
         return;
     }
 
-    uint32_t temp_pt_phys = pmm_alloc_frame();
-    if (!temp_pt_phys) {
-        return;
-    }
+    map_boot_page(pt_phys);
 
-    map_boot_page(temp_pt_phys);
-    uint32_t* temp_pt = (uint32_t*)(temp_pt_phys + KERNEL_BASE);
-    memset(temp_pt, 0, PAGE_SIZE);
-    virt_page_directory[pd_idx] = (temp_pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    temp_page_table = (uint32_t*)(pt_phys + KERNEL_BASE);
+    memset(temp_page_table, 0, PAGE_SIZE);
 
-    if (pd_idx == TEMP_PD_INDEX_0) {
-        temp_page_table0 = temp_pt;
-    } else if (pd_idx == TEMP_PD_INDEX_1) {
-        temp_page_table1 = temp_pt;
-    } else if (pd_idx == TEMP_PD_INDEX_2) {
-        temp_page_table2 = temp_pt;
-    } else if (pd_idx == TEMP_PD_INDEX_3) {
-        temp_page_table3 = temp_pt;
-    } else if (pd_idx == TEMP_PD_INDEX_4) {
-        temp_page_table4 = temp_pt;
-    } else if (pd_idx == TEMP_PD_INDEX_5) {
-        temp_page_table5 = temp_pt;
-    }
+    kernel_page_directory[TEMP_PD_INDEX] = (pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+}
+
+static void* temp_map_phys_slot(uint32_t slot, uint32_t phys) {
+    uint32_t virt = TEMP_MAP_BASE + slot * PAGE_SIZE;
+    uint32_t pt_idx = (virt >> 12) & 0x3FF;
+
+    temp_page_table[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+
+    invlpg((void*)virt);
+
+    return (void*)(virt + (phys & 0xFFF));
 }
 
 void paging_init_temp_regions() {
@@ -85,63 +97,27 @@ void transition_page_directory() {
 }
 
 uint32_t* temp_map_phys0(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_0;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table0[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(0, phys);
 }
 
 uint32_t* temp_map_phys1(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_1;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table1[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(1, phys);
 }
 
 uint32_t* temp_map_phys2(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_2;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table2[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(2, phys);
 }
 
 uint32_t* temp_map_phys3(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_3;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table3[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(3, phys);
 }
 
 uint32_t* temp_map_phys4(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_4;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table4[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(4, phys);
 }
 
 uint32_t* temp_map_phys5(uint32_t phys) {
-    uint32_t virt = TEMP_PT_VIRT_5;
-    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-    
-    temp_page_table5[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
-    invlpg((void*)virt);
-
-    return (uint32_t*)virt;
+    return (uint32_t*)temp_map_phys_slot(5, phys);
 }
 
 uint32_t* create_page_table(uint32_t* page_directory, uint32_t pd_idx, uint32_t flags) {
@@ -179,8 +155,6 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
 void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
-
-    int debug = (virt == 0x08048000 || virt == 0x08048728);
 
     if (!(page_directory[pd_idx] & PAGE_PRESENT)) {
         if (!create_page_table(page_directory, pd_idx, PAGE_USER)) {

@@ -204,6 +204,7 @@ void kfree(void* ptr) {
 }
 
 void* kzmalloc(size_t size) {
+    log_debug("kzmalloc\n"); 
     void* ptr = kmalloc(size);
     
     if (!ptr) {

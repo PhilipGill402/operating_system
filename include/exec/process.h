@@ -9,20 +9,16 @@
 #include "memory/paging.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
+#include "memory_mapping.h"
 
 #define MAX_FDS 128
 #define MAX_ARGV 32
-
-#define KERNEL_BASE 0xC0000000
 
 #define USER_CS_RING3 0x1B
 #define USER_DS_RING3 0x23
 #define MAX_SEGMENTS 8
 
 #define PAGE_SIZE 4096
-#define KERNEL_STACK_SIZE  (PAGE_SIZE * 4)
-#define KERNEL_STACK_BOTTOM 0xC0C00000
-#define KERNEL_STACK_TOP (KERNEL_STACK_BOTTOM + KERNEL_STACK_SIZE)
 #define DEFAULT_MAX_TICKS 10
 
 #define USER_NULL_GUARD      0x00000000

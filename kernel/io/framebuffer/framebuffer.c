@@ -61,7 +61,6 @@ void framebuffer_clear_cursor() {
 
 void framebuffer_putchar(char c, void* ctx) {
     (void)ctx;
-    
     framebuffer_clear_cursor();
 
     if (c == '\n') {
@@ -93,6 +92,8 @@ void framebuffer_putchar(char c, void* ctx) {
     
     if (cursor_on)
         framebuffer_draw_cursor();
+
+    //framebuffer_present();
 }
 
 int32_t framebuffer_init(multiboot_info_t* mbi) {
@@ -116,7 +117,12 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.bpp = mbi->framebuffer_bpp;
     framebuffer.x = FB_PADDING;
     framebuffer.y = FB_PADDING;
+    /* 
+    framebuffer.backbuffer = kmalloc(framebuffer.width * framebuffer.height * sizeof(uint32_t));
     
+    if (!framebuffer.backbuffer)
+        return 0;
+    */ 
     io_put_char = framebuffer_putchar;
 
     framebuffer_draw_cursor();

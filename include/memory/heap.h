@@ -7,10 +7,8 @@
 #include <string.h>
 
 #include "memory/paging.h"
+#include "memory_mapping.h"
 
-// same as KERNEL_VIRT_MEM
-#define KHEAP_START 0xC2000000
-#define KHEAP_END   0xC3000000
 #define HEAP_ALIGN 8
 #define PAGE_SIZE 4096
 
@@ -50,6 +48,8 @@ void kfree_debug(void* ptr, const char* file, int line);
 #endif
 
 void* krealloc(void* ptr, size_t size);
+
+bool heap_check(const char* where);
 
 void init_heap();
 

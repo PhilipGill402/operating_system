@@ -14,6 +14,7 @@
 #include "fs/ramfs.h"
 #include "fs/vfs.h"
 #include "fs/initrd.h"
+#include "memory_mapping.h"
 
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128

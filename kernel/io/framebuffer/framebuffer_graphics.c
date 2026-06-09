@@ -11,6 +11,28 @@ uint32_t framebuffer_draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t 
     return 1;
 }
 
+void framebuffer_present() {
+    uint32_t row_bytes = framebuffer.width * 4;
+
+    for (uint32_t y = 0; y < framebuffer.height; y++) {
+        uint8_t* dst = framebuffer.addr + y * framebuffer.pitch;
+        uint8_t* src = (uint8_t*)framebuffer.backbuffer + y * row_bytes;
+
+        memcpy(dst, src, row_bytes);
+    }
+}
+
+void framebuffer_clear(uint32_t color) {
+    if (!framebuffer.backbuffer)
+        return;
+
+    uint32_t size = framebuffer.width * framebuffer.height;
+
+    for (uint32_t off = 0; off < size; off++) {
+        framebuffer.backbuffer[off] = color;
+    }
+}
+
 uint32_t framebuffer_draw_bitmap(uint8_t* bytes, uint32_t x, uint32_t y) {
     bmp_file_header_t* header = (bmp_file_header_t*)bytes;
     bmp_info_header_t* info = (bmp_info_header_t*)(bytes + sizeof(bmp_file_header_t));
