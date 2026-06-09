@@ -1,6 +1,46 @@
 #include "io/framebuffer/framebuffer_graphics.h"
 
+fb_rect_t fb_dirty_objs[MAX_DIRTY_OBJS] = { 0 };
+uint32_t dirty_count = 0;
+
+uint32_t framebuffer_mark_dirty(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    if (x >= framebuffer.width)
+        return 0;
+    else if (y >= framebuffer.height)
+        return 0;
+    else if (dirty_count >= MAX_DIRTY_OBJS)
+        return 0;
+
+    if (x + width >= framebuffer.width)
+        width = framebuffer.width - x;
+    if (y + height >= framebuffer.height)
+        height = framebuffer.height - y;
+
+    fb_rect_t rect = {
+        .x = x,
+        .y = y,
+        .width = width,
+        .height = height
+    };
+    
+    fb_dirty_objs[dirty_count++] = rect;
+
+    return 1;
+}
+
 uint32_t framebuffer_draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
+    if (width == 0 || height == 0)
+        return 0;
+
+    if (x >= framebuffer.width || y >= framebuffer.height)
+        return 0;
+
+    if (x + width > framebuffer.width)
+        width = framebuffer.width - x;
+
+    if (y + height > framebuffer.height)
+        height = framebuffer.height - y;
+
     for (uint32_t x_off = 0; x_off < width; x_off++) {
         for (uint32_t y_off = 0; y_off < height; y_off++) {
             if (!framebuffer_set_pixel(x + x_off, y + y_off, color))
@@ -8,18 +48,32 @@ uint32_t framebuffer_draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t 
         }
     }
 
+    framebuffer_mark_dirty(x, y, width, height);
+
     return 1;
 }
 
-void framebuffer_present() {
-    uint32_t row_bytes = framebuffer.width * 4;
+static void framebuffer_present_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    if (x + width >= framebuffer.width)
+        width = framebuffer.width - x;
+    if (y + width >= framebuffer.height)
+        height = framebuffer.height - y;
 
-    for (uint32_t y = 0; y < framebuffer.height; y++) {
-        uint8_t* dst = framebuffer.addr + y * framebuffer.pitch;
-        uint8_t* src = (uint8_t*)framebuffer.backbuffer + y * row_bytes;
+    for (uint32_t row = 0; row < height; row++) {
+        uint8_t* dst = framebuffer.addr + (y + row) * framebuffer.pitch + x * 4;
+        uint8_t* src = (uint8_t*)framebuffer.backbuffer + ((y + row) * framebuffer.width + x) * 4;
 
-        memcpy(dst, src, row_bytes);
+        memcpy(dst, src, width * 4);
     }
+}
+
+void framebuffer_flush() {
+    for (uint32_t i = 0; i < dirty_count; i++) {
+        fb_rect_t rect = fb_dirty_objs[i];
+        framebuffer_present_rect(rect.x, rect.y, rect.width, rect.height);
+    }
+
+    dirty_count = 0;
 }
 
 void framebuffer_clear(uint32_t color) {

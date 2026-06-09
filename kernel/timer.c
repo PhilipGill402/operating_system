@@ -15,8 +15,8 @@ void timer_callback(regs_t* r) {
         if (cursor_on) {
             framebuffer_draw_cursor();
         }
-
-        framebuffer_present();
+        
+        framebuffer_flush();
     }
 
     if (!current_process) {

@@ -12,3 +12,4 @@ uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color) {
 
     return 1;
 }
+

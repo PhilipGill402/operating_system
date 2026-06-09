@@ -28,6 +28,8 @@
 #define FB_BROWN        0x00A52A2A
 #define FB_PINK         0x00FFC0CB
 
+#define MAX_DIRTY_OBJS  128
+
 typedef struct {
     uint8_t bpp;
     uint32_t* backbuffer;

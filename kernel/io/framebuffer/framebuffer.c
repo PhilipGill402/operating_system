@@ -33,6 +33,8 @@ static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t f
         }
     }
 
+    framebuffer_mark_dirty(x, y, FONT_WIDTH, FONT_HEIGHT);
+
     return 1;
 }
 
@@ -65,7 +67,7 @@ void framebuffer_putchar(char c, void* ctx) {
 
     if (c == '\n') {
         framebuffer.y += FONT_HEIGHT;
-        framebuffer.x = FONT_WIDTH;
+        framebuffer.x = FB_PADDING;
         if (framebuffer.y >= framebuffer.height - FONT_HEIGHT) {
             framebuffer_scroll();
         }
@@ -80,7 +82,7 @@ void framebuffer_putchar(char c, void* ctx) {
         framebuffer_draw_char(c, framebuffer.x, framebuffer.y, FB_WHITE, FB_BLACK);
         framebuffer.x += FONT_WIDTH;
 
-        if (framebuffer.x >= framebuffer.width) {
+        if (framebuffer.x + FONT_WIDTH >= framebuffer.width) {
             framebuffer.x = FB_PADDING;
             framebuffer.y += FONT_HEIGHT;
             
@@ -90,10 +92,12 @@ void framebuffer_putchar(char c, void* ctx) {
         }
     }
     
-    if (cursor_on)
+    if (cursor_on) {
         framebuffer_draw_cursor();
-
-    framebuffer_present();
+    }
+    
+    framebuffer_flush();
+    
 }
 
 int32_t framebuffer_init(multiboot_info_t* mbi) {
