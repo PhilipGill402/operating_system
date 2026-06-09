@@ -110,8 +110,16 @@ int32_t sys_close(uint32_t fd) {
     if (fd >= MAX_FDS)
         return EBADF;
 
-    kfree(current_process->fds[fd].node); 
-    memset(&current_process->fds[fd], 0, sizeof(file_desc_t));
+    file_desc_t* desc = &current_process->fds[fd];
+
+    if (!desc->in_use)
+        return EBADF;
+
+    if (desc->node) {
+        kfree(desc->node);
+    }
+    
+    memset(desc, 0, sizeof(file_desc_t));
 
     return 1;
 }

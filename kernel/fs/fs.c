@@ -157,14 +157,14 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
     if (!start || !path) 
         return NULL;
         
-    fs_node_t* current = start;
-    if (!current)
-        return NULL;
+    fs_node_t* current = NULL;
     
     if (path[0] == '/') {
-        current = fs_root;
+        current = fs_node_clone(fs_root);
         while (*path == '/')
             path++;
+    } else {
+         current = fs_node_clone(start);
     }
 
     char component[128];
@@ -194,18 +194,22 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
             fs_node_t* parent = fs_parent(current);
 
             if (parent) {
+                kfree(current); 
                 current = parent;
             }
-
+            
             continue;
         }
 
         if (!current->finddir) {
             log_error("no finddir\n");
+            kfree(current);
             return NULL;
         }
         
+        fs_node_t* old_current = current;
         current = fs_finddir(current, component);
+        kfree(old_current);
 
         if (!current) {
             log_error("couldn't resolve path: %s\n", path);

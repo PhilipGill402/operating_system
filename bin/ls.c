@@ -21,7 +21,9 @@ int main(int argc, char* argv[]) {
     }
     printf("\n");
 
-    free(path); 
+    free(entries);
+
+    close(fd);
 
     return 0;
 }

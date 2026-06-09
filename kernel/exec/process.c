@@ -151,6 +151,19 @@ process_t* process_clone(process_t* process) {
         return NULL;
     }
 
+    for (uint32_t i = 0; i < MAX_FDS; i++) {
+        file_desc_t src_desc = process->fds[i];
+        file_desc_t dst_desc = { 0 };
+
+        if (!src_desc.in_use)
+            continue;
+
+        memcpy(&dst_desc, &src_desc, sizeof(file_desc_t));
+        dst_desc.node = fs_node_clone(src_desc.node);
+    
+        new->fds[i] = dst_desc;
+    }
+
     strcpy(new->name, process->name);
     new->cwd = fs_node_clone(process->cwd);
     
@@ -260,12 +273,14 @@ void process_init_file_descriptors(process_t* process) {
 
     for (uint8_t i = 0; i < 3; i++) {
         process->fds[i].in_use = 1; 
-        process->fds[i].node = console;
+        process->fds[i].node = fs_node_clone(console);
         process->fds[i].offset = 0;
         process->fds[i].flags = 0;
     }
 
     process->open_fds = 3;
+
+    kfree(console);
 }
 
 void process_destroy(process_t* process) {
@@ -289,6 +304,16 @@ void process_destroy(process_t* process) {
             pmm_free_frame(frame);
         }
     }
+    
+    // free all file descriptor nodes
+    for (uint32_t i = 0; i < MAX_FDS; i++) {
+        if (process->fds[i].in_use && process->fds[i].node) {
+            kfree(process->fds[i].node);
+        } 
+
+        memset(&process->fds[i], 0, sizeof(file_desc_t));
+    }
+
     
     // frees heap allocated variables
     kfree(process->cwd);
