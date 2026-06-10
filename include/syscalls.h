@@ -5,6 +5,10 @@
 #include <stddef.h>
 
 #include <errno.h>
+#include <sys/io.h>
+#include <sys/signals.h>
+#include <sys/mman.h>
+#include <string.h>
 
 #include "exec/process.h"
 #include "exec/scheduler.h"
@@ -13,7 +17,6 @@
 #include "interrupts/registers.h"
 #include "timer.h"
 #include "fs/fs.h"
-#include "syscall_defs.h"
 
 #define PAGE_SIZE 4096
 
@@ -30,6 +33,8 @@
 #define SYS_FORK        57
 #define SYS_EXECVE      59
 #define SYS_EXIT        60
+#define SYS_MMAP        90
+#define SYS_MUNMAP      91
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
 

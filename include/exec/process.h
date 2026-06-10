@@ -26,12 +26,36 @@
 #define USER_STACK_SIZE      (PAGE_SIZE * 4)
 #define USER_STACK_BOTTOM    (USER_STACK_TOP - USER_STACK_SIZE)
 
+#define USER_MMAP_BASE 0x40000000
+#define USER_MMAP_END  0xA0000000
+
 #define MAX_PROCESSES 64
 
 #define SIGTERM 1
 #define SIGKILL 2
 #define SIGSTOP 4
 #define SIGCONT 8
+
+typedef enum {
+    VMA_ANON,
+    VMA_FRAMEBUFFER,
+    VMA_DEVICE,
+    VMA_FILE
+} vm_area_type_t;
+
+typedef struct vm_area {
+    uint32_t start;
+    uint32_t end;
+
+    uint32_t prot;
+    uint32_t flags;
+    vm_area_type_t type;
+
+    uint32_t* frames;
+    uint32_t frame_count;
+
+    struct vm_area* next;
+} vm_area_t;
 
 typedef struct {
     uint32_t start;
@@ -80,6 +104,8 @@ typedef struct {
     uint32_t page_directory_phys;
     mem_range_t mem_ranges[MAX_SEGMENTS];
     uint8_t num_ranges;
+
+    vm_area_t* vmas;
     
     regs_t* trapframe;
     uint32_t ticks_left;

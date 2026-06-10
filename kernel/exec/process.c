@@ -258,6 +258,9 @@ uint32_t process_init_heap(process_t* process) {
     process->heap_break = process->heap_start;
     process->heap_mapped_end = process->heap_start + PAGE_SIZE;
     process->heap_max_end = heap_start + (16384 * PAGE_SIZE); // allow heap growth up to 64 MB
+                                                              
+    if (process->heap_max_end >= USER_MMAP_BASE)
+        process->heap_max_end = USER_MMAP_BASE - 1;
                                                              
     return 1;
 }
@@ -324,8 +327,4 @@ void process_destroy(process_t* process) {
 
     process = NULL;
 }
-
-
-
-
 

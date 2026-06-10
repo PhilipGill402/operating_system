@@ -1,14 +1,12 @@
-#ifndef INCLUDE_SYSCALL_DEFS_H_
-#define INCLUDE_SYSCALL_DEFS_H_
-
-#include <stdint.h>
+#ifndef LIBC_SYS_IO_H_
+#define LIBC_SYS_IO_H_
 
 typedef struct {
     char name[128];
     uint32_t inode;
-} sys_dirent_t;
+} dirent_t;
 
-typedef uint16_t sys_mode_t;
+typedef uint16_t mode_t;
 
 #define S_IFMT  0170000 // file type mask
 #define S_IRWXU 0000700 // user has read, write, and execute
@@ -56,11 +54,6 @@ typedef uint16_t sys_mode_t;
 #define O_PATH
 #define O_TMPFILE
 
-#define SIGTERM 1
-#define SIGKILL 2
-#define SIGSTOP 4
-#define SIGCONT 8
 
 
-
-#endif // !INCLUDE_SYSCALL_DEFS_H_
+#endif // !LIBC_SYS_IO_H_

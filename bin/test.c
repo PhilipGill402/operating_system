@@ -1,60 +1,66 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <unistd.h>
+#include <stdint.h>
+#include <sys/mman.h>
 
-int main(int argc, char* argv[]) {
-    char buffer[101];
-    uint32_t bytes_read = read(stdin, buffer, 100);
-}
+int main(void) {
+    printf("mmap test starting...\n");
 
-/*
-int main(int argc, char* argv[]) {
-    int fd = open("/tmp/whats_up.txt", O_CREAT | O_TRUNC, 0);
+    uint8_t* mem = mmap(
+        NULL,
+        8192,
+        PROT_READ | PROT_WRITE,
+        MAP_ANON,
+        -1,
+        0
+    );
 
-    if (fd < 0) {
-        perror("open");
-        return -1;
-    }
-    
-    printf("fd = %d\n", fd);
-
-    char* buffer = "whats up world\n";
-    int ret = write(fd, buffer, strlen(buffer));
-
-    if (ret < 0) {
-        perror("write");
-        return -1;
+    if (!mem) {
+        printf("mmap failed: returned NULL\n");
+        return 1;
     }
 
-    printf("ret = %d\n", ret);
-    
-    ret = lseek(fd, 0);
-    
-    if (ret < 0) {
-        perror("lseek");
-        return -1;
+    printf("mmap returned address: %x\n", mem);
+
+    /*
+     * Test 1: newly mapped anonymous memory should be zeroed.
+     */
+    if (mem[0] != 0 || mem[4096] != 0) {
+        printf("FAIL: mmap memory was not zeroed\n");
+        printf("mem[0]=%u mem[4096]=%u\n", mem[0], mem[4096]);
+        return 1;
     }
 
-    char read_buffer[256];
-    int bytes_read = read(fd, read_buffer, 255);
+    printf("PASS: memory starts zeroed\n");
 
-    if (bytes_read < 0) {
-        perror("read");
-        return -1;
+    /*
+     * Test 2: write to both mapped pages.
+     */
+    mem[0] = 42;
+    mem[1] = 43;
+    mem[4096] = 99;
+    mem[8191] = 123;
+
+    if (mem[0] != 42 ||
+        mem[1] != 43 ||
+        mem[4096] != 99 ||
+        mem[8191] != 123) {
+        printf("FAIL: mmap memory write/read failed\n");
+        return 1;
     }
 
-    printf("bytes read = %d\n", bytes_read);
+    printf("PASS: write/read worked across both pages\n");
 
-    read_buffer[bytes_read] = '\0';
+    /*
+     * Test 3: munmap the exact region.
+     */
+    if (munmap(mem, 8192) < 0) {
+        printf("FAIL: munmap failed\n");
+        return 1;
+    }
 
-    printf("%s\n", read_buffer);
+    printf("PASS: munmap returned success\n");
 
-    close(fd);
-    
+    printf("mmap test complete\n");
+
     return 0;
 }
-*/
-

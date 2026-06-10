@@ -9,7 +9,7 @@ LIBC := $(BUILD_DIR)/libc.a
 CRT := $(BUILD_DIR)/crt0.o
 INC_DIR := include
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libc -I../include
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libc -I../include -fomit-frame-pointer
 
 C_SOURCES := $(shell find . -type f -name '*.c' ! -path './include/*' ! -path './build/*')
 CRT_SOURCE := crt/crt0.s

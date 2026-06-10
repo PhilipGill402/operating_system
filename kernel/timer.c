@@ -1,11 +1,12 @@
 #include "timer.h"
 
+#include "window/window.h"
+
 volatile uint32_t ticks = 0;
 
 void timer_callback(regs_t* r) {
     ticks++;
     
-
     if (framebuffer_initialized && ticks % 50 == 0) {
         cursor_on = !cursor_on;
         

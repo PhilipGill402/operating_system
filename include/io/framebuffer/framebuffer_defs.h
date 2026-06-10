@@ -49,6 +49,7 @@ typedef struct {
 } __attribute__((packed)) fb_color_t;
 
 uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color);
+uint32_t framebuffer_set_pixel_raw(uint32_t x, uint32_t y, uint32_t color);
 
 extern framebuffer_t framebuffer;
 extern uint8_t framebuffer_initialized;

@@ -77,13 +77,10 @@ void framebuffer_flush() {
 }
 
 void framebuffer_clear(uint32_t color) {
-    if (!framebuffer.backbuffer)
-        return;
-
-    uint32_t size = framebuffer.width * framebuffer.height;
-
-    for (uint32_t off = 0; off < size; off++) {
-        framebuffer.backbuffer[off] = color;
+    for (uint32_t x = 0; x < framebuffer.width; x++) {
+        for (uint32_t y = 0; y < framebuffer.height; y++) {
+            framebuffer_set_pixel_raw(x, y, color);
+        }
     }
 }
 

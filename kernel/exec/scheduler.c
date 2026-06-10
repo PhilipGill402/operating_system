@@ -73,7 +73,7 @@ process_t* dequeue_ready() {
     return NULL;
 }
 
-void scheduler_idle_loop(void) {
+void scheduler_idle_loop() {
     current_process = NULL;
 
     for (;;) {

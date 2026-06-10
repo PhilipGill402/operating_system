@@ -7,9 +7,13 @@
 #include <string.h>
 
 #include "io/framebuffer/framebuffer.h"
+#include "interrupts/mouse.h"
 
 #define MAX_WINDOWS 32
 #define WINDOW_TITLE_MAX 64
+
+#define WINDOW_BORDER_SIZE 10
+#define WINDOW_TITLE_SIZE 20
 
 typedef struct window {
     uint32_t id;
@@ -33,5 +37,7 @@ void window_init();
 uint32_t window_create(char* title);
 void window_destroy(uint32_t id);
 void window_draw(uint32_t id);
+void window_render();
+int32_t window_hit_id(uint32_t x, uint32_t y);
 
 #endif // !INCLUDE_WINDOW_WINDOW_H_

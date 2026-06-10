@@ -4,6 +4,9 @@
 #include <sys/cdefs.h>
 #include <stddef.h>
 
+#define PAGE_ALIGN_DOWN(x) ((x) & ~(PAGE_SIZE - 1))
+#define PAGE_ALIGN_UP(x)   (((x) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
+
 int memcmp(const void*, const void*, size_t);
 void* memcpy(void* __restrict, const void* __restrict, size_t);
 void* memmove(void*, const void*, size_t);

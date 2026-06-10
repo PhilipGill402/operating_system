@@ -42,8 +42,9 @@ void map_boot_page(uint32_t phys_addr) {
 
 void create_temp_page_table(uint32_t* virt_page_directory, uint32_t pd_idx) {
     uint32_t pt_phys = pmm_alloc_frame();
+
     if (!pt_phys) {
-        log_error("failed to allocate frame\n"); 
+        log_error("failed to allocate temp map page table");
         return;
     }
 
@@ -52,27 +53,56 @@ void create_temp_page_table(uint32_t* virt_page_directory, uint32_t pd_idx) {
     temp_page_table = (uint32_t*)(pt_phys + KERNEL_BASE);
     memset(temp_page_table, 0, PAGE_SIZE);
 
-    kernel_page_directory[TEMP_PD_INDEX] = (pt_phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    kernel_page_directory[TEMP_PD_INDEX] = pt_phys | PAGE_PRESENT | PAGE_WRITE;
+
+    asm volatile("mov %%cr3, %%eax\n"
+                 "mov %%eax, %%cr3\n"
+                 ::: "eax", "memory");
 }
 
-static void* temp_map_phys_slot(uint32_t slot, uint32_t phys) {
-    uint32_t virt = TEMP_MAP_BASE + slot * PAGE_SIZE;
-    uint32_t pt_idx = (virt >> 12) & 0x3FF;
+void* temp_map_phys_slot(uint32_t slot, uint32_t phys_addr) {
+    if (!temp_page_table) {
+        log_error("temp maps not initialized");
+        return NULL;
+    }
 
-    temp_page_table[pt_idx] = (phys & 0xFFFFF000) | PAGE_PRESENT | PAGE_WRITE;
+    if (slot >= TEMP_MAP_SLOTS) {
+        log_error("temp map slot out of range");
+        return NULL;
+    }
+
+    uint32_t virt = TEMP_MAP_BASE + slot * PAGE_SIZE;
+    uint32_t pt_idx = (virt >> 12) & 0x03FF;
+
+    uint32_t phys_page = phys_addr & 0xFFFFF000;
+    uint32_t offset = phys_addr & 0x00000FFF;
+
+    temp_page_table[pt_idx] = phys_page | PAGE_PRESENT | PAGE_WRITE;
 
     invlpg((void*)virt);
 
-    return (void*)(virt + (phys & 0xFFF));
+    return (void*)(virt + offset);
 }
 
-void paging_init_temp_regions() {
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_0);
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_1);
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_2);
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_3);
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_4);
-    create_temp_page_table(kernel_page_directory, TEMP_PD_INDEX_5);
+void paging_init_temp_regions(void) {
+    uint32_t pt_phys = pmm_alloc_frame();
+
+    if (!pt_phys) {
+        log_error("failed to allocate temp map page table\n");
+        return;
+    }
+
+    map_boot_page(pt_phys);
+
+    temp_page_table = (uint32_t*)(pt_phys + KERNEL_BASE);
+    memset(temp_page_table, 0, PAGE_SIZE);
+
+    kernel_page_directory[TEMP_PD_INDEX] =
+        pt_phys | PAGE_PRESENT | PAGE_WRITE;
+
+    asm volatile("mov %%cr3, %%eax\n"
+                 "mov %%eax, %%cr3\n"
+                 ::: "eax", "memory");
 }
 
 void transition_page_directory() {
@@ -96,28 +126,36 @@ void transition_page_directory() {
 
 }
 
-uint32_t* temp_map_phys0(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(0, phys);
+void* temp_map_phys0(uint32_t phys_addr) {
+    return temp_map_phys_slot(0, phys_addr);
 }
 
-uint32_t* temp_map_phys1(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(1, phys);
+void* temp_map_phys1(uint32_t phys_addr) {
+    return temp_map_phys_slot(1, phys_addr);
 }
 
-uint32_t* temp_map_phys2(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(2, phys);
+void* temp_map_phys2(uint32_t phys_addr) {
+    return temp_map_phys_slot(2, phys_addr);
 }
 
-uint32_t* temp_map_phys3(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(3, phys);
+void* temp_map_phys3(uint32_t phys_addr) {
+    return temp_map_phys_slot(3, phys_addr);
 }
 
-uint32_t* temp_map_phys4(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(4, phys);
+void* temp_map_phys4(uint32_t phys_addr) {
+    return temp_map_phys_slot(4, phys_addr);
 }
 
-uint32_t* temp_map_phys5(uint32_t phys) {
-    return (uint32_t*)temp_map_phys_slot(5, phys);
+void* temp_map_phys5(uint32_t phys_addr) {
+    return temp_map_phys_slot(5, phys_addr);
+}
+
+void* temp_map_phys6(uint32_t phys_addr) {
+    return temp_map_phys_slot(6, phys_addr);
+}
+
+void* temp_map_phys7(uint32_t phys_addr) {
+    return temp_map_phys_slot(7, phys_addr);
 }
 
 uint32_t* create_page_table(uint32_t* page_directory, uint32_t pd_idx, uint32_t flags) {
@@ -170,6 +208,31 @@ void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint3
     pt[pt_idx] = (phys & 0xFFFFF000) | (flags & 0xFFF) | PAGE_PRESENT | PAGE_USER;
         
     invlpg((void*)virt);
+}
+
+uint32_t unmap_page_from(uint32_t* pd, uint32_t virt) {
+    uint32_t pd_idx = (uint32_t) virt >> 22;
+    uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
+    
+    // page table doesnt exist
+    if (!(pd[pd_idx] & PAGE_PRESENT)) {
+        return 0;
+    }
+
+    uint32_t pt_phys = pd[pd_idx] & 0xFFFFF000;
+    uint32_t* pt = temp_map_phys0(pt_phys);
+    
+    // page table entry doesnt exist
+    if (!(pt[pt_idx] & PAGE_PRESENT)) {
+        return 0;
+    }
+
+    uint32_t phys = pt[pt_idx] & 0xFFFFF000;
+    pt[pt_idx] = 0;
+
+    invlpg((void*)virt);
+
+    return phys;
 }
 
 uint32_t unmap_page(uint32_t virt) {

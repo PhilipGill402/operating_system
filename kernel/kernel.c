@@ -18,13 +18,14 @@
 #include "interrupts/idt.h"
 #include "interrupts/irq.h"
 #include "interrupts/pit.h"
+#include "interrupts/mouse.h"
+#include "interrupts/keyboard.h"
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
 #include "hardware.h"
 #include "memory_mapping.h"
 #include "window/window.h"
-#include "interrupts/keyboard.h"
 
 static multiboot_info_t* mbi;
 
@@ -104,17 +105,20 @@ void finish_init() {
         io_put_char = terminal_putchar;
     }
 
+    mouse_init();
+
     scheduler_init();
     
+    /*
     window_init();
     uint32_t id = window_create("test");
 
     if (id == MAX_WINDOWS + 1) {
         log_error("couldnt create window\n");
-    } else {
-        window_draw(id);
     }
-    
+
+    window_render();
+    */
     __asm__ __volatile__("sti");
     fs_node_t* tty_elf = resolve_path("/bin/tty", fs_root);
     if (!tty_elf) {

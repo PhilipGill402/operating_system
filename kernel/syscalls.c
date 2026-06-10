@@ -86,6 +86,188 @@ static void free_exec_args(cmd_args_t* args) {
     }
 }
 
+static uint32_t vma_is_range_free(process_t* proc, uint32_t start, uint32_t end) {
+    if (!proc)
+        return 0;
+
+    if (start >= end)
+        return 0;
+
+    if (start < USER_MMAP_BASE || end > USER_MMAP_END)
+        return 0;
+
+    vm_area_t* vma = proc->vmas;
+
+    while (vma) {
+        if (start < vma->end && vma->start < end)
+            return 0;
+
+        vma = vma->next;
+    }
+
+    return 1;
+}
+
+static uint32_t vma_find_free_range(process_t* proc, uint32_t length) {
+    length = PAGE_ALIGN_UP(length);
+
+    for (uint32_t addr = USER_MMAP_BASE; addr + length < USER_MMAP_END; addr += PAGE_SIZE) {
+        if (addr + length < addr)
+            return 0;
+
+        if (vma_is_range_free(proc, addr, addr + length))
+            return addr;
+    }
+    
+    return 0;
+}
+
+static uint32_t mmap_prot_to_page_flags(prot) {
+    uint32_t page_flags = PAGE_USER | PAGE_PRESENT;
+
+    if (prot & PROT_WRITE) {
+        page_flags |= PAGE_WRITE;
+    }
+
+    return page_flags;
+}
+
+static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end) {
+    vm_area_t* prev = NULL; 
+    vm_area_t* vm = proc->vmas;
+
+    while (vm) {
+        if (vm->start == start && vm->end == end) {
+            if (prev)
+                prev->next = vm->next;
+            else
+                proc->vmas = vm->next;
+
+            vm->next = NULL;
+            return vm;
+        }
+        
+        prev = vm;
+        vm = vm->next;
+    }
+
+    return NULL;
+}
+
+int32_t sys_munmap(void* addr, uint32_t length) {
+    if (!addr || length == 0)
+        return -1;
+
+    if (addr < USER_MMAP_BASE || addr > USER_MMAP_END)
+        return -1;
+
+    process_t* proc = current_process;
+
+    if (!proc)
+        return -1;
+
+    uint32_t start = (uint32_t)addr;
+
+    if (start & (PAGE_SIZE - 1))
+        return -1;
+
+    uint32_t aligned_length = PAGE_ALIGN_UP(length);
+    uint32_t end = start + aligned_length;
+
+    vm_area_t* area = vma_remove_exact(proc, start, end);
+    if (!area)
+        return -1;
+    
+    
+    uint32_t* pd = temp_map_phys0(proc->page_directory_phys);
+    
+    if (area->type == VMA_ANON) {
+        for (uint32_t i = 0; i < area->frame_count; i++) {
+            uint32_t virt = area->start + i * PAGE_SIZE;
+
+            uint32_t frame = unmap_page_from(pd, virt);
+
+            if (frame)
+                pmm_free_frame(frame);
+            else if (area->frames[i])
+                pmm_free_frame(area->frames[i]);
+        }
+    }
+
+    kfree(area->frames);
+    kfree(area);
+
+    return 0;
+}
+
+void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t fd, uint32_t offset) {
+    (void)fd;
+    (void)offset;
+
+    if (length == 0)
+        return NULL;
+
+    // keep this until i implement more flags 
+    if (!(flags & MAP_ANON)) {
+        return NULL;
+    }
+
+    process_t* proc = current_process;
+    uint32_t* pd = temp_map_phys1(proc->page_directory_phys);
+
+    if (!proc || !pd) {
+        return NULL;
+    }
+
+    uint32_t rounded_length = PAGE_ALIGN_UP(length);
+
+    if (rounded_length == 0) {
+        return NULL;
+    }
+    
+    uint32_t start;
+    if (flags & MAP_FIXED) {
+        // TODO IMPLEMENT THIS
+        start = vma_find_free_range(proc, rounded_length);
+    } else {
+        start = vma_find_free_range(proc, rounded_length);
+
+        if (!start)
+            return NULL;
+    }
+
+    uint32_t end = start + rounded_length;
+    uint32_t frame_count = rounded_length / PAGE_SIZE;
+    
+
+    vm_area_t* area = kmalloc(sizeof(vm_area_t));
+    area->start = start;
+    area->end = end;
+    area->prot = prot;
+    area->flags = flags;
+    area->type = VMA_ANON;
+    area->frames = kmalloc(frame_count * sizeof(uint32_t));
+    area->frame_count = frame_count;
+    area->next = NULL;
+
+    uint32_t page_flags = mmap_prot_to_page_flags(prot);
+    
+    for (uint32_t i = 0; i < frame_count; i++) {
+        uint32_t frame = pmm_alloc_frame();
+        area->frames[i] = frame;
+
+        map_user_page(pd, start + i * PAGE_SIZE, frame, page_flags);
+
+        void* tmp = temp_map_phys0(frame);
+        memset(tmp, 0, PAGE_SIZE);
+    }
+
+    area->next = proc->vmas;
+    proc->vmas = area;
+
+    return (void*)start;
+}
+
 int32_t sys_kill(uint32_t pid, int32_t sig) {
     if (!(sig & SIGTERM) && !(sig & SIGKILL) && !(sig & SIGSTOP) && !(sig & SIGCONT))
         return EINVAL;
@@ -441,7 +623,7 @@ int32_t sys_getpid() {
 void syscall_handler(regs_t* reg) {
     int32_t ret = 0;
     memcpy(current_process->trapframe, reg, sizeof(regs_t));
-    
+     
     switch (reg->eax) {
         case SYS_READ:
             ret = sys_read(reg->ebx, (char*)reg->ecx, (size_t)reg->edx);
@@ -474,7 +656,7 @@ void syscall_handler(regs_t* reg) {
             ret = sys_getpid();
             break;
         case SYS_BRK:
-            ret = (uint32_t)sys_brk((void*)reg->ebx);
+            ret = (int32_t)sys_brk((void*)reg->ebx);
             break;
         case SYS_OPEN:
             ret = sys_open((char*)reg->ebx, reg->ecx, (sys_mode_t)reg->edx);
@@ -494,13 +676,19 @@ void syscall_handler(regs_t* reg) {
         case SYS_KILL:
             ret = sys_kill(reg->ebx, reg->ecx);
             break;
+        case SYS_MMAP:
+            ret = (int32_t)sys_mmap((void*)reg->ebx, reg->ecx, (int32_t)reg->edx, (int32_t)reg->esi, (int32_t)reg->edi, reg->ebp);
+            break;
+        case SYS_MUNMAP:
+            ret = sys_munmap((void*)reg->ebx, reg->ecx);
+            break;
     }
 
     reg->eax = ret;
     reg->eflags |= 0x200;
 
     check_pending_signals(current_process);
-
+    
     if (current_process->state != PROC_RUNNING) {
         schedule_from_interrupt(reg);
         return;

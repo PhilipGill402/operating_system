@@ -15,7 +15,7 @@ static fb_color_t fb_color_create(uint8_t r, uint8_t g, uint8_t b) {
     return color;
 }
 
-static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg) {
+uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg) {
     uint8_t* font_char = font8x8_basic[(uint8_t)c];
 
     for (uint8_t row = 0; row < 8; row++) {
@@ -34,6 +34,20 @@ static uint32_t framebuffer_draw_char(char c, uint32_t x, uint32_t y, uint32_t f
     }
 
     framebuffer_mark_dirty(x, y, FONT_WIDTH, FONT_HEIGHT);
+
+    return 1;
+}
+
+uint32_t framebuffer_draw_string(char* str, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg) {
+    uint32_t x_off = 0;
+
+    while (*str) {
+        if (!framebuffer_draw_char(*str, x + x_off, y, fg, bg))
+            return 0;
+
+        str++;
+        x_off += FONT_WIDTH;
+    } 
 
     return 1;
 }
