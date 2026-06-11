@@ -4,6 +4,8 @@ framebuffer_t framebuffer;
 uint8_t framebuffer_initialized = 0;
 volatile uint8_t cursor_on;
 
+fb_shared_buffer_t fb_shared_buffer;
+
 uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color) {
     if (x >= framebuffer.width || y >= framebuffer.height)
         return 0;

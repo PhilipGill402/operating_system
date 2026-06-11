@@ -41,6 +41,21 @@ typedef struct {
     uint32_t y;
 } framebuffer_t;
 
+typedef struct fb_shared_buffer {
+    uint32_t width;
+    uint32_t height;
+    uint32_t pitch;
+    uint32_t bpp;
+    uint32_t size;
+
+    uint32_t kernel_vaddr;
+
+    uint32_t* frames;
+    uint32_t frame_count;
+
+    int32_t owner_pid;
+} fb_shared_buffer_t;
+
 typedef struct {
     uint8_t b;
     uint8_t g;
@@ -54,5 +69,6 @@ uint32_t framebuffer_set_pixel_raw(uint32_t x, uint32_t y, uint32_t color);
 extern framebuffer_t framebuffer;
 extern uint8_t framebuffer_initialized;
 extern volatile uint8_t cursor_on;
+extern fb_shared_buffer_t fb_shared_buffer;
 
 #endif // !INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_

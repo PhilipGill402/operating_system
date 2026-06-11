@@ -200,6 +200,71 @@ int32_t sys_munmap(void* addr, uint32_t length) {
     return 0;
 }
 
+static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t flags) {
+    process_t* proc = current_process;
+
+    if (fb_shared_buffer.owner_pid != -1 && fb_shared_buffer.owner_pid != proc->pid)
+        return NULL;
+
+    uint32_t rounded_length = PAGE_ALIGN_UP(fb_shared_buffer.size);
+
+    if (length > rounded_length)
+        return NULL;
+
+    uint32_t start;
+
+    if (flags & MAP_FIXED) {
+        start = (uint32_t)addr;
+
+        if (start != USER_FB_VADDR) {
+            return NULL;
+        }
+    } 
+    /*
+    else {
+        start = vma_find_free_range(proc, rounded_length);
+
+        if (!start) {
+            return NULL;
+        }
+    }
+    */
+
+    uint32_t end = start + rounded_length;
+
+    if (!vma_is_range_free(proc, start, end))
+        return NULL;
+
+    vm_area_t* area = kmalloc(sizeof(vm_area_t));
+
+    if (!area)
+        return NULL;
+
+    memset(area, 0, sizeof(vm_area_t));
+
+    area->start = start;
+    area->end = end;
+    area->prot = prot;
+    area->flags = flags;
+    area->type = VMA_FRAMEBUFFER;
+    area->frames = fb_shared_buffer.frames;
+    area->frame_count = fb_shared_buffer.frame_count;
+
+    uint32_t page_flags = mmap_prot_to_page_flags(prot);
+    
+    uint32_t* pd = temp_map_phys0(proc->page_directory_phys); 
+    for (uint32_t i = 0; i < fb_shared_buffer.frame_count; i++) {
+        map_user_page(pd, start + i * PAGE_SIZE, fb_shared_buffer.frames[i], page_flags);
+    }
+    
+    fb_shared_buffer.owner_pid = proc->pid;
+    
+    area->next = proc->vmas;
+    proc->vmas = proc;
+
+    return (void*)start;
+}
+
 void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t fd, uint32_t offset) {
     (void)fd;
     (void)offset;
@@ -207,12 +272,11 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
     if (length == 0)
         return NULL;
 
-    // keep this until i implement more flags 
-    if (!(flags & MAP_ANON)) {
-        return NULL;
-    }
-
     process_t* proc = current_process;
+    
+    if ((flags & MAP_FRAMEBUFFER) == MAP_FRAMEBUFFER)
+        return mmap_framebuffer(addr, length, prot, flags);
+
     uint32_t* pd = temp_map_phys1(proc->page_directory_phys);
 
     if (!proc || !pd) {

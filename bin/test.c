@@ -2,14 +2,14 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-int main(void) {
+void* test_mmap() {
     printf("mmap test starting...\n");
 
     uint8_t* mem = mmap(
         NULL,
         8192,
         PROT_READ | PROT_WRITE,
-        MAP_ANON,
+        MAP_FRAMEBUFFER,
         -1,
         0
     );
@@ -50,17 +50,24 @@ int main(void) {
 
     printf("PASS: write/read worked across both pages\n");
 
-    /*
-     * Test 3: munmap the exact region.
-     */
+
+    printf("mmap test complete\n");
+
+    return mem;
+}
+
+void test_munmap(void* mem) {
     if (munmap(mem, 8192) < 0) {
         printf("FAIL: munmap failed\n");
         return 1;
     }
 
     printf("PASS: munmap returned success\n");
+}
 
-    printf("mmap test complete\n");
+int main(void) {
+    
+    void* addr = test_mmap();
 
     return 0;
 }

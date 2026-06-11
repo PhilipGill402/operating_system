@@ -114,6 +114,36 @@ void framebuffer_putchar(char c, void* ctx) {
     
 }
 
+static int32_t framebuffer_shared_buffer_init() {
+    fb_shared_buffer.width = framebuffer.width;
+    fb_shared_buffer.height = framebuffer.height;
+    fb_shared_buffer.pitch = framebuffer.width * sizeof(uint32_t);
+    fb_shared_buffer.bpp = framebuffer.bpp;
+    fb_shared_buffer.size = fb_shared_buffer.pitch * framebuffer.height;
+    fb_shared_buffer.frame_count = PAGE_ALIGN_UP(fb_shared_buffer.size) / PAGE_SIZE;
+    fb_shared_buffer.kernel_vaddr = FB_SHARED_KERNEL_VADDR;
+    fb_shared_buffer.owner_pid = -1;
+    fb_shared_buffer.frames = kmalloc(fb_shared_buffer.frame_count * sizeof(uint32_t));
+
+    if (!fb_shared_buffer.frames)
+        return -1;
+
+    for (uint32_t i = 0; i < fb_shared_buffer.frame_count; i++) {
+        uint32_t frame = pmm_alloc_frame();
+
+        if (!frame)
+            return -1;
+
+        fb_shared_buffer.frames[i] = frame;
+
+        uint32_t* page = FB_SHARED_KERNEL_VADDR + i * PAGE_SIZE;
+        map_page(page, frame, PAGE_WRITE);
+        memset(page, 0, PAGE_SIZE);
+    }
+
+    framebuffer.backbuffer = (uint32_t*)FB_SHARED_KERNEL_VADDR;
+}
+
 int32_t framebuffer_init(multiboot_info_t* mbi) {
     uint64_t fb_phys = mbi->framebuffer_addr;
     
@@ -135,11 +165,10 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     framebuffer.bpp = mbi->framebuffer_bpp;
     framebuffer.x = FB_PADDING;
     framebuffer.y = FB_PADDING;
-    framebuffer.backbuffer = kzmalloc(framebuffer.width * framebuffer.height * sizeof(uint32_t));
     
-    if (!framebuffer.backbuffer)
-        return 0;
-
+    if (!framebuffer_shared_buffer_init())
+        return -1;
+        
     framebuffer_clear(FB_BLACK);
 
     io_put_char = framebuffer_putchar;
