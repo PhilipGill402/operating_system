@@ -53,6 +53,7 @@ typedef struct vm_area {
 
     uint32_t* frames;
     uint32_t frame_count;
+    uint8_t owns_frames;
 
     struct vm_area* next;
 } vm_area_t;

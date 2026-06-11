@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sys/io.h>
+#include <sys/fb.h>
 
 #define SYS_READ        0
 #define SYS_WRITE       1
@@ -23,6 +24,7 @@
 #define SYS_MUNMAP      91
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
+#define SYS_FB_INFO     200
 
 /* HELPERS */
 int32_t __sys0(uint32_t sys_num);
@@ -48,5 +50,7 @@ int32_t close(uint32_t fd);
 int32_t lseek(uint32_t fd, uint32_t offset);
 int32_t kill(uint32_t pid, int32_t sig);
 void* mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t fd, uint32_t offset);
+int32_t munmap(void* addr, uint32_t length);
+int32_t fb_info(fb_info_t* info);
 
 #endif

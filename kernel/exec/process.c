@@ -302,27 +302,24 @@ void process_destroy(process_t* process) {
 
     // cleans up process virtual memory
     vm_area_t* vma = process->vmas;
-    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
+    uint32_t* pd = temp_map_phys1(process->page_directory_phys);
     
     while (vma) {
-        if (vma->type == VMA_ANON) {
-            for (uint32_t i = 0; i < vma->frame_count; i++) {
-                uint32_t virt = vma->start + i * PAGE_SIZE;
+        vm_area_t* next = vma->next;
 
-                uint32_t frame = unmap_page_from(pd, virt);
+        for (uint32_t i = 0; i < vma->frame_count; i++) {
+            uint32_t virt = vma->start + i * PAGE_SIZE;
 
-                if (frame)
-                    pmm_free_frame(frame);
-                else if (vma->frames[i])
-                    pmm_free_frame(vma->frames[i]);
-            }
+            uint32_t frame = unmap_page_from(pd, virt);
 
-            kfree(vma->frames);
-        } 
+            if (vma->frames[i] && vma->owns_frames)
+                pmm_free_frame(vma->frames[i]);
+        }
+
+        kfree(vma->frames);
         
-        vm_area_t* prev = vma;
-        vma = vma->next;
-        kfree(prev);
+        kfree(vma);
+        vma = next;
     }
 
     // cleans up the user stack memory

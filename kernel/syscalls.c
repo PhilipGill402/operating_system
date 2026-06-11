@@ -135,7 +135,7 @@ static uint32_t mmap_prot_to_page_flags(prot) {
 static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end) {
     vm_area_t* prev = NULL; 
     vm_area_t* vm = proc->vmas;
-
+    
     while (vm) {
         if (vm->start == start && vm->end == end) {
             if (prev)
@@ -154,6 +154,19 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
     return NULL;
 }
 
+int32_t sys_fb_info(sys_fb_info_t* info) {
+    if (!info)
+        return EFAULT;
+
+    info->width = fb_shared_buffer.width;
+    info->height = fb_shared_buffer.height;
+    info->pitch = fb_shared_buffer.pitch;
+    info->bpp = fb_shared_buffer.bpp;
+    info->size = fb_shared_buffer.size;
+
+    return 1;
+}
+
 int32_t sys_munmap(void* addr, uint32_t length) {
     if (!addr || length == 0)
         return -1;
@@ -162,12 +175,10 @@ int32_t sys_munmap(void* addr, uint32_t length) {
         return -1;
 
     process_t* proc = current_process;
-
     if (!proc)
         return -1;
 
     uint32_t start = (uint32_t)addr;
-
     if (start & (PAGE_SIZE - 1))
         return -1;
 
@@ -178,20 +189,15 @@ int32_t sys_munmap(void* addr, uint32_t length) {
     if (!area)
         return -1;
     
+    uint32_t* pd = temp_map_phys1(proc->page_directory_phys);
     
-    uint32_t* pd = temp_map_phys0(proc->page_directory_phys);
-    
-    if (area->type == VMA_ANON) {
-        for (uint32_t i = 0; i < area->frame_count; i++) {
-            uint32_t virt = area->start + i * PAGE_SIZE;
+    for (uint32_t i = 0; i < area->frame_count; i++) {
+        uint32_t virt = area->start + i * PAGE_SIZE;
 
-            uint32_t frame = unmap_page_from(pd, virt);
+        uint32_t frame = unmap_page_from(pd, virt);
 
-            if (frame)
-                pmm_free_frame(frame);
-            else if (area->frames[i])
-                pmm_free_frame(area->frames[i]);
-        }
+        if (area->frames[i] && area->owns_frames)
+            pmm_free_frame(area->frames[i]);
     }
 
     kfree(area->frames);
@@ -205,8 +211,10 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
 
     if (fb_shared_buffer.owner_pid != -1 && fb_shared_buffer.owner_pid != proc->pid)
         return NULL;
-
+    
     uint32_t rounded_length = PAGE_ALIGN_UP(fb_shared_buffer.size);
+    if (rounded_length != length)
+        return NULL;
 
     if (length > rounded_length)
         return NULL;
@@ -249,6 +257,7 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     area->type = VMA_FRAMEBUFFER;
     area->frames = fb_shared_buffer.frames;
     area->frame_count = fb_shared_buffer.frame_count;
+    area->owns_frames = 0;
 
     uint32_t page_flags = mmap_prot_to_page_flags(prot);
     
@@ -260,7 +269,7 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     fb_shared_buffer.owner_pid = proc->pid;
     
     area->next = proc->vmas;
-    proc->vmas = proc;
+    proc->vmas = area;
 
     return (void*)start;
 }
@@ -313,6 +322,7 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
     area->frames = kmalloc(frame_count * sizeof(uint32_t));
     area->frame_count = frame_count;
     area->next = NULL;
+    area->owns_frames = 1;
 
     uint32_t page_flags = mmap_prot_to_page_flags(prot);
     
@@ -457,7 +467,6 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     }
 
     if (fd >= MAX_FDS + 1) {
-        log_error("Too many file descriptors open\n");
         return ENFILE; 
     }
 
@@ -745,6 +754,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_MUNMAP:
             ret = sys_munmap((void*)reg->ebx, reg->ecx);
+            break;
+        case SYS_FB_INFO:
+            ret = sys_fb_info((sys_fb_info_t*)reg->ebx);
             break;
     }
 

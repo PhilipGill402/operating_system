@@ -400,6 +400,8 @@ void* kzmalloc_debug(size_t size, const char* file, int line) {
 }
 
 void kfree_debug(void* ptr, const char* file, int line) {
+    log_debug("Free called at %s:%d for addr %x\n", file, line, ptr); 
+
     num_frees++; 
     if (!ptr) {
         return;

@@ -8,6 +8,7 @@
 #include <sys/io.h>
 #include <sys/signals.h>
 #include <sys/mman.h>
+#include <sys/fb.h>
 #include <string.h>
 
 #include "exec/process.h"
@@ -37,6 +38,7 @@
 #define SYS_MUNMAP      91
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
+#define SYS_FB_INFO     200
 
 void syscall_handler(regs_t* reg);
 

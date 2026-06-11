@@ -91,3 +91,7 @@ int32_t munmap(void* addr, uint32_t length) {
     return __sys2(SYS_MUNMAP, (uint32_t)addr, length);
 }
 
+int32_t fb_info(fb_info_t* info) {
+    return __sys1(SYS_FB_INFO, info);
+}
+
