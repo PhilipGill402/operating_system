@@ -1,3 +1,5 @@
+/*
+
 #include "window/window.h"
 
 static window_t windows[MAX_WINDOWS] = { 0 };
@@ -147,4 +149,4 @@ int32_t window_hit_id(uint32_t x, uint32_t y) {
     return -1;
 }
 
-
+*/

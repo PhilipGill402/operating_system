@@ -1,3 +1,4 @@
+/*
 #ifndef INCLUDE_WINDOW_WINDOW_H_
 #define INCLUDE_WINDOW_WINDOW_H_
 
@@ -41,3 +42,4 @@ void window_render();
 int32_t window_hit_id(uint32_t x, uint32_t y);
 
 #endif // !INCLUDE_WINDOW_WINDOW_H_
+*/

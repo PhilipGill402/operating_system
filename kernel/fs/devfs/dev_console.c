@@ -42,7 +42,7 @@ int32_t write_console_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, u
     (void)offset;
     
     for (uint32_t i = 0; i < size; i++) {
-        io_put_char(buffer[i], NULL); 
+        log_debug("%c\n", buffer[i]);
     }
 
     return (int32_t)size;

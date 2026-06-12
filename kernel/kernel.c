@@ -9,7 +9,7 @@
 #include "io/io.h"
 #include "io/vga.h"
 #include "io/serial.h"
-#include "io/framebuffer/framebuffer.h"
+#include "io/framebuffer.h"
 #include "gdt.h"
 #include "multiboot.h"
 #include "memory/physical_allocator.h"
@@ -98,11 +98,6 @@ void finish_init() {
     // GRUB multiboot supports use of the framebuffer
     if (mbi->flags & (1 << 12)) {
         framebuffer_init(mbi);
-    }
-
-    if (!io_put_char) {
-        terminal_initialize();
-        io_put_char = terminal_putchar;
     }
 
     mouse_init();

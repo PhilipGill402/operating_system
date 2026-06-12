@@ -40,30 +40,6 @@ static uint8_t mouse_read(void) {
     return ps2_read_data();
 }
 
-static inline void mouse_clear() {
-    framebuffer_draw_rect(mouse.x, mouse.y, MOUSE_WIDTH, MOUSE_HEIGHT, FB_BLACK);
-}
-
-void mouse_draw() {
-    for (uint32_t x_off = 0; x_off < MOUSE_WIDTH; x_off++) {
-        for (uint32_t y_off = 0; y_off < MOUSE_HEIGHT; y_off++) {
-            framebuffer_set_pixel_raw(mouse.x + x_off, mouse.y + y_off, FB_LIGHT_GRAY);
-        }
-    }
-}
-
-void mouse_update_screen() {
-    if (!mouse.dirty)
-        return;
-    
-    // clears
-    framebuffer_draw_rect(mouse.x, mouse.y, MOUSE_WIDTH, MOUSE_HEIGHT, FB_BLACK);
-    
-    framebuffer_draw_rect(mouse.x, mouse.y, MOUSE_WIDTH, MOUSE_HEIGHT, FB_LIGHT_GRAY);
-
-    mouse.dirty = 0;
-}
-
 void mouse_irq_handler(regs_t* regs) {
     (void)regs;
 

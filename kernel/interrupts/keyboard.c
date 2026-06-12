@@ -147,13 +147,8 @@ void keyboard_callback(regs_t* r) {
     }
 
     if (c == '\n') {
-        io_put_char(c, NULL);
         input_buffer_submit();
-    } else if (c == '\b') {
-        io_put_char(c, NULL);
-        input_buffer_pop();
-    } else {
-        io_put_char(c, NULL);
-        input_buffer_push(c);
     }
+
+    input_buffer_push(c);
 }

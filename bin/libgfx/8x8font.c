@@ -1,4 +1,4 @@
-#include "io/font8x8.h"
+#include "font8x8.h"
 
 char font8x8_basic[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0000 (nul)

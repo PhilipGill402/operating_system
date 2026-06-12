@@ -1,12 +1,16 @@
-#ifndef INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_
-#define INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_
+#ifndef INCLUDE_IO_FRAMEBUFFER_H_
+#define INCLUDE_IO_FRAMEBUFFER_H_
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
+#include <log.h>
+
+#include "multiboot.h"
+#include "memory/paging.h"
+#include "memory/heap.h"
 #include "memory_mapping.h"
-
-#define FB_PADDING      5
 
 #define FB_BLACK        0x00000000
 #define FB_WHITE        0x00FFFFFF
@@ -28,7 +32,7 @@
 #define FB_BROWN        0x00A52A2A
 #define FB_PINK         0x00FFC0CB
 
-#define MAX_DIRTY_OBJS  128
+
 
 typedef struct {
     uint8_t bpp;
@@ -37,8 +41,6 @@ typedef struct {
     uint32_t width;
     uint32_t height;
     uint32_t pitch;
-    uint32_t x;
-    uint32_t y;
 } framebuffer_t;
 
 typedef struct fb_shared_buffer {
@@ -56,19 +58,11 @@ typedef struct fb_shared_buffer {
     int32_t owner_pid;
 } fb_shared_buffer_t;
 
-typedef struct {
-    uint8_t b;
-    uint8_t g;
-    uint8_t r;
-    uint8_t unused;
-} __attribute__((packed)) fb_color_t;
-
-uint32_t framebuffer_set_pixel(uint32_t x, uint32_t y, uint32_t color);
 uint32_t framebuffer_set_pixel_raw(uint32_t x, uint32_t y, uint32_t color);
+void framebuffer_clear(uint32_t color);
+int32_t framebuffer_init(multiboot_info_t* mbi);
 
 extern framebuffer_t framebuffer;
-extern uint8_t framebuffer_initialized;
-extern volatile uint8_t cursor_on;
 extern fb_shared_buffer_t fb_shared_buffer;
 
-#endif // !INCLUDE_IO_FRAMEBUFFER_FRAMEBUFFER_DEFS_H_
+#endif

@@ -5,7 +5,7 @@
 
 #include <log.h>
 
-#include "io/framebuffer/framebuffer.h"
+#include "io/framebuffer.h"
 #include "interrupts/irq.h"
 #include "interrupts/keyboard.h"
 #include "interrupts/port.h"
@@ -44,11 +44,8 @@ typedef struct {
     uint8_t left_clicked;
     uint8_t right_clicked;
     uint8_t middle_clicked;
-
-    uint8_t dirty;
 } mouse_state_t;
 
 void mouse_init();
-void mouse_draw();
 
 #endif // !INCLUDE_INTERRUPTS_MOUSE_H_
