@@ -4,7 +4,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <queue.h>
+
 #include "fs/fs_types.h"
+
+typedef struct {
+    queue_t input;
+    queue_t output;
+} pty_t;
 
 typedef struct dev_file {
     fs_node_t* parent;
@@ -20,5 +27,7 @@ typedef struct {
     uint32_t child_count;
     fs_node_t* parent;
 } dev_dir_t;
+
+extern pty_t pty;
 
 #endif

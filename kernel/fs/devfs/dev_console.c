@@ -6,35 +6,7 @@ int32_t get_console_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uin
     (void)file;
     (void)offset;
     
-    if (!buffer || size == 0) {
-        log_error("Buffer is %p and size was %d\n", buffer, size); 
-        return 0;
-    } 
-        
-
-    while (!keyboard_buffer.ready) {
-        asm volatile("sti; hlt" ::: "memory");
-    }
-
-    asm volatile("cli" ::: "memory");
-
-    int32_t len = (int32_t)keyboard_buffer.length;
-    if (len >= size)
-        len = size - 1;
-
-    for (uint32_t i = 0; i < len; i++) {
-        buffer[i] = (uint8_t)keyboard_buffer.data[i];
-    }
-
-    buffer[len] = '\0';
-
-    keyboard_buffer.data[0] = '\0';
-    keyboard_buffer.length = 0;
-    keyboard_buffer.ready = 0;
-
-    asm volatile("sti" ::: "memory");
-
-    return len;
+    return 0;
 }
 
 int32_t write_console_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {

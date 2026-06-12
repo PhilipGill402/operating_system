@@ -101,6 +101,7 @@ void finish_init() {
     }
 
     mouse_init();
+    keyboard_init();
 
     scheduler_init();
     

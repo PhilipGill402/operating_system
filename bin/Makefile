@@ -4,11 +4,14 @@ TARGET := $(ARCH)-elf
 CC := $(TARGET)-gcc
 
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-SYSROOT := $(abspath $(MAKEFILE_DIR)/../sysroot)
-OUTDIR := $(abspath $(MAKEFILE_DIR)/../fs)
-BUILDDIR := $(abspath $(MAKEFILE_DIR)/../build/user)
+SRC_DIR := $(patsubst %/,%,$(MAKEFILE_DIR))
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -m32 -I$(SYSROOT)/usr/include
+SYSROOT := $(abspath $(SRC_DIR)/../sysroot)
+OUTDIR := $(abspath $(SRC_DIR)/../fs)
+BUILDDIR := $(abspath $(SRC_DIR)/../build/user)
+
+CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -m32
+CFLAGS += -I$(SYSROOT)/usr/include
 CFLAGS += -MMD -MP
 
 LDFLAGS := -nostdlib -nostartfiles -ffreestanding -m32
@@ -17,37 +20,38 @@ CRT0 := $(SYSROOT)/usr/lib/crt0.o
 LIBC := $(SYSROOT)/usr/lib/libc.a
 LIBGFX := $(SYSROOT)/usr/lib/libgfx.a
 
-C_SOURCES := $(notdir $(wildcard $(MAKEFILE_DIR)/*.c))
+C_SOURCES := $(wildcard $(SRC_DIR)/*.c)
+PROG_NAMES := $(basename $(notdir $(C_SOURCES)))
 
-OBJS := $(addprefix $(BUILDDIR)/,$(C_SOURCES:.c=.o))
+OBJS := $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(PROG_NAMES)))
 DEPS := $(OBJS:.o=.d)
+PROGS := $(addprefix $(OUTDIR)/,$(PROG_NAMES))
 
-PROGS := $(addprefix $(OUTDIR)/,$(C_SOURCES:.c=))
+.PHONY: all clean print dirs
 
-.PHONY: all clean print
+all: dirs $(PROGS)
 
-all: $(PROGS)
+dirs:
+	mkdir -p $(BUILDDIR)
+	mkdir -p $(OUTDIR)
 
 print:
 	@echo MAKEFILE_DIR=$(MAKEFILE_DIR)
+	@echo SRC_DIR=$(SRC_DIR)
 	@echo SYSROOT=$(SYSROOT)
 	@echo OUTDIR=$(OUTDIR)
 	@echo BUILDDIR=$(BUILDDIR)
 	@echo C_SOURCES=$(C_SOURCES)
+	@echo PROG_NAMES=$(PROG_NAMES)
 	@echo OBJS=$(OBJS)
+	@echo DEPS=$(DEPS)
 	@echo PROGS=$(PROGS)
 
-$(BUILDDIR):
-	mkdir -p $(BUILDDIR)
-
-$(OUTDIR):
-	mkdir -p $(OUTDIR)
-
-$(BUILDDIR)/%.o: $(MAKEFILE_DIR)/%.c | $(BUILDDIR)
+$(OBJS): $(BUILDDIR)/%.o: $(SRC_DIR)/%.c | dirs
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OUTDIR)/%: $(BUILDDIR)/%.o $(CRT0) $(LIBGFX) $(LIBC) | $(OUTDIR)
-	$(CC) $(LDFLAGS) $(CRT0) $< $(LIBGFX) $(LIBC) -o $@
+$(PROGS): $(OUTDIR)/%: $(BUILDDIR)/%.o $(CRT0) $(LIBGFX) $(LIBC) | dirs
+	$(CC) $(LDFLAGS) $(CRT0) $< $(LIBGFX) $(LIBC) -lgcc -o $@
 
 clean:
 	rm -rf $(BUILDDIR)

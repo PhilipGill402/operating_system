@@ -9,6 +9,9 @@
 #include "fs/devfs/dev_console.h"
 #include "fs/devfs/dev_serial.h"
 #include "fs/devfs/dev_fb.h"
+#include "fs/devfs/dev_pts.h"
+#include "fs/devfs/dev_ptm.h"
+#include "fs/devfs/dev_input.h"
 
 fs_node_t* init_dev();
 

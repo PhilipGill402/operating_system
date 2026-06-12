@@ -9,6 +9,8 @@ static int32_t write_serial_data(dev_file_t* file, uint8_t* buffer, uint32_t off
     for (uint32_t i = 0; i < size; i++) {
         serial_write_char(buffer[i], NULL);
     }
+
+    return size;
 }
 
 dev_file_t* create_serial_file(fs_node_t* parent, uint32_t inode) {

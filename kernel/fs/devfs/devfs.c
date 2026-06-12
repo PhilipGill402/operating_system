@@ -1,12 +1,17 @@
 #include "fs/devfs/devfs.h"
 
-fs_node_t* dev_dir;
-
 int32_t dev_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
 int32_t dev_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
 fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index);
 fs_node_t* dev_finddir(fs_node_t* node, char* name);
 fs_node_t* dev_parent(fs_node_t* node);
+
+pty_t pty;
+
+void pty_init(void) {
+    pty.input = queue_create(sizeof(char));
+    pty.output = queue_create(sizeof(char));
+}
 
 fs_node_t* dev_file_to_node(dev_file_t* file) {
     if (!file)
@@ -174,7 +179,9 @@ int dev_add_child(fs_node_t* dir, dev_file_t* child) {
 }
 
 fs_node_t* init_dev() {
-    dev_dir = create_dev_dir("dev", fs_root, inode_count++);
+    fs_node_t* dev_dir = create_dev_dir("dev", fs_root, inode_count++);
+    
+    pty_init();
 
     dev_file_t* console_file = create_console_file(dev_dir, inode_count++);
     if (!console_file)
@@ -196,7 +203,28 @@ fs_node_t* init_dev() {
 
     if (!dev_add_child(dev_dir, serial_file))
         log_error("failed to init devices\n");
+    
+    dev_file_t* ptm_file = create_ptm_file(dev_dir, inode_count++);
+    if (!ptm_file)
+        log_error("failed to init ptm file\n");
 
+    if (!dev_add_child(dev_dir, ptm_file))
+        log_error("failed to init devices\n");
+
+    dev_file_t* pts_file = create_pts_file(dev_dir, inode_count++);
+    if (!pts_file)
+        log_error("failed to init pts file\n");
+
+    if (!dev_add_child(dev_dir, pts_file))
+        log_error("failed to init devices\n");
+
+    dev_file_t* input_file = create_input_file(dev_dir, inode_count++);
+    if (!input_file)
+        log_error("failed to init input file\n");
+
+    if (!dev_add_child(dev_dir, input_file))
+        log_error("failed to init devices\n");
+    
     return dev_dir;
 }
 
