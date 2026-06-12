@@ -2,26 +2,18 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-int main(void) {
-    fb_info_t info;
-    
-    errno = 0;
-    if (!fb_info(&info)) {
-        perror("fb_info");
-        return -1;
-    }
+#include <gfx/gfx.h>
+#include <gfx/rendering.h>
+#include <gfx/8x8font.h>
 
-    uint32_t* fb = mmap(NULL, info.size, PROT_READ | PROT_WRITE, MAP_FRAMEBUFFER, -1, 0);
-    if (!fb) {
-        printf("mmap failed\n");
-        return -1;
-    }
+int main(void) {
+    gfx_context_t* ctx = gfx_get_context(NULL, NULL);
     
-    errno = 0;
-    if (munmap(fb, info.size) < 0) {
-        perror("munmap");
-        return -1;
-    }
+    uint32_t ret = gfx_draw_string(ctx, "Hello world\n", 100, 100, FB_WHITE, FB_BLACK);
+
+    fb_flush(100, 100, 100, 100);
+    
+    gfx_free_context(ctx); 
 
     return 0;
 }

@@ -11,6 +11,7 @@
 #include <sys/fb.h>
 #include <string.h>
 
+#include "io/framebuffer.h"
 #include "exec/process.h"
 #include "exec/scheduler.h"
 #include "memory/physical_allocator.h"

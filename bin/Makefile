@@ -15,6 +15,7 @@ LDFLAGS := -nostdlib -nostartfiles -ffreestanding -m32
 
 CRT0 := $(SYSROOT)/usr/lib/crt0.o
 LIBC := $(SYSROOT)/usr/lib/libc.a
+LIBGFX := $(SYSROOT)/usr/lib/libgfx.a
 
 C_SOURCES := $(notdir $(wildcard $(MAKEFILE_DIR)/*.c))
 
@@ -45,8 +46,8 @@ $(OUTDIR):
 $(BUILDDIR)/%.o: $(MAKEFILE_DIR)/%.c | $(BUILDDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OUTDIR)/%: $(BUILDDIR)/%.o $(CRT0) $(LIBC) | $(OUTDIR)
-	$(CC) $(LDFLAGS) $(CRT0) $< $(LIBC) -o $@
+$(OUTDIR)/%: $(BUILDDIR)/%.o $(CRT0) $(LIBGFX) $(LIBC) | $(OUTDIR)
+	$(CC) $(LDFLAGS) $(CRT0) $< $(LIBGFX) $(LIBC) -o $@
 
 clean:
 	rm -rf $(BUILDDIR)

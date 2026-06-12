@@ -286,7 +286,7 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     
     area->next = proc->vmas;
     proc->vmas = area;
-
+    
     return (void*)start;
 }
 

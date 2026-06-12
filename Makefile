@@ -28,6 +28,7 @@ LIBC := $(LIBC_DIR)/build/libc.a
 LIBC_INC := $(LIBC_DIR)/include
 LIBK_INC := $(LIBK_DIR)/include
 CRT0 := $(LIBC_DIR)/build/crt0.o
+LIBGFX := bin/libgfx/build/libgfx.a
 SYSROOT := sysroot
 
 SYSROOT_LIBC := $(SYSROOT)/usr/lib/libc.a
@@ -81,6 +82,11 @@ libk: $(LIBK)
 
 $(LIBK):
 	$(MAKE) -C $(LIBK_DIR)
+
+libgfx: $(LIBGFX)
+
+$(LIBGFX):
+	$(MAKE)
 
 user: libc
 	$(MAKE) -C $(USER_DIR)
