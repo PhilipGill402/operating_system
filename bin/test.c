@@ -7,11 +7,16 @@
 #include <gfx/8x8font.h>
 
 int main(void) {
+    int32_t serial_fd = open("/dev/serial", O_WRONLY, 0);
+    char* msg = "hello world\n"; 
+
+    write(serial_fd, msg, strlen(msg));
+
     gfx_context_t* ctx = gfx_get_context(NULL, NULL);
     
-    uint32_t ret = gfx_draw_string(ctx, "Hello world\n", 100, 100, FB_WHITE, FB_BLACK);
+    uint32_t ret = gfx_draw_string(ctx, "WHATS UP\n", 100, 100, FB_WHITE, FB_BLACK);
 
-    fb_flush(100, 100, 100, 100);
+    gfx_flush(ctx);
     
     gfx_free_context(ctx); 
 

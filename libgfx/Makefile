@@ -5,7 +5,7 @@ BUILD_DIR = build
 SRC_DIR = src
 INCLUDE_DIR = include
 
-SYSROOT = ../../sysroot
+SYSROOT = ../sysroot
 LIB_NAME = libgfx.a
 LIB = $(SYSROOT)/usr/lib/$(LIB_NAME)
 

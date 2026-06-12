@@ -189,6 +189,13 @@ fs_node_t* init_dev() {
 
     if (!dev_add_child(dev_dir, fb_file))
         log_error("failed to init devices\n");
+    
+    dev_file_t* serial_file = create_serial_file(dev_dir, inode_count++);
+    if (!serial_file)
+        log_error("failed to init serial file\n");
+
+    if (!dev_add_child(dev_dir, serial_file))
+        log_error("failed to init devices\n");
 
     return dev_dir;
 }

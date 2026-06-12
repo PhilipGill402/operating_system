@@ -7,6 +7,8 @@
 #include "fs/fs_types.h"
 #include "fs/devfs/dev_defs.h"
 #include "fs/devfs/dev_console.h"
+#include "fs/devfs/dev_serial.h"
+#include "fs/devfs/dev_fb.h"
 
 fs_node_t* init_dev();
 

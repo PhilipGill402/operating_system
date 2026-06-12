@@ -28,6 +28,15 @@ gfx_context_t* gfx_get_context(fb_info_t* info, uint32_t* pixels) {
     return ctx;
 }
 
+uint32_t gfx_flush(gfx_context_t* ctx) {
+    for (uint32_t i = 0; i < ctx->dirty_count; i++) {
+        gfx_rect_t rect = ctx->dirty_rects[i]; 
+        fb_flush(rect.x, rect.y, rect.width, rect.height);
+    }
+
+    return 1;
+}
+
 void gfx_free_context(gfx_context_t* ctx) {
     if (ctx->owns_pixels) {
         if (munmap(ctx->pixels, ctx->fb.size) < 0)

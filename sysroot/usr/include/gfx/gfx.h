@@ -30,6 +30,7 @@ typedef struct {
 } gfx_context_t;
 
 gfx_context_t* gfx_get_context(fb_info_t* info, uint32_t* pixels);
+uint32_t gfx_flush(gfx_context_t* ctx);
 void gfx_free_context(gfx_context_t* ctx);
 
 #endif
