@@ -39,6 +39,7 @@
 #define SYS_GETDENTS    141
 #define SYS_GETCWD      183
 #define SYS_FB_INFO     200
+#define SYS_FB_FLUSH    201
 
 void syscall_handler(regs_t* reg);
 

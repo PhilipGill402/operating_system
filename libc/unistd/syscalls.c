@@ -92,6 +92,10 @@ int32_t munmap(void* addr, uint32_t length) {
 }
 
 int32_t fb_info(fb_info_t* info) {
-    return __sys1(SYS_FB_INFO, info);
+    return __sys1(SYS_FB_INFO, (uint32_t)info);
+}
+
+int32_t fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    return __sys4(SYS_FB_FLUSH, x, y, width, height);
 }
 

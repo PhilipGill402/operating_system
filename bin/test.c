@@ -11,12 +11,10 @@ int main(void) {
         return -1;
     }
 
-    printf("FB SIZE: %u\n", info.size);
-    
-    uint32_t* mem = mmap(NULL, info.size, PROT_READ | PROT_WRITE, MAP_FRAMEBUFFER, -1, 0);
+    uint32_t* fb = mmap(NULL, info.size, PROT_READ | PROT_WRITE, MAP_FRAMEBUFFER, -1, 0);
     
     errno = 0;
-    if (munmap(mem, info.size) < 0) {
+    if (munmap(fb, info.size) < 0) {
         perror("munmap");
         return -1;
     }

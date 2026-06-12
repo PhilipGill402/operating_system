@@ -154,6 +154,22 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
     return NULL;
 }
 
+int32_t sys_fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+    if (x + width >= framebuffer.width)
+        width = framebuffer.width - x;
+    if (y + width >= framebuffer.height)
+        height = framebuffer.height - y;
+
+    for (uint32_t row = 0; row < height; row++) {
+        uint8_t* dst = framebuffer.addr + (y + row) * framebuffer.pitch + x * 4;
+        uint8_t* src = (uint8_t*)framebuffer.backbuffer + ((y + row) * framebuffer.width + x) * 4;
+
+        memcpy(dst, src, width * 4);
+    }
+
+    return 1;
+}
+
 int32_t sys_fb_info(sys_fb_info_t* info) {
     if (!info)
         return EFAULT;
@@ -757,6 +773,9 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_FB_INFO:
             ret = sys_fb_info((sys_fb_info_t*)reg->ebx);
+            break;
+        case SYS_FB_FLUSH:
+            ret = sys_fb_flush(reg->ebx, reg->ecx, reg->edx, reg->esi);
             break;
     }
 
