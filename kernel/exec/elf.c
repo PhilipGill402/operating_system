@@ -331,6 +331,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
+    process->wait_channel = NULL;
 
     process->exit_status = 0;
     process->waited_on = 0;

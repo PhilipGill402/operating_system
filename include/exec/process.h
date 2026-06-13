@@ -76,6 +76,7 @@ typedef struct {
     uint32_t pid;
     uint32_t ppid; 
     proc_state_t state;
+    void* wait_channel;
     uint32_t entry;
 
     int32_t exit_status;
