@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/io.h>
 
 int main(int argc, char* argv[]) {
     char* path;
@@ -11,7 +15,7 @@ int main(int argc, char* argv[]) {
     }
 
     // if no path then use the cwd 
-    uint32_t fd = open(path, O_RDONLY, 0);
+    int32_t fd = open(path, O_RDONLY, 0);
     
     dirent_t* entries = malloc(sizeof(dirent_t) * 10);
     uint32_t num_entries = getdents(fd, entries, 10);

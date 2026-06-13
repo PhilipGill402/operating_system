@@ -575,6 +575,8 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (!file)
         return ENOENT;
     
+    str[count] = '\0';
+
     uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd].offset, count);
     current_process->fds[fd].offset += bytes_written;
 
@@ -628,7 +630,7 @@ int32_t sys_exit(regs_t* reg, int32_t status) {
     current_process->state = PROC_TERMINATED;
     current_process->exit_status = status;
     
-    log_debug("Process %d exited with status %d\n", current_process->pid, current_process->exit_status);
+    log_debug("Process %d (%s) exited with status %d\n", current_process->pid, current_process->name, current_process->exit_status);
 
     process_wake_parent(current_process->pid);
 
