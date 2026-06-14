@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/events.h>
 #include <gfx/gfx.h>
 #include <gfx/rendering.h>
 #include <gfx/8x8font.h>
@@ -70,9 +71,6 @@ int main() {
 
     uint32_t child_pid = fork();
     if (child_pid == 0) {
-        char* msg = "made it\n";
-        write(serial_fd, msg, strlen(msg));
-
         // close all i/o file descriptors to replace with dev/pts for shell
         close(0);
         close(1);
@@ -112,7 +110,7 @@ int main() {
         for (uint32_t i = 0; i < events_read; i++) {
             input_event_t event = input_event_buffer[i];
 
-            if (event.ch) {
+            if (event.type == INPUT_EVENT_KEY && event.ch) {
                 bytes[num_chars++] = event.ch; 
             }
         }

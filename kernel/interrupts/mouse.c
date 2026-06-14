@@ -94,6 +94,27 @@ void mouse_irq_handler(regs_t* regs) {
         mouse.y = 0;
 
     memset(&mouse_packet, 0, sizeof(mouse_packet));
+
+    input_event_t event;
+    
+    if (mouse.left_clicked || mouse.right_clicked || mouse.middle_clicked)
+        event.type == INPUT_EVENT_MOUSE_CLICK;
+    else
+        event.type == INPUT_EVENT_MOUSE;
+
+    if (mouse.left_clicked)
+        event.mouse_buttons |= MOUSE_BUTTON_LEFT;
+    else if (mouse.right_clicked)
+        event.mouse_buttons |= MOUSE_BUTTON_RIGHT;
+    else if (mouse.middle_clicked)
+        event.mouse_buttons |= MOUSE_BUTTON_CENTER;
+    
+    event.mouse_x = mouse.x;
+    event.mouse_y = mouse.y;
+    event.mouse_dx = dx;
+    event.mouse_dy = dy;
+
+    enqueue(&input_buffer, &event);
 }
 
 void mouse_init() {

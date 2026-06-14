@@ -7,6 +7,8 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+uint32_t serial_fd;
+
 static int read_line(char* buffer, uint32_t max_len) {
     uint32_t len = 0;
 
@@ -36,7 +38,7 @@ static int read_line(char* buffer, uint32_t max_len) {
             }
             continue;
         }
-
+        
         buffer[len++] = c;
         write(1, &c, 1); // echo typed character
     }
@@ -67,6 +69,7 @@ int check_builtins(int argc, char* argv[]) {
 }
 
 int main() {
+    serial_fd = open("/dev/serial", O_WRONLY, 0);
     char buffer[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
     
@@ -86,6 +89,7 @@ int main() {
         buffer[bytes] = '\0';
 
         char* token = strtok(buffer, ' ');
+        
         int user_argc = 0;
         
         while (token != NULL) {
@@ -101,6 +105,7 @@ int main() {
         // try to run the program, if not check the bin folder
         char* path = malloc(MAX_BUFFER_LENGTH);
         memset(path, 0, MAX_BUFFER_LENGTH);
+        
         errno = 0;
         int fd = open(user_argv[0], O_RDONLY, 0);
         if (fd == -1 && errno == ENOENT) {
@@ -113,7 +118,7 @@ int main() {
         } else {
             strcpy(path, user_argv[0]);
         }
-        
+
         uint32_t child_pid = fork();
         if (child_pid == 0) {
             errno = 0; 

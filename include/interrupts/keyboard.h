@@ -7,10 +7,8 @@
 #include "io/io.h"
 #include "interrupts/idt.h"
 #include "interrupts/port.h"
+#include "interrupts/events.h"
 #include "exec/process.h"
-
-
-#define INPUT_EVENT_KEY 1
 
 #define KEY_MOD_SHIFT 0x01
 #define KEY_MOD_CTRL  0x02
@@ -144,14 +142,6 @@ typedef enum {
 
     KEY_MAX
 } keycode_t;
-
-typedef struct {
-    uint32_t type;
-    uint32_t keycode;
-    char ch;
-    uint8_t pressed;
-    uint8_t modifiers;
-} input_event_t;
 
 void keyboard_callback(regs_t* r);
 void keyboard_init();

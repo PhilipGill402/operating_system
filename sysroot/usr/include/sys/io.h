@@ -6,14 +6,6 @@ typedef struct {
     uint32_t inode;
 } dirent_t;
 
-typedef struct {
-    uint32_t type;
-    uint32_t keycode;
-    char ch;
-    uint8_t pressed;
-    uint8_t modifiers;
-} input_event_t;
-
 typedef uint16_t mode_t;
 
 #define S_IFMT  0170000 // file type mask

@@ -1,7 +1,5 @@
 #include "timer.h"
 
-#include "window/window.h"
-
 volatile uint32_t ticks = 0;
 
 void timer_callback(regs_t* r) {

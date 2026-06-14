@@ -129,11 +129,11 @@ char* strstr(char* str, char* substr){
 
 char* strtok(char* str, int delimiter){
     static char* string = NULL;
-    if (str != NULL){
+    if (str != NULL) {
         string = str;
     }
     
-    if (string == NULL){
+    if (string == NULL) {
         return NULL;
     }
     
@@ -141,7 +141,7 @@ char* strtok(char* str, int delimiter){
         string++;
     }
     
-    if (*string == '\0'){
+    if (*string == '\0') {
         string = NULL; 
         return NULL;
     }
@@ -152,9 +152,11 @@ char* strtok(char* str, int delimiter){
         string++;
     }
 
-    if (*string){
+    if (*string) {
         *string = '\0';
         string++;
+    } else {
+        string = NULL;
     }
     
     return start;

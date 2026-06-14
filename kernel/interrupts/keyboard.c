@@ -1,6 +1,5 @@
 #include "interrupts/keyboard.h"
 
-queue_t input_buffer;
 static volatile keyboard_modifiers = 0;
 
 static const keycode_t scancode_set1_map[128] = {
@@ -358,6 +357,7 @@ static uint32_t keyboard_decode(uint8_t scancode, input_event_t* event) {
     if (!event)
         return 0;
     
+    event->type = INPUT_EVENT_KEY;
     event->pressed = key_pressed(scancode);
     scancode &= 0x7F; 
 
@@ -387,6 +387,3 @@ void keyboard_callback(regs_t* r) {
     }
 }
 
-void keyboard_init() {
-    input_buffer = queue_create(sizeof(input_event_t));
-}

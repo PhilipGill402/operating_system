@@ -9,6 +9,7 @@
 #include "interrupts/irq.h"
 #include "interrupts/keyboard.h"
 #include "interrupts/port.h"
+#include "interrupts/events.h"
 
 #define PS2_DATA_PORT      0x60
 #define PS2_STATUS_PORT    0x64
@@ -28,9 +29,6 @@
 
 #define MOUSE_ACK              0xFA
 
-#define MOUSE_WIDTH 10
-#define MOUSE_HEIGHT 10
-
 typedef struct {
     uint32_t x;
     uint32_t y;
@@ -47,5 +45,5 @@ typedef struct {
 } mouse_state_t;
 
 void mouse_init();
-
+    
 #endif // !INCLUDE_INTERRUPTS_MOUSE_H_
