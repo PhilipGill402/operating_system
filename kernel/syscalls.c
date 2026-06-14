@@ -779,6 +779,10 @@ void syscall_handler(regs_t* reg) {
         case SYS_FB_FLUSH:
             ret = sys_fb_flush(reg->ebx, reg->ecx, reg->edx, reg->esi);
             break;
+        case SYS_YIELD:
+            reg->eax = 0;
+            schedule_from_interrupt(reg);
+            return;
     }
 
     reg->eax = ret;

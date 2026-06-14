@@ -147,6 +147,7 @@ void schedule_from_interrupt(regs_t* r) {
         
         current_process = NULL;
         scheduler_idle_loop();
+        return;
     }
 
     //log_debug("switching to process %s (%d)\n", next->name, next->pid);

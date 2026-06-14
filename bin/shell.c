@@ -15,6 +15,7 @@ static int read_line(char* buffer, uint32_t max_len) {
         int32_t n = read(0, &c, 1);
 
         if (n <= 0) {
+            yield(); 
             continue;
         }
 

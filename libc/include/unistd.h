@@ -26,6 +26,7 @@
 #define SYS_GETCWD      183
 #define SYS_FB_INFO     200
 #define SYS_FB_FLUSH    201
+#define SYS_YIELD       202
 
 /* HELPERS */
 int32_t __sys0(uint32_t sys_num);

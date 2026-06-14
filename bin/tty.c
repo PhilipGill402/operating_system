@@ -25,8 +25,6 @@ void tty_draw_cursor(tty_t* tty) {
 }
 
 void tty_put_char(char c, tty_t* tty) {
-    tty_clear_cursor(tty);
-
     if (c == '\n') {
         tty->y += FONT_HEIGHT;
         tty->x = 0;
@@ -62,7 +60,6 @@ void tty_put_char(char c, tty_t* tty) {
         tty->y = 0;
     }
 
-    tty_draw_cursor(tty);
 }
 
 int main() {
@@ -103,7 +100,12 @@ int main() {
      
 
     while (1) {
+        uint8_t did_work = 0;
+
         uint32_t event_bytes_read = read(input_fd, (char*)input_event_buffer, sizeof(input_event_buffer));
+        if (event_bytes_read > 0)
+            did_work = 1;
+
         uint32_t events_read = event_bytes_read / sizeof(input_event_t);
          
         uint8_t num_chars = 0;
@@ -116,18 +118,26 @@ int main() {
         }
 
         uint32_t bytes_written = 0;
-        if (num_chars > 0)
+        if (num_chars > 0) {
             bytes_written = write(ptm_fd, bytes, num_chars);
+            did_work = 1;
+        }
         
         uint32_t bytes_read = read(ptm_fd, bytes, sizeof(bytes) - 1);
         
         if (bytes_read > 0) {
+            did_work = 1;
+            tty_clear_cursor(&tty);
             for (int32_t i = 0; i < bytes_read; i++) {
                 tty_put_char((char)bytes[i], &tty);
             }
+            tty_draw_cursor(&tty);
 
             gfx_flush(ctx);
         }
+
+        if (!did_work)
+            yield();
 
     }
 

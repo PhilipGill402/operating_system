@@ -99,3 +99,7 @@ int32_t fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
     return __sys4(SYS_FB_FLUSH, x, y, width, height);
 }
 
+int32_t yield() {
+    return __sys0(SYS_YIELD);
+}
+
