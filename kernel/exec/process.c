@@ -288,26 +288,6 @@ void process_init_file_descriptors(process_t* process) {
     kfree(console);
 }
 
-void process_block_process(process_t* process, void* channel) {
-    process->state = PROC_BLOCKED;
-    process->wait_channel = channel;
-
-    schedule();
-}
-
-void process_wake_blocked(void* channel) {
-    for (uint32_t i = 0; i < num_processes; i++) {
-        process_t* proc = process_table[i];
-        if (!proc)
-            continue;
-
-        if (proc->state == PROC_BLOCKED && proc->wait_channel == channel) {
-            proc->state = PROC_READY;
-            proc->wait_channel = NULL;
-            enqueue(&current_processes, proc);
-        }
-    }
-}
 
 void process_destroy(process_t* process) {
     // cleans up all the mapped virtual memory

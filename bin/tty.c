@@ -8,6 +8,8 @@
 
 #define MAX_BUFFER_LENGTH 256
 
+uint32_t serial_fd = 0;
+
 typedef struct {
     gfx_context_t* ctx;
     uint32_t x;
@@ -22,21 +24,38 @@ void tty_put_char(char c, tty_t* tty) {
         uint32_t col = tty->x / FONT_WIDTH;
         uint32_t next_tab_col = ((col / 4) + 1) * 4;
 
-        tty->x = next_tab_col * FONT_WIDTH;
+        while (col < next_tab_col) {
+            tty_put_char(' ', tty);
+            col++;
+        }
+
     } else if (c == '\r') {
         tty->x = 0;
     } else if (c == '\b') {
-        gfx_draw_char(tty->ctx, ' ', tty->x, tty->y, FB_WHITE, FB_BLACK);
-        tty->x -= FONT_WIDTH;
+        if (tty->x >= FONT_WIDTH) {
+            gfx_draw_char(tty->ctx, ' ', tty->x, tty->y, FB_WHITE, FB_BLACK);
+            tty->x -= FONT_WIDTH;
+        } 
     } else if (c >= ' ') { 
         gfx_draw_char(tty->ctx, c, tty->x, tty->y, FB_WHITE, FB_BLACK); 
         tty->x += FONT_WIDTH;
+    }
+
+    if (tty->x >= tty->ctx->fb.width) {
+        tty->x = 0;
+        tty->y += FONT_HEIGHT;
+    }
+
+    if (tty->y + FONT_HEIGHT > tty->ctx->fb.height) {
+        gfx_draw_rect(tty->ctx, 0, 0, tty->ctx->fb.width, tty->ctx->fb.height, FB_BLACK);
+        tty->x = 0;
+        tty->y = 0;
     }
 }
 
 int main() {
     tty_t tty = { 0 }; 
-    uint32_t serial_fd = open("/dev/serial", O_WRONLY, 0);
+    serial_fd = open("/dev/serial", O_WRONLY, 0);
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);
     uint32_t ptm_fd = open("/dev/ptm", O_RDWR, 0);
 
@@ -68,11 +87,13 @@ int main() {
 
     input_event_t input_event_buffer[256];
     uint8_t bytes[256];
+    
+     
 
     while (1) {
         uint32_t event_bytes_read = read(input_fd, (char*)input_event_buffer, sizeof(input_event_buffer));
         uint32_t events_read = event_bytes_read / sizeof(input_event_t);
-        
+         
         uint8_t num_chars = 0;
         for (uint32_t i = 0; i < events_read; i++) {
             input_event_t event = input_event_buffer[i];

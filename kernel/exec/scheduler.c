@@ -187,4 +187,25 @@ void process_wake_parent(uint32_t child_pid) {
     }
 }
 
+void process_block_current_process(void* channel) {
+    current_process->state = PROC_BLOCKED;
+    current_process->wait_channel = channel;
+
+    //schedule();
+}
+
+void process_wake_blocked(void* channel) {
+    for (uint32_t i = 0; i < num_processes; i++) {
+        process_t* proc = process_table[i];
+        if (!proc)
+            continue;
+
+        if (proc->state == PROC_BLOCKED && proc->wait_channel == channel) {
+            proc->state = PROC_READY;
+            proc->wait_channel = NULL;
+            enqueue(&current_processes, proc);
+        }
+    }
+}
+
 

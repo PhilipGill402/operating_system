@@ -10,7 +10,7 @@
 #include <sys/fb.h>
 #include <sys/mman.h>
 
-#define MAX_DIRTY_RECTS  128
+#define MAX_DIRTY_RECTS 1024 
 
 typedef struct {
     uint32_t x;

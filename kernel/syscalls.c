@@ -575,7 +575,7 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (!file)
         return ENOENT;
     
-    str[count] = '\0';
+    //str[count] = '\0';
 
     uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd].offset, count);
     current_process->fds[fd].offset += bytes_written;

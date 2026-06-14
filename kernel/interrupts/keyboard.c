@@ -372,8 +372,6 @@ static uint32_t keyboard_decode(uint8_t scancode, input_event_t* event) {
 
     event->ch = c;
 
-    log_debug("%c\n", c);
-
     return 1;
 }
 

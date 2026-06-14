@@ -99,6 +99,7 @@ int main() {
 
         // try to run the program, if not check the bin folder
         char* path = malloc(MAX_BUFFER_LENGTH);
+        memset(path, 0, MAX_BUFFER_LENGTH);
         errno = 0;
         int fd = open(user_argv[0], O_RDONLY, 0);
         if (fd == -1 && errno == ENOENT) {
@@ -120,6 +121,7 @@ int main() {
             
             if (ret == -1) {
                 perror("execve");
+                printf("%s\n", path);
                 exit(-1);
             }
         }
@@ -127,7 +129,7 @@ int main() {
         int status;
         waitpid(child_pid, &status, 0);
         
-        free(path); 
+        free(path);
     }
 
     return 0;

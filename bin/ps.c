@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     uint32_t num_entries = getdents(fd, entries, 10);
 
     for (uint32_t i = 0; i < num_entries; i++) {
-        char* buffer = malloc(256);
+        char* buffer = malloc(1024);
         if (!buffer) 
             return -1;
         
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-        uint32_t bytes_read = read(proc_fd, buffer, 256);
+        uint32_t bytes_read = read(proc_fd, buffer, 1056);
         buffer[bytes_read] = '\0';
 
         if (bytes_read == 0)
