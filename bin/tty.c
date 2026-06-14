@@ -16,7 +16,17 @@ typedef struct {
     uint32_t y;
 } tty_t;
 
+void tty_clear_cursor(tty_t* tty) {
+    gfx_draw_rect(tty->ctx, tty->x, tty->y, FONT_WIDTH, FONT_HEIGHT, FB_BLACK);
+}
+
+void tty_draw_cursor(tty_t* tty) {
+    gfx_draw_rect(tty->ctx, tty->x, tty->y, FONT_WIDTH, FONT_HEIGHT, FB_WHITE);
+}
+
 void tty_put_char(char c, tty_t* tty) {
+    tty_clear_cursor(tty);
+
     if (c == '\n') {
         tty->y += FONT_HEIGHT;
         tty->x = 0;
@@ -51,6 +61,8 @@ void tty_put_char(char c, tty_t* tty) {
         tty->x = 0;
         tty->y = 0;
     }
+
+    tty_draw_cursor(tty);
 }
 
 int main() {
