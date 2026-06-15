@@ -15,8 +15,9 @@ static int32_t read_input_data(dev_file_t* file, uint8_t* buffer, uint32_t offse
         if (queue_empty(&input_buffer))
             break;
 
-        input_event_t* c = (input_event_t*)dequeue(&input_buffer);
-        memcpy(buffer + buf_offset, c, sizeof(input_event_t));
+        input_event_t c = *(input_event_t*)dequeue(&input_buffer);
+
+        memcpy(buffer + buf_offset, &c, sizeof(input_event_t));
         buf_offset += sizeof(input_event_t);
     }
 

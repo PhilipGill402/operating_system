@@ -1,14 +1,13 @@
-/*
 #ifndef INCLUDE_WINDOW_WINDOW_H_
 #define INCLUDE_WINDOW_WINDOW_H_
 
 #include <stdint.h>
 
-#include <log.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include "io/framebuffer/framebuffer.h"
-#include "interrupts/mouse.h"
+#include <gfx/gfx.h>
+#include <gfx/rendering.h>
 
 #define MAX_WINDOWS 32
 #define WINDOW_TITLE_MAX 64
@@ -35,11 +34,10 @@ typedef struct window {
 } window_t;
 
 void window_init();
-uint32_t window_create(char* title);
+uint32_t window_create(gfx_context_t* ctx, char* title);
 void window_destroy(uint32_t id);
-void window_draw(uint32_t id);
-void window_render();
+void window_draw(gfx_context_t* ctx, uint32_t id);
+void window_render(gfx_context_t* ctx);
 int32_t window_hit_id(uint32_t x, uint32_t y);
 
 #endif // !INCLUDE_WINDOW_WINDOW_H_
-*/

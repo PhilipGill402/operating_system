@@ -98,10 +98,10 @@ void mouse_irq_handler(regs_t* regs) {
     input_event_t event;
     
     if (mouse.left_clicked || mouse.right_clicked || mouse.middle_clicked)
-        event.type == INPUT_EVENT_MOUSE_CLICK;
+        event.type = INPUT_EVENT_MOUSE_CLICK;
     else
-        event.type == INPUT_EVENT_MOUSE;
-
+        event.type = INPUT_EVENT_MOUSE;
+    
     if (mouse.left_clicked)
         event.mouse_buttons |= MOUSE_BUTTON_LEFT;
     else if (mouse.right_clicked)
