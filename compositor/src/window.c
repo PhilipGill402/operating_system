@@ -37,8 +37,6 @@ static void window_draw_all(gfx_context_t* ctx) {
         if (windows[i].in_use)
             window_draw(ctx, i);
     }
-
-    gfx_flush(ctx);
 }
 
 void window_init() {
@@ -120,7 +118,6 @@ void window_draw(gfx_context_t* ctx, uint32_t id) {
 
 void window_render(gfx_context_t* ctx) {
     window_draw_all(ctx);
-    gfx_flush(ctx);
 }
 
 int32_t window_hit_id(uint32_t x, uint32_t y) {
