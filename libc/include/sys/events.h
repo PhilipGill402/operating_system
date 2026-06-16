@@ -5,6 +5,11 @@
 #define MOUSE_BUTTON_RIGHT  2
 #define MOUSE_BUTTON_CENTER 4
 
+#define KEY_MOD_SHIFT 0x01
+#define KEY_MOD_CTRL  0x02
+#define KEY_MOD_ALT   0x04
+#define KEY_MOD_CAPS  0x08
+
 typedef enum {
     INPUT_EVENT_KEY,
     INPUT_EVENT_MOUSE,

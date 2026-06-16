@@ -7,8 +7,19 @@
 #include "window.h"
 
 typedef struct {
-    uint32_t x;
-    uint32_t y;
+    // graphics
+    gfx_context_t* ctx;
+    
+    // mouse 
+    uint32_t mouse_x;
+    uint32_t mouse_y;
+
+    // keyboard events
+    uint32_t modifiers;
+} compositor_t;
+
+typedef struct {
+    
 } mouse_t;
 
 #endif // !INCLUDE_COMPOSITOR_H_
