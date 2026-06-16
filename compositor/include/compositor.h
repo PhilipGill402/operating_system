@@ -10,6 +10,9 @@ typedef struct {
     // graphics
     gfx_context_t* ctx;
     
+    // tty
+    uint32_t tty_pid;
+
     // mouse 
     uint32_t mouse_x;
     uint32_t mouse_y;

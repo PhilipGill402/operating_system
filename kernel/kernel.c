@@ -106,7 +106,7 @@ void finish_init() {
     scheduler_init();
     
     __asm__ __volatile__("sti");
-    fs_node_t* tty_elf = resolve_path("/bin/compositor", fs_root);
+    fs_node_t* tty_elf = resolve_path("/bin/tty", fs_root);
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {

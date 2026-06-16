@@ -31,10 +31,12 @@
 #define SYS_LSEEK       19
 #define SYS_GETPID      20
 #define SYS_KILL        37
+#define SYS_DUP         41
 #define SYS_BRK         45
 #define SYS_FORK        57
 #define SYS_EXECVE      59
 #define SYS_EXIT        60
+#define SYS_DUP2        63
 #define SYS_MMAP        90
 #define SYS_MUNMAP      91
 #define SYS_GETDENTS    141

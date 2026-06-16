@@ -154,6 +154,81 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
     return NULL;
 }
 
+int32_t sys_close(uint32_t fd) {
+    if (fd >= MAX_FDS)
+        return EBADF;
+
+    file_desc_t* desc = &current_process->fds[fd];
+
+    if (!desc->in_use)
+        return EBADF;
+
+    if (desc->node) {
+        kfree(desc->node);
+    }
+    
+    memset(desc, 0, sizeof(file_desc_t));
+
+    return 1;
+}
+
+int32_t sys_dup(uint32_t old_fd) {
+    if (old_fd >= MAX_FDS || !current_process->fds[old_fd].in_use)
+        return EBADF;
+    
+    file_desc_t old_file_desc = current_process->fds[old_fd]; 
+
+    // find first open file descriptor
+    uint32_t fd = MAX_FDS + 1;
+    for (uint32_t i = 0; i < MAX_FDS; i++) {
+        if (current_process->fds[i].in_use == 0) {
+            fd = i;
+            break;
+        }
+    }
+
+    if (fd >= MAX_FDS + 1)
+        return ENFILE;
+    
+    file_desc_t file_desc = {
+        .node = fs_node_clone(old_file_desc.node),
+        .flags = old_file_desc.flags,
+        .offset = old_file_desc.offset,
+        .in_use = 1
+    };
+    
+    current_process->fds[fd] = file_desc;
+
+    return fd;
+}
+
+int32_t sys_dup2(uint32_t old_fd, uint32_t new_fd) {
+    if (old_fd >= MAX_FDS || !current_process->fds[old_fd].in_use)
+        return EBADF;
+    
+    if (old_fd == new_fd)
+        return new_fd;
+
+    if (new_fd >= MAX_FDS)
+        return EBADF;
+
+    file_desc_t old_file_desc = current_process->fds[old_fd];
+    
+    // ignore errors
+    sys_close(new_fd);
+
+    file_desc_t file_desc = { 
+        .node = fs_node_clone(old_file_desc.node),
+        .flags = old_file_desc.flags,
+        .offset = old_file_desc.offset,
+        .in_use = 1
+    };
+
+    current_process->fds[new_fd] = file_desc;
+
+    return new_fd;
+}
+
 int32_t sys_fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
     if (x + width >= framebuffer.width)
         width = framebuffer.width - x;
@@ -376,24 +451,6 @@ int32_t sys_lseek(uint32_t fd, uint32_t offset) {
     current_process->fds[fd].offset = offset;
 
     return offset;
-}
-
-int32_t sys_close(uint32_t fd) {
-    if (fd >= MAX_FDS)
-        return EBADF;
-
-    file_desc_t* desc = &current_process->fds[fd];
-
-    if (!desc->in_use)
-        return EBADF;
-
-    if (desc->node) {
-        kfree(desc->node);
-    }
-    
-    memset(desc, 0, sizeof(file_desc_t));
-
-    return 1;
 }
 
 int32_t sys_waitpid(uint32_t pid, int* status, int options) {
@@ -783,6 +840,13 @@ void syscall_handler(regs_t* reg) {
             reg->eax = 0;
             schedule_from_interrupt(reg);
             return;
+        case SYS_DUP2:
+            ret = sys_dup2(reg->ebx, reg->ecx);
+            break;
+        case SYS_DUP:
+            ret = sys_dup(reg->ebx);
+            break;
+
     }
 
     reg->eax = ret;

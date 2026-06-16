@@ -103,3 +103,11 @@ int32_t yield() {
     return __sys0(SYS_YIELD);
 }
 
+int32_t dup(uint32_t old_fd) {
+    return __sys1(SYS_DUP, old_fd);
+}
+
+int32_t dup2(uint32_t old_fd, uint32_t new_fd) {
+    return __sys2(SYS_DUP2, old_fd, new_fd);
+}
+
