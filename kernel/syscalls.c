@@ -154,6 +154,30 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
     return NULL;
 }
 
+int32_t sys_mkdir(const char* path, uint32_t mode) {
+    char* trim = trim_path(path);
+    fs_node_t* dir;
+    char* file_name;
+
+    //relative pathname 
+    if (!trim) {
+        dir = fs_node_clone(current_process->cwd);
+        
+        file_name = kmalloc(strlen(path)); 
+        strcpy(file_name, path);
+    } else {
+        dir = resolve_path(trim, current_process->cwd);
+        if (!dir)
+            return ENOENT;
+    
+        file_name = get_file_name(path);
+    }
+
+    fs_createdir(dir, file_name); 
+
+    return 1;
+}
+
 int32_t sys_close(uint32_t fd) {
     if (fd >= MAX_FDS)
         return EBADF;
@@ -515,11 +539,23 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     
     if (!file && flags & O_CREAT) {
         char* trim = trim_path(path);
-        fs_node_t* dir = resolve_path(trim, current_process->cwd);
-        if (!dir)
-            return ENOENT;
+        fs_node_t* dir;
+        char* file_name;
+
+        //relative pathname 
+        if (!trim) {
+            dir = fs_node_clone(current_process->cwd);
+            
+            file_name = kmalloc(strlen(path)); 
+            strcpy(file_name, path);
+        } else {
+            dir = resolve_path(trim, current_process->cwd);
+            if (!dir)
+                return ENOENT;
         
-        char* file_name = get_file_name(path);
+            file_name = get_file_name(path);
+        } 
+        
         
         fs_createfile(dir, file_name, 256);
         file = fs_finddir(dir, file_name);
@@ -699,25 +735,34 @@ int32_t sys_exit(regs_t* reg, int32_t status) {
 int32_t sys_chdir(const char* path) {
     fs_node_t* new_dir;
     if (!path) {
-        new_dir = fs_root; 
+        new_dir = fs_node_clone(fs_root); 
     } else {
         new_dir = resolve_path_from(current_process->cwd, path);
         
-        if (!new_dir) return ENOENT;
-        if (!(new_dir->flags & FS_DIR)) return ENOTDIR;
+        if (!new_dir)
+            return ENOENT;
+        if (!(new_dir->flags & FS_DIR))
+            return ENOTDIR;
     }
 
     current_process->cwd = new_dir;
+
+    log_debug("%s\n", new_dir->name);
     
     return 0;
 }
 
 int32_t sys_getcwd(char* buffer, size_t size) {
-    if (!buffer) return EFAULT;
-    if (size == 0) return ERANGE;
+    if (!buffer)
+        return EFAULT;
+    
+    if (size == 0)
+        return ERANGE;
 
     fs_node_t* start = current_process->cwd;
-    if (!start) return ENOENT;
+    
+    if (!start)
+        return ENOENT;
 
     fs_node_t* path[10];
     int idx = 0;
@@ -726,6 +771,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
 
     while (start) {
         path[idx++] = start;
+         
         if (strcmp(start->name, fs_root->name) == 0) {
             break;
         }
@@ -733,7 +779,8 @@ int32_t sys_getcwd(char* buffer, size_t size) {
         start = fs_parent(start);
     }
 
-    if (!start) return ENOENT;
+    if (!start)
+        return ENOENT;
 
     size_t used = 0;
     
@@ -846,6 +893,8 @@ void syscall_handler(regs_t* reg) {
         case SYS_DUP:
             ret = sys_dup(reg->ebx);
             break;
+        case SYS_MKDIR:
+            ret = sys_mkdir((char*)reg->ebx, reg->ecx);
 
     }
 

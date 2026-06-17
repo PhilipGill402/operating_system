@@ -15,6 +15,9 @@ fs_node_t* fs_node_clone(fs_node_t* node) {
 
     memcpy(clone, node, sizeof(fs_node_t));
     strcpy(clone->name, node->name);
+
+    if (node->mount_parent)
+        node->mount_parent = fs_node_clone(node->mount_parent);
     
     return clone;
 }

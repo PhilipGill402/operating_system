@@ -111,3 +111,7 @@ int32_t dup2(uint32_t old_fd, uint32_t new_fd) {
     return __sys2(SYS_DUP2, old_fd, new_fd);
 }
 
+int32_t mkdir(const char* path, uint32_t mode) {
+    return __sys2(SYS_MKDIR, (uint32_t)path, mode);
+}
+

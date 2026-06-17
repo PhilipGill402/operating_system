@@ -31,6 +31,7 @@
 #define SYS_LSEEK       19
 #define SYS_GETPID      20
 #define SYS_KILL        37
+#define SYS_MKDIR       39
 #define SYS_DUP         41
 #define SYS_BRK         45
 #define SYS_FORK        57

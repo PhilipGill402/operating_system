@@ -15,7 +15,8 @@
 #define SYS_CHDIR       12
 #define SYS_LSEEK       19
 #define SYS_GETPID      20
-#define SYS_KILL        39
+#define SYS_KILL        37
+#define SYS_MKDIR       39
 #define SYS_DUP         41
 #define SYS_BRK         45
 #define SYS_FORK        57
@@ -62,6 +63,6 @@ int32_t fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 int32_t yield();
 int32_t dup(uint32_t old_fd);
 int32_t dup2(uint32_t old_fd, uint32_t new_fd);
-
+int32_t mkdir(const char* path, uint32_t mode);
 
 #endif

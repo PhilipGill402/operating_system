@@ -20,7 +20,7 @@ void ramfs_createdir(fs_node_t* node, char* name) {
 
     if (!child)
         return;
-    
+
     strcpy(child->name, name);
     child->type = FS_DIR;
     child->inode = inode_count++;
@@ -32,7 +32,6 @@ void ramfs_createdir(fs_node_t* node, char* name) {
     child->fs_node = ramfs_to_vfs(child);
 
     ramfs->children[ramfs->child_count++] = child;
-
 }
 
 void ramfs_createfile(fs_node_t* node, char* name, uint32_t size) {
@@ -154,12 +153,17 @@ fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs) {
     fs_node_t* node = kmalloc(sizeof(fs_node_t));
     if (!node)
         return NULL;
-
+    
     strcpy(node->name, ramfs->name);
     node->flags = ramfs->type;
     node->inode = ramfs->inode;
     node->size = ramfs->size;
-    node->mount_parent = NULL;
+
+    if (strcmp(ramfs->name, "tmp") == 0)
+        node->mount_parent = fs_node_clone(fs_root);
+    else
+        node->mount_parent = NULL;
+
     node->device = ramfs;
     
     node->createdir = ramfs_createdir;
@@ -188,5 +192,7 @@ fs_node_t* ramfs_init() {
     root->size = 0;
     root->capacity = 0;
 
-    return ramfs_to_vfs(root);
+    fs_node_t* node = ramfs_to_vfs(root);
+    
+    return node;
 }

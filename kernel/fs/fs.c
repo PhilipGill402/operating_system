@@ -5,7 +5,8 @@ fs_node_t* fs_parent(fs_node_t* node) {
         log_error("node is at %x or node->parent is null\n", node); 
         return NULL;
     } 
-
+    
+    log_debug("%x\n", node->mount_parent);
     if (node->mount_parent) {
         return node->mount_parent;
     }
@@ -18,9 +19,13 @@ void fs_createdir(fs_node_t* node, char* name) {
         log_error("node is at %x or node->createdir is null\n", node); 
         return;
     }
-        
 
-    return node->createdir(node, name);
+    if (!name) {
+        log_error("name is at %x\n", name);
+        return;
+    }
+        
+    node->createdir(node, name);
 }
 
 void fs_createfile(fs_node_t* node, char* name, uint32_t size) {
