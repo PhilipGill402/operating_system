@@ -20,7 +20,8 @@ void process_send_signal(process_t* proc, uint32_t sig) {
 
     if (!(sig & SIGTERM) && !(sig & SIGKILL) && !(sig & SIGSTOP) && !(sig & SIGCONT))
         return;
-
+    
+    log_debug("made it\n");
     proc->pending_signals |= sig;
     proc->interrupted_by_signal = 1;
     proc->state = PROC_READY;
@@ -152,18 +153,18 @@ process_t* process_clone(process_t* process) {
         kfree(new);
         return NULL;
     }
+    
+    memset(new->fds, 0, sizeof(new->fds));
+    new->open_fds = 0;
 
     for (uint32_t i = 0; i < MAX_FDS; i++) {
-        file_desc_t src_desc = process->fds[i];
-        file_desc_t dst_desc = { 0 };
-
-        if (!src_desc.in_use)
+        file_desc_t* fd = process->fds[i];
+        if (!fd)
             continue;
 
-        memcpy(&dst_desc, &src_desc, sizeof(file_desc_t));
-        dst_desc.node = fs_node_clone(src_desc.node);
-    
-        new->fds[i] = dst_desc;
+        fd->num_refs++;
+        new->fds[i] = fd;
+        new->open_fds++;
     }
 
     strcpy(new->name, process->name);
@@ -268,20 +269,20 @@ uint32_t process_init_heap(process_t* process) {
 }
 
 void process_init_file_descriptors(process_t* process) {
-    memset(process->fds, 0, sizeof(file_desc_t) * MAX_FDS);
+    memset(process->fds, 0, sizeof(file_desc_t*) * MAX_FDS);
     fs_node_t* console = resolve_path("/dev/console", fs_root);
 
     if (!console) {
         log_error("couldn't find console\n");
         return;
     }
+    
+    file_desc_t* fd = fs_create_file_desc(console, 0);
 
-    for (uint8_t i = 0; i < 3; i++) {
-        process->fds[i].in_use = 1; 
-        process->fds[i].node = fs_node_clone(console);
-        process->fds[i].offset = 0;
-        process->fds[i].flags = 0;
-    }
+    for (uint8_t i = 0; i < 3; i++)
+        process->fds[i] = fd;
+    
+    fd->num_refs = 3;
 
     process->open_fds = 3;
 
@@ -335,11 +336,10 @@ void process_destroy(process_t* process) {
     
     // free all file descriptor nodes
     for (uint32_t i = 0; i < MAX_FDS; i++) {
-        if (process->fds[i].in_use && process->fds[i].node) {
-            kfree(process->fds[i].node);
-        } 
+        if (process->fds[i])
+            fs_free_file_desc(process->fds[i]);            
 
-        memset(&process->fds[i], 0, sizeof(file_desc_t));
+        memset(&process->fds[i], 0, sizeof(file_desc_t*));
     }
 
     

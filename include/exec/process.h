@@ -112,7 +112,7 @@ typedef struct {
     regs_t* trapframe;
     uint32_t ticks_left;
     
-    file_desc_t fds[MAX_FDS];
+    file_desc_t* fds[MAX_FDS];
     uint32_t open_fds;
     fs_node_t* cwd;
 

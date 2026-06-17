@@ -65,20 +65,18 @@ void tty_put_char(char c, tty_t* tty) {
 
 int main() {
     tty_t tty = { 0 }; 
-    serial_fd = open("/dev/serial", O_WRONLY, 0);
+    serial_fd = open("/dev/serial", O_WRONLY, 0); 
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);
     uint32_t ptm_fd = open("/dev/ptm", O_RDWR, 0);
 
     uint32_t child_pid = fork();
     if (child_pid == 0) {
         // close all i/o file descriptors to replace with dev/pts for shell
-        close(0);
-        close(1);
-        close(2);
+        int pts = open("/dev/pts", O_RDWR, 0);
 
-        open("/dev/pts", O_RDWR, 0);
-        open("/dev/pts", O_RDWR, 0);
-        open("/dev/pts", O_RDWR, 0);
+        dup2(pts, 0); 
+        dup2(pts, 1);
+        dup2(pts, 2);
 
         errno = 0; 
          

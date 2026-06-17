@@ -42,7 +42,7 @@ typedef struct {
     fs_node_t* node;
     uint32_t flags;
     uint32_t offset;
-    uint8_t in_use;
+    uint8_t num_refs;
 } file_desc_t;
 
 typedef struct {
@@ -56,6 +56,8 @@ extern fs_node_t* console_node;
 extern uint32_t inode_count;
 
 fs_node_t* fs_node_clone(fs_node_t* node);
+file_desc_t* fs_create_file_desc(fs_node_t* node, uint32_t flags);
+void fs_free_file_desc(file_desc_t* fd);
 
 #endif // !INCLUDE_FS_FS_TYPES_H_
 

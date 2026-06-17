@@ -6,7 +6,6 @@ fs_node_t* fs_parent(fs_node_t* node) {
         return NULL;
     } 
     
-    log_debug("%x\n", node->mount_parent);
     if (node->mount_parent) {
         return node->mount_parent;
     }

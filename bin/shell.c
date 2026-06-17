@@ -78,7 +78,7 @@ int main() {
         errno = 0; 
         int ret = getcwd(cwd, MAX_BUFFER_LENGTH);
         if (ret == -1) {
-            perror("ret");
+            perror("getcwd");
         }
 
         printf("%s >> ", cwd);

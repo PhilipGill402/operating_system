@@ -182,30 +182,30 @@ int32_t sys_close(uint32_t fd) {
     if (fd >= MAX_FDS)
         return EBADF;
 
-    file_desc_t* desc = &current_process->fds[fd];
+    file_desc_t* desc = current_process->fds[fd];
 
-    if (!desc->in_use)
+    if (!desc)
         return EBADF;
-
-    if (desc->node) {
-        kfree(desc->node);
-    }
     
-    memset(desc, 0, sizeof(file_desc_t));
+    fs_free_file_desc(desc);
+    current_process->fds[fd] = NULL;
+
+    if (current_process->open_fds > 0)
+        current_process->open_fds--;
 
     return 1;
 }
 
 int32_t sys_dup(uint32_t old_fd) {
-    if (old_fd >= MAX_FDS || !current_process->fds[old_fd].in_use)
+    if (old_fd >= MAX_FDS || !current_process->fds[old_fd])
         return EBADF;
     
-    file_desc_t old_file_desc = current_process->fds[old_fd]; 
+    file_desc_t* old_file_desc = current_process->fds[old_fd]; 
 
     // find first open file descriptor
     uint32_t fd = MAX_FDS + 1;
     for (uint32_t i = 0; i < MAX_FDS; i++) {
-        if (current_process->fds[i].in_use == 0) {
+        if (!current_process->fds[i]) {
             fd = i;
             break;
         }
@@ -214,20 +214,15 @@ int32_t sys_dup(uint32_t old_fd) {
     if (fd >= MAX_FDS + 1)
         return ENFILE;
     
-    file_desc_t file_desc = {
-        .node = fs_node_clone(old_file_desc.node),
-        .flags = old_file_desc.flags,
-        .offset = old_file_desc.offset,
-        .in_use = 1
-    };
+    old_file_desc->num_refs++;
     
-    current_process->fds[fd] = file_desc;
+    current_process->fds[fd] = old_file_desc;
 
     return fd;
 }
 
 int32_t sys_dup2(uint32_t old_fd, uint32_t new_fd) {
-    if (old_fd >= MAX_FDS || !current_process->fds[old_fd].in_use)
+    if (old_fd >= MAX_FDS || !current_process->fds[old_fd])
         return EBADF;
     
     if (old_fd == new_fd)
@@ -236,19 +231,14 @@ int32_t sys_dup2(uint32_t old_fd, uint32_t new_fd) {
     if (new_fd >= MAX_FDS)
         return EBADF;
 
-    file_desc_t old_file_desc = current_process->fds[old_fd];
+    file_desc_t* old_file_desc = current_process->fds[old_fd];
     
     // ignore errors
     sys_close(new_fd);
+    
+    old_file_desc->num_refs++;
 
-    file_desc_t file_desc = { 
-        .node = fs_node_clone(old_file_desc.node),
-        .flags = old_file_desc.flags,
-        .offset = old_file_desc.offset,
-        .in_use = 1
-    };
-
-    current_process->fds[new_fd] = file_desc;
+    current_process->fds[new_fd] = old_file_desc;
 
     return new_fd;
 }
@@ -472,7 +462,10 @@ int32_t sys_kill(uint32_t pid, int32_t sig) {
 }
 
 int32_t sys_lseek(uint32_t fd, uint32_t offset) {
-    current_process->fds[fd].offset = offset;
+    if (fd >= MAX_FDS || !current_process->fds[fd])
+        return EBADF;
+
+    current_process->fds[fd]->offset = offset;
 
     return offset;
 }
@@ -510,15 +503,18 @@ int32_t sys_waitpid(uint32_t pid, int* status, int options) {
 }
 
 int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
-    file_desc_t file_desc = current_process->fds[fd]; 
-    fs_node_t* file = file_desc.node;
+    if (fd >= MAX_FDS || !current_process->fds[fd])
+        return EBADF;
+
+    file_desc_t* file_desc = current_process->fds[fd]; 
+    fs_node_t* file = file_desc->node;
     
     if (!file) return EBADF;
     if (!(file->flags & FS_DIR)) return ENOTDIR;
     
     uint32_t num_entries = 0;
     for (uint32_t i = 0; i < count; i++) {
-        fs_dirent_t* fs_dent = fs_readdir(file, file_desc.offset++);
+        fs_dirent_t* fs_dent = fs_readdir(file, file_desc->offset++);
         if (!fs_dent) 
             continue;
 
@@ -569,7 +565,7 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     // finding lowest available fd
     uint32_t fd = MAX_FDS + 1;
     for (uint32_t i = 0; i < MAX_FDS; i++) {
-        if (current_process->fds[i].in_use == 0) {
+        if (!current_process->fds[i]) {
             fd = i;
             break;
         }
@@ -579,18 +575,13 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
         return ENFILE; 
     }
 
-    file_desc_t file_desc = {
-        .node = file,
-        .flags = flags,
-        .offset = 0,
-        .in_use = 1
-    };
+    file_desc_t* file_desc = fs_create_file_desc(file, flags);
 
     if (flags & O_TRUNC)
-        file_desc.offset = 0;
+        file_desc->offset = 0;
     else if (flags & O_APPEND)
-        file_desc.offset = file->size;
-
+        file_desc->offset = file->size;
+    
     current_process->fds[fd] = file_desc;
 
     return fd;
@@ -630,13 +621,13 @@ void* sys_brk(void* new_addr) {
 int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     if (!buffer) return EFAULT; 
 
-    if (fd >= MAX_FDS) return EBADF;
+    if (fd >= MAX_FDS || !current_process->fds[fd]) return EBADF;
 
-    fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
+    fs_node_t* file = current_process->fds[fd]->node;
     
     if (!file) return ENOENT;
     
-    int32_t bytes_read = fs_read(file, current_process->fds[fd].offset, count, (uint8_t*)buffer);
+    int32_t bytes_read = fs_read(file, current_process->fds[fd]->offset, count, (uint8_t*)buffer);
     
     // TODO: Implement this later
     /*
@@ -654,24 +645,24 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     }
     */
     
-    current_process->fds[fd].offset += bytes_read;
+    current_process->fds[fd]->offset += bytes_read;
 
     return bytes_read;
 }
 
 int32_t sys_write(uint32_t fd, char* str, size_t count) {
-    if (fd >= MAX_FDS)
+    if (fd >= MAX_FDS || !current_process->fds[fd])
         return EBADF;
     
-    fs_node_t* file = current_process->fds[fd].in_use == 1 ? current_process->fds[fd].node : NULL;
+    fs_node_t* file = current_process->fds[fd]->node;
     
     if (!file)
         return ENOENT;
     
     //str[count] = '\0';
 
-    uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd].offset, count);
-    current_process->fds[fd].offset += bytes_written;
+    uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd]->offset, count);
+    current_process->fds[fd]->offset += bytes_written;
 
     return bytes_written;
 }
@@ -763,7 +754,7 @@ int32_t sys_getcwd(char* buffer, size_t size) {
     
     if (!start)
         return ENOENT;
-
+    
     fs_node_t* path[10];
     int idx = 0;
 
@@ -775,9 +766,10 @@ int32_t sys_getcwd(char* buffer, size_t size) {
         if (strcmp(start->name, fs_root->name) == 0) {
             break;
         }
-
+    
         start = fs_parent(start);
     }
+    
 
     if (!start)
         return ENOENT;

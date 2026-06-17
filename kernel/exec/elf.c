@@ -263,9 +263,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process_t* process = kzmalloc(sizeof(process_t));
 
     process_init_file_descriptors(process);
-    fs_node_t* process_cwd = kmalloc(sizeof(fs_node_t));
-    memcpy(process_cwd, fs_cwd, sizeof(fs_node_t));
-    process->cwd = process_cwd;
+    process->cwd = fs_node_clone(fs_root);
     
     uint8_t* buf = elf_from_file(elf, &size);
     
