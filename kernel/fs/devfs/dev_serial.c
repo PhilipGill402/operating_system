@@ -1,5 +1,12 @@
 #include "fs/devfs/dev_serial.h"
 
+static uint8_t poll_serial_data(dev_file_t* file, uint32_t offset) {
+    (void)file;
+    (void)offset;
+
+    return POLLOUT;
+}
+
 static int32_t write_serial_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     (void)offset; 
 
@@ -27,6 +34,7 @@ dev_file_t* create_serial_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = NULL;
     file->write_data = write_serial_data;
+    file->poll_data = poll_serial_data;
 
     return file;
 }

@@ -7,6 +7,16 @@ uint32_t num_nodes;
 //forward declaration
 fs_node_t* initrd_parent(fs_node_t* node);
 
+uint8_t initrd_poll(fs_node_t* node, uint32_t offset) {
+    (void)node;
+    uint8_t poll = POLLIN;
+    
+    if (offset < node->size)
+        poll |= POLLOUT;
+
+    return poll;
+}
+
 int32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size) {
     initrd_node_t* file = &node_table[node->inode];
     
@@ -139,6 +149,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
             file->createdir = NULL;
             file->createfile = NULL;
             file->writefile = NULL;
+            file->poll = initrd_poll;
             
             return file;
         }
@@ -176,6 +187,7 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     fs_node->parent = initrd_parent;
     fs_node->createdir = NULL;
     fs_node->createfile = NULL;
+    fs_node->poll = initrd_poll;
 
     return fs_node;
 }
@@ -242,6 +254,7 @@ fs_node_t* initrd_init(uint32_t addr) {
     fs_root->parent = initrd_parent;
     fs_root->createdir = NULL;
     fs_root->createfile = NULL;
+    fs_root->poll = initrd_poll;
     
     return fs_root;
 }

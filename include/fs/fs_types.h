@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/poll.h>
 #include "memory/heap.h"
 
 typedef enum {
@@ -36,6 +37,7 @@ typedef struct fs_node_t{
     void (*createdir)(fs_node_t* node, char* name);
     void (*createfile)(fs_node_t* node, char* name, uint32_t size);
     int32_t (*writefile)(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
+    uint8_t (*poll)(fs_node_t* node, uint32_t offset);
 } fs_node_t;
 
 typedef struct {

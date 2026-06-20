@@ -19,6 +19,7 @@ typedef struct dev_file {
     uint32_t inode;
     int32_t (*get_data)(struct dev_file* file, uint8_t* buffer, uint32_t offset, uint32_t size);
     int32_t (*write_data)(struct dev_file* file, uint8_t* buffer, uint32_t offset, uint32_t size);
+    uint8_t (*poll_data)(struct dev_file* file, uint32_t offset);
 } dev_file_t;
 
 typedef struct {

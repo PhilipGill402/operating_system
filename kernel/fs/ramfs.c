@@ -7,6 +7,17 @@ ramfs_node_t* root;
 // forward declaration
 fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs);
 
+uint8_t ramfs_poll(fs_node_t* node, uint32_t offset) {
+    (void)node;
+
+    uint8_t poll = POLLOUT;
+
+    if (offset < node->size)
+        poll |= POLLIN;
+
+    return poll;
+}
+
 void ramfs_createdir(fs_node_t* node, char* name) {
     if (!node || !node->device)
         return;
@@ -173,6 +184,7 @@ fs_node_t* ramfs_to_vfs(ramfs_node_t* ramfs) {
     node->readdir = ramfs_readdir;
     node->finddir = ramfs_finddir;
     node->parent = ramfs_parent;
+    node->poll = ramfs_poll;
 
     return node;
 }

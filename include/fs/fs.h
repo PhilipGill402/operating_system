@@ -29,5 +29,6 @@ int32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t si
 int32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
 fs_dirent_t* fs_readdir(fs_node_t* node, uint32_t index);
 fs_node_t* fs_finddir(fs_node_t* node, char* name);
+uint8_t fs_poll(fs_node_t* node, uint32_t offset);
 
 #endif // !INCLUDE_FS_FS_H_

@@ -1,5 +1,15 @@
 #include "fs/devfs/dev_input.h"
 
+static uint8_t poll_input_data(dev_file_t* file, uint32_t offset) {
+    (void)file;
+    (void)offset;
+
+    if (!queue_empty(&input_buffer))
+        return POLLIN;
+    else
+        return 0;
+} 
+
 static int32_t read_input_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     (void) offset;
     
@@ -39,6 +49,7 @@ dev_file_t* create_input_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = read_input_data;
     file->write_data = NULL;
+    file->poll_data = poll_input_data;
 
     return file;
 }

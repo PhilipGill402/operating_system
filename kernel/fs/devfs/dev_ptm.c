@@ -1,5 +1,17 @@
 #include "fs/devfs/dev_ptm.h"
 
+static uint8_t poll_ptm_data(dev_file_t* file, uint32_t offset) {
+    (void)file;
+    (void)offset;
+
+    uint8_t poll = POLLOUT;
+
+    if (!queue_empty(&pty.output))
+        poll |= POLLIN;
+
+    return poll;
+}
+
 static int32_t write_ptm_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     (void)offset; 
 
@@ -44,6 +56,7 @@ dev_file_t* create_ptm_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = read_ptm_data;
     file->write_data = write_ptm_data;
+    file->poll_data = poll_ptm_data;
 
     return file;
 }

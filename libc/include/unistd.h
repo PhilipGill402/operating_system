@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <sys/io.h>
 #include <sys/fb.h>
+#include <sys/poll.h>
 
 #define SYS_READ        0
 #define SYS_WRITE       1
@@ -26,6 +27,7 @@
 #define SYS_MMAP        90
 #define SYS_MUNMAP      91
 #define SYS_GETDENTS    141
+#define SYS_POLL        168
 #define SYS_GETCWD      183
 #define SYS_FB_INFO     200
 #define SYS_FB_FLUSH    201
@@ -64,5 +66,6 @@ int32_t yield();
 int32_t dup(uint32_t old_fd);
 int32_t dup2(uint32_t old_fd, uint32_t new_fd);
 int32_t mkdir(const char* path, uint32_t mode);
+int32_t poll(pollfd_t* fds, uint32_t nfds);
 
 #endif

@@ -1,5 +1,17 @@
 #include "fs/devfs/dev_pts.h"
 
+static uint8_t poll_pts_data(dev_file_t* file, uint32_t offset) {
+    (void)file;
+    (void)offset;
+
+    uint8_t poll = POLLOUT;
+
+    if (!queue_empty(&pty.input))
+        poll |= POLLIN;
+
+    return poll;
+}
+
 static int32_t write_pts_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     (void)offset; 
 
@@ -44,6 +56,7 @@ dev_file_t* create_pts_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = read_pts_data;
     file->write_data = write_pts_data;
+    file->poll_data = poll_pts_data;
 
     return file;
 }

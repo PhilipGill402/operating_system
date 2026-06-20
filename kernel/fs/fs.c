@@ -1,5 +1,15 @@
 #include "fs/fs.h"
 
+uint8_t fs_poll(fs_node_t* node, uint32_t offset) {
+    if (!node || !node->poll)
+        return POLLERR;
+
+    if (node->flags & FS_DIR)
+        return 0;
+
+    return node->poll(node, offset);
+}
+
 fs_node_t* fs_parent(fs_node_t* node) {
     if (!node || !node->parent) {
         log_error("node is at %x or node->parent is null\n", node); 

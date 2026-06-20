@@ -41,6 +41,7 @@
 #define SYS_MMAP        90
 #define SYS_MUNMAP      91
 #define SYS_GETDENTS    141
+#define SYS_POLL        168
 #define SYS_GETCWD      183
 #define SYS_FB_INFO     200
 #define SYS_FB_FLUSH    201

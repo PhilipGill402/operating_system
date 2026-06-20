@@ -1,6 +1,13 @@
 #include "fs/devfs/dev_fb.h"
 
-int32_t get_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
+static uint8_t poll_fb_data(dev_file_t* file, uint32_t offset) {
+    (void)file;
+    (void)offset;
+
+    return POLLIN | POLLOUT;
+}
+
+static int32_t get_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     if (!file || !buffer)
         return 0;
     
@@ -16,7 +23,7 @@ int32_t get_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t
     return bytes_to_read;
 }
 
-int32_t write_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
+static int32_t write_fb_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     if (!file || !buffer)
         return 0;
     
@@ -46,6 +53,7 @@ dev_file_t* create_fb_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = get_fb_data;
     file->write_data = write_fb_data;
+    file->poll_data = poll_fb_data;
 
     return file;
 }

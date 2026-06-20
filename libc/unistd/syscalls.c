@@ -115,3 +115,7 @@ int32_t mkdir(const char* path, uint32_t mode) {
     return __sys2(SYS_MKDIR, (uint32_t)path, mode);
 }
 
+int32_t poll(pollfd_t* fds, uint32_t nfds) {
+    return __sys2(SYS_POLL, (uint32_t)fds, nfds);
+}
+

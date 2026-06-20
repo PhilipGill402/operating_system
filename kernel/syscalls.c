@@ -154,6 +154,33 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
     return NULL;
 }
 
+int32_t sys_poll(pollfd_t* fds, uint32_t nfds) {
+    if (!fds)
+        return EFAULT;
+
+    int32_t num_events = 0;
+
+    for (uint32_t i = 0; i < nfds; i++) {
+        uint32_t fd = fds[i].fd;
+
+        if (fd >= MAX_FDS || fd < 0) {
+            fds[i].revents = 0;
+            continue;
+        }
+
+        file_desc_t* file_desc = current_process->fds[fd];
+
+        uint8_t poll = fs_poll(file_desc->node, file_desc->offset);
+
+        if (poll != 0)
+            num_events++;
+
+        fds[i].revents = fds[i].events & poll;
+    }
+
+    return num_events;
+}
+
 int32_t sys_mkdir(const char* path, uint32_t mode) {
     char* trim = trim_path(path);
     fs_node_t* dir;
@@ -738,8 +765,6 @@ int32_t sys_chdir(const char* path) {
 
     current_process->cwd = new_dir;
 
-    log_debug("%s\n", new_dir->name);
-    
     return 0;
 }
 
@@ -887,7 +912,10 @@ void syscall_handler(regs_t* reg) {
             break;
         case SYS_MKDIR:
             ret = sys_mkdir((char*)reg->ebx, reg->ecx);
-
+            break;
+        case SYS_POLL:
+            ret = sys_poll((pollfd_t*)reg->ebx, reg->ecx);
+            break;
     }
 
     reg->eax = ret;

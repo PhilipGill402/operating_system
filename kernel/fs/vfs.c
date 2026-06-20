@@ -16,6 +16,14 @@ int fs_mount(fs_node_t* root, char* name) {
     return 0;
 }
 
+uint8_t vfs_poll(fs_node_t* node, uint32_t offset) {
+    (void)node;
+    (void)offset;
+        
+    // the root directory can't be polled
+    return 0;
+}
+
 fs_dirent_t* vfs_readdir(fs_node_t* node, uint32_t index) {
     if (index >= mount_count)
         return NULL;
@@ -62,6 +70,7 @@ fs_node_t* vfs_init() {
     vfs_root->createdir = NULL;
     vfs_root->createfile = NULL;
     vfs_root->writefile = NULL;
+    vfs_root->poll = vfs_poll;
 
     return vfs_root;
 }

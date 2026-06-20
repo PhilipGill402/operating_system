@@ -2,6 +2,13 @@
 
 #include <log.h>
 
+int32_t poll_console_data(dev_file_t* file, uint32_t offset) {
+    if (!file)
+        return POLLERR;
+
+    return POLLOUT;
+}
+
 int32_t get_console_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
     (void)file;
     (void)offset;
@@ -33,6 +40,7 @@ dev_file_t* create_console_file(fs_node_t* parent, uint32_t inode) {
     file->inode = inode;
     file->get_data = get_console_data;
     file->write_data = write_console_data;
+    file->poll_data = poll_console_data;
 
     return file;
 }

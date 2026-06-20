@@ -1,5 +1,6 @@
 #include "fs/devfs/devfs.h"
 
+uint8_t dev_poll(fs_node_t* node, uint32_t offset);
 int32_t dev_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
 int32_t dev_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t size);
 fs_dirent_t* dev_readdir(fs_node_t* node, uint32_t index);
@@ -37,8 +38,18 @@ fs_node_t* dev_file_to_node(dev_file_t* file) {
     node->createdir = NULL;
     node->createfile = NULL;
     node->writefile = dev_writefile;
+    node->poll = dev_poll;
     
     return node;
+}
+
+uint8_t dev_poll(fs_node_t* node, uint32_t offset) {
+    dev_file_t* file = (dev_file_t*)node->device;
+
+    if (!file || !file->poll_data)
+        return POLLERR;
+
+    return file->poll_data(file, offset);
 }
 
 int32_t dev_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {
