@@ -14,9 +14,9 @@ void c_strcat_cstr(char* dst, char* src){
 
 void c_strcat_hstr(char* dst, string_t* src) {
     // assume destination has enough space 
-    char* p = dst[c_strlen(dst)]; 
+    char* p = dst + c_strlen(dst); 
 
-    for (uint32_t i = 0; i < src->len) {
+    for (uint32_t i = 0; i < src->len; i++) {
         *p = src->str[i];
         p++;
     }
@@ -55,9 +55,9 @@ int c_strcmp_cstr(const char* s1, const char* s2){
 }
 
 int c_strcmp_hstr(const char* s1, string_t* s2) {
-    for (uint32_t i = 0; i < a->len && b[i] != '\0'; i++) {
-        if (a->str[i] != b[i]) {
-            return a->str[i] - b[i];
+    for (uint32_t i = 0; i < s2->len && s1[i] != '\0'; i++) {
+        if (s2->str[i] != s1[i]) {
+            return s2->str[i] - s1[i];
         }
     }
 
@@ -74,7 +74,7 @@ int c_strlen(const char* s){
     return len;
 }
 
-void c_strncat(char* dst, char* src, size_t n){
+void c_strncat_cstr(char* dst, char* src, size_t n){
     while (*dst != '\0'){
         dst++;
     }
@@ -84,28 +84,56 @@ void c_strncat(char* dst, char* src, size_t n){
         src++;
         dst++;
     }
+
+    *dst = '\0';
 }
 
-int c_strncmp(const char* s1, const char* s2, size_t n){
-    int ascii1 = (int)*s1;
-    int ascii2 = (int)*s2;
-    size_t idx = 1;
+void c_strncat_hstr(char* dst, string_t* src, size_t len) {
+    while (*dst != '\0')
+        dst++;
 
-    while (ascii1 - ascii2 == 0 && *s1 != '\0' && *s2 != '\0' && idx < n){
-        s1++;
-        s2++;
-        ascii1 = (int)*s1;
-        ascii2 = (int)*s2;
-        idx++;
+    for (uint32_t i = 0; i < src->len && i < len; i++) {
+        *dst = src->str[i];
+        dst++;
     }
 
-    return ascii1 - ascii2;
+    *dst = '\0';
 }
 
-void c_strncpy(char* dst, char* src, size_t n){
+int c_strncmp_cstr(const char* a, const char* b, size_t n){
+    for (uint32_t idx = 0; a[idx] != '\0' && b[idx] != '\0' && idx < n; idx++) {
+        int diff = (int)a[idx] - (int)b[idx];
+
+        if (diff != 0)
+            return diff;
+    } 
+
+    return 0;
+}
+
+int c_strncmp_hstr(const char* a, string_t* b, size_t len) {
+    for (uint32_t idx = 0; idx < b->len && a[idx] != '\0' && idx < len; idx++) {
+        int diff = (int)a[idx] - (int)b->str[idx];
+
+        if (diff != 0)
+            return diff;
+    }
+
+    return 0;
+}
+
+void c_strncpy_cstr(char* dst, char* src, size_t n){
     while (*src != '\0' && n-- > 0){
         *dst = *src;
         src++;
+        dst++;
+    }
+    *dst = '\0';
+}
+
+void c_strncpy_hstr(char* dst, string_t* src, size_t n) {
+    for (uint32_t i = 0; i < src->len && i < n; i++) {
+        *dst = src->str[i];
         dst++;
     }
     *dst = '\0';
@@ -124,7 +152,6 @@ char* c_strrchar(char* str, int c){
 
     return c_ptr;
 }
-
 
 char* c_strstr(char* str, char* substr){
     char* found = NULL;
@@ -149,42 +176,36 @@ char* c_strstr(char* str, char* substr){
     return found;
 }
 
-char* c_strtok(char* str, int delimiter){
-    static char* string = NULL;
-    if (str != NULL) {
-        string = str;
-    }
+vector_t c_strtok(char* str, char delimiter){
+    vector_t tokens = vector_create(sizeof(char*));
+    int str_len = c_strlen(str); 
     
-    if (string == NULL) {
-        return NULL;
-    }
-    
-    while (*string != '\0' && *string == (char)delimiter){
-        string++;
-    }
-    
-    if (*string == '\0') {
-        string = NULL; 
-        return NULL;
+    char* tok = malloc(sizeof(char) * str_len);
+    int tok_idx = 0;
+    for (int i = 0; i < str_len; i++) {
+        if (*str == delimiter) {
+            tok[tok_idx] = '\0';
+            vector_push_back(&tokens, &tok);
+            
+            tok = malloc(sizeof(char) * str_len);
+            tok_idx = 0;
+            
+            str++;
+        } else {
+            tok[tok_idx++] = *str;
+            str++;
+        }
     }
 
-    char* start = string;
-    
-    while (*string != '\0' && *string != (char)delimiter){
-        string++;
-    }
-
-    if (*string) {
-        *string = '\0';
-        string++;
-    } else {
-        string = NULL;
+    if (tok_idx > 0) {
+        tok[tok_idx] = '\0';
+        vector_push_back(&tokens, &tok);
     }
     
-    return start;
+    return tokens;
 }
 
-void c_strcpy_cstr(char* dst, char* src){
+void c_strcpy_cstr(char* dst, const char* src){
     while (*src != '\0'){
         *dst = *src;
         src++;
