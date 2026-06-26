@@ -10,6 +10,16 @@ string_t string_create() {
     return string;
 }
 
+string_t string_literal(const char* str) {
+    string_t string;
+    string.len = strlen(str);
+    string.capacity = string.len * 2;
+    string.str = malloc(sizeof(char) * string.capacity); // this needs to be allocated on the heap so that when we release the string we can just call 'free()'
+    strcpy(string.str, str);
+
+    return string;
+}
+
 void string_append_chr(string_t* string, char ch) {
     if (string->len + 1 > string->capacity) {
         string->str = realloc(string->str, sizeof(char) * 2 * (string->len + 1));
@@ -43,7 +53,7 @@ void string_cat(string_t* dst, string_t* src) {
     dst->len += src->len;
 }
 
-int string_compare(string_t* a, string_t* b) {
+int h_strcmp(string_t* a, string_t* b) {
     if (a->len == 0 && b->len == 0) return 0;
     else if (a->len == 0) return b->str[0];
     else if (b->len == 0) return a->str[0];
@@ -57,7 +67,7 @@ int string_compare(string_t* a, string_t* b) {
     return 0;
 }
 
-void string_copy(string_t* dst, string_t* src) {
+void h_strcpy_hstr(string_t* dst, string_t* src) {
     if (src->len > dst->capacity) {
         dst->str = realloc(dst->str, sizeof(char) * 2 * src->len);
         
@@ -75,6 +85,24 @@ void string_copy(string_t* dst, string_t* src) {
     dst->len = src->len;
 }
 
+void h_strcpy_cstr(string_t* dst, const char* src) {
+    int src_len = c_strlen(src);
+
+    if (src_len > dst->capacity) {
+        dst->str = realloc(dst->str, sizeof(char) * 2 * src_len);
+
+        if (!dst->str)
+            return;
+
+        dst->capacity = sizeof(char) * 2 * src_len;
+    }
+
+    for (int i = 0; i < src_len; i++)
+        dst->str[i] = src[i];
+
+    dst->len = src_len;
+}
+
 void string_free(string_t* str) {
     free(str->str);
 
@@ -83,7 +111,7 @@ void string_free(string_t* str) {
     str->capacity = 0;
 }
 
-int string_len(string_t* string) {
+int h_strlen(string_t* string) {
     return string->len;
 }
 
@@ -92,19 +120,10 @@ void string_clear(string_t* str) {
     str->len = 0;
 }
 
-string_t string_literal(const char* str) {
-    string_t string;
-    string.len = strlen(str);
-    string.capacity = string.len * 2;
-    string.str = malloc(sizeof(char) * string.capacity); // this needs to be allocated on the heap so that when we release the string we can just call 'free()'
-    strcpy(string.str, str);
-
-    return string;
-}
 
 
-int string_compare_literal(string_t* a, const char* b) {
-    for (uint32_t i = 0; i < a->len && b[i] != '\0'; i++) {
+int h_strcmp_cstr(string_t* a, const char* b) {
+    for (int i = 0; i < a->len && b[i] != '\0'; i++) {
         if (a->str[i] != b[i]) {
             return a->str[i] - b[i];
         }
@@ -129,7 +148,7 @@ string_t string_clone(string_t* str) {
     return new;
 }
 
-vector_t string_tokenize(string_t* str, char a) {
+string_t h_strtok(string_t* str, char a) {
     vector_t tokens = vector_create(sizeof(string_t));
     string_t token = string_create();
 

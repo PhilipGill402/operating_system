@@ -1,6 +1,6 @@
 #include <string.h>
 
-void strcat(char* dst, char* src){
+void c_strcat_cstr(char* dst, char* src){
     while (*dst != '\0'){
         dst++;
     }
@@ -12,7 +12,19 @@ void strcat(char* dst, char* src){
     }
 }
 
-char* strchar(char* str, int c){
+void c_strcat_hstr(char* dst, string_t* src) {
+    // assume destination has enough space 
+    char* p = dst[c_strlen(dst)]; 
+
+    for (uint32_t i = 0; i < src->len) {
+        *p = src->str[i];
+        p++;
+    }
+
+    *p = '\0';
+}
+
+char* c_strchar(char* str, int c){
     char ch = (char)c;
     char* c_ptr = NULL; 
 
@@ -28,7 +40,7 @@ char* strchar(char* str, int c){
     
 }
 
-int strcmp(const char* s1, const char* s2){
+int c_strcmp_cstr(const char* s1, const char* s2){
     int ascii1 = (int)*s1;
     int ascii2 = (int)*s2;
 
@@ -42,7 +54,17 @@ int strcmp(const char* s1, const char* s2){
     return ascii1 - ascii2;
 }
 
-int strlen(const char* s){
+int c_strcmp_hstr(const char* s1, string_t* s2) {
+    for (uint32_t i = 0; i < a->len && b[i] != '\0'; i++) {
+        if (a->str[i] != b[i]) {
+            return a->str[i] - b[i];
+        }
+    }
+
+    return 0;
+}
+
+int c_strlen(const char* s){
     int len = 0;
     while (*s != '\0'){
         s++;
@@ -52,7 +74,7 @@ int strlen(const char* s){
     return len;
 }
 
-void strncat(char* dst, char* src, size_t n){
+void c_strncat(char* dst, char* src, size_t n){
     while (*dst != '\0'){
         dst++;
     }
@@ -64,7 +86,7 @@ void strncat(char* dst, char* src, size_t n){
     }
 }
 
-int strncmp(const char* s1, const char* s2, size_t n){
+int c_strncmp(const char* s1, const char* s2, size_t n){
     int ascii1 = (int)*s1;
     int ascii2 = (int)*s2;
     size_t idx = 1;
@@ -80,7 +102,7 @@ int strncmp(const char* s1, const char* s2, size_t n){
     return ascii1 - ascii2;
 }
 
-void strncpy(char* dst, char* src, size_t n){
+void c_strncpy(char* dst, char* src, size_t n){
     while (*src != '\0' && n-- > 0){
         *dst = *src;
         src++;
@@ -89,7 +111,7 @@ void strncpy(char* dst, char* src, size_t n){
     *dst = '\0';
 }
 
-char* strrchar(char* str, int c){
+char* c_strrchar(char* str, int c){
     char ch = (char)c;
     char* c_ptr = NULL;
 
@@ -104,7 +126,7 @@ char* strrchar(char* str, int c){
 }
 
 
-char* strstr(char* str, char* substr){
+char* c_strstr(char* str, char* substr){
     char* found = NULL;
     char* substr_reset = substr;
     while (*str != '\0'){
@@ -127,7 +149,7 @@ char* strstr(char* str, char* substr){
     return found;
 }
 
-char* strtok(char* str, int delimiter){
+char* c_strtok(char* str, int delimiter){
     static char* string = NULL;
     if (str != NULL) {
         string = str;
@@ -162,13 +184,22 @@ char* strtok(char* str, int delimiter){
     return start;
 }
 
-void strcpy(char* dst, char* src){
+void c_strcpy_cstr(char* dst, char* src){
     while (*src != '\0'){
         *dst = *src;
         src++;
         dst++;
     }     
     
+    *dst = '\0';
+}
+
+void c_str_cpy_hstr(char* dst, string_t* src) {
+    for (uint32_t i = 0; i < src->len; i++) {
+        *dst = src->str[i];
+        dst++;
+    }
+
     *dst = '\0';
 }
 
