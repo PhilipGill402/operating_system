@@ -1,5 +1,4 @@
 #include <vector.h>
-#include <stdio.h>
 
 void vector_assign(vector_t* vec, void* element, int num_copies){
     if (num_copies > vec->capacity){

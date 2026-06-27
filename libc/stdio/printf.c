@@ -48,7 +48,7 @@ static void sprintf_s_putc(char c, void* ctx) {
 
     if (!sprintf_ctx || !sprintf_ctx->str) return;
     
-    string_append_chr(sprintf_ctx->str, c); 
+    strcat(sprintf_ctx->str, c); 
 }
 
 static void snprintf_s_putc(char c, void* ctx) {
@@ -57,7 +57,7 @@ static void snprintf_s_putc(char c, void* ctx) {
     if (!sprintf_ctx || !sprintf_ctx->str) return;
     
     if (sprintf_ctx->size >= sprintf_ctx->capacity) {
-        string_append_chr(sprintf_ctx->str, c);
+        strcat(sprintf_ctx->str, c);
         sprintf_ctx->size++;
     }
 }
@@ -342,11 +342,11 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
             format++;
             string_t string = va_arg(args, string_t);
             
-            for (int i = 0; i < string_len(&string); i++) {
+            for (int i = 0; i < strlen(&string); i++) {
                 putc(string.str[i], ctx);
             }
 
-            written += string_len(&string);
+            written += strlen(&string);
         }
 
         else if (*format == 'f') {

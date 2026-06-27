@@ -7,6 +7,7 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <vector.h>
 
 #define EOF (-1)
 #define stdout 1
@@ -36,5 +37,8 @@ int puts(const char* str);
 int getchar();
 
 void perror(const char* str);
+
+/* --- DATA STRUCTURE PRINT FUNCTIONS --- */
+void vector_print(const vector_t* vec, void (*print_element)(void*));
 
 #endif // !STDIO_H_

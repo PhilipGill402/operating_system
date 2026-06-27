@@ -9,6 +9,11 @@
 
 uint32_t serial_fd;
 
+static void print_str(void* str) {
+    char* s = *(char**)str; 
+    printf(s);
+}
+
 static int read_line(char* buffer, uint32_t max_len) {
     uint32_t len = 0;
 
@@ -88,14 +93,11 @@ int main() {
 
         buffer[bytes] = '\0';
 
-        char* token = strtok(buffer, ' ');
-        
-        int user_argc = 0;
-        
-        while (token != NULL) {
-            user_argv[user_argc++] = token;
-            token = strtok(NULL, ' ');
-        }
+        vector_t tokens = strtok(buffer, ' ');
+        int user_argc = vector_size(&tokens);
+
+        for (int i = 0; i < user_argc; i++)
+            user_argv[i] = *(char**)vector_get(&tokens, i);
         
         // if command is a builtin one then skip
         if (check_builtins(user_argc, user_argv)) {

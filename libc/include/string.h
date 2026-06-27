@@ -35,27 +35,30 @@ int c_strlen(const char*);
 #define strcat(dst, src) _Generic((dst),        \
     string_t*: _Generic((src),                  \
                 string_t*: h_strcat_hstr,       \
-                char: h_strcat_c                \
+                char: h_strcat_c,               \
                 char*: h_strcat_cstr,           \
                 const char*: h_strcat_cstr      \
                 ),                              \
     char*: _Generic((src),                      \
                 string_t*: c_strcat_hstr,       \
                 char*: c_strcat_cstr,           \
-                const char*: c_strcat_cstr      \
+                const char*: c_strcat_cstr,     \
+                char: c_strcat_c                \
             ),                                  \
     const char*: _Generic((src),                \
                 string_t*: c_strcat_hstr,       \
                 char*: c_strcat_cstr,           \
-                const char*: c_strcat_cstr      \
+                const char*: c_strcat_cstr,     \
+                char: c_strcat_c                \
                 )                               \
 )(dst, src)
 
 void h_strcat_c(string_t* string, char ch);
 void h_strcat_cstr(string_t* dst, const char* src);
 void h_strcat_hstr(string_t* dst, string_t* src);
-void c_strcat_cstr(char*, char*);
-void c_strcat_hstr(char*, string_t*);
+void c_strcat_cstr(char* dst, char* src);
+void c_strcat_hstr(char* dst, string_t* src);
+void c_strcat_c(char* dst, char c);
 
 /* --- STRCMP --- */
 #define strcmp(dst, src) _Generic((dst),        \

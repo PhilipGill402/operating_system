@@ -21,6 +21,7 @@ typedef struct vector_iterator_t{
 //initializing and destroying
 vector_t vector_create(size_t element_size);
 void vector_free(vector_t* vec);
+void vector_free_destructor(vector_t* vec, void (*destructor)(void*));
 
 //managing size
 void vector_reserve(vector_t* vec, int new_capacity);
@@ -54,6 +55,5 @@ void* vector_next(vector_iterator_t* itr);
 
 //miscellanenous
 bool vector_empty(const vector_t* vec);
-void vector_print(const vector_t* vec, void (*print_element)(void*));
 
 #endif // !UTILS_VECTOR_H_

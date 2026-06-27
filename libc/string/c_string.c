@@ -1,5 +1,7 @@
 #include <string.h>
 
+#include <stdio.h>
+
 void c_strcat_cstr(char* dst, char* src){
     while (*dst != '\0'){
         dst++;
@@ -22,6 +24,15 @@ void c_strcat_hstr(char* dst, string_t* src) {
     }
 
     *p = '\0';
+}
+
+void c_strcat_c(char* dst, char c) {
+    while (*dst)
+        dst++;
+
+    *dst = c;
+    dst++;
+    *dst = '\0';
 }
 
 char* c_strchar(char* str, int c){
@@ -179,17 +190,16 @@ char* c_strstr(char* str, char* substr){
 vector_t c_strtok(char* str, char delimiter){
     vector_t tokens = vector_create(sizeof(char*));
     int str_len = c_strlen(str); 
-    
-    char* tok = malloc(sizeof(char) * str_len);
+    char* tok = malloc(str_len + 1);
     int tok_idx = 0;
+    
     for (int i = 0; i < str_len; i++) {
         if (*str == delimiter) {
             tok[tok_idx] = '\0';
             vector_push_back(&tokens, &tok);
             
-            tok = malloc(sizeof(char) * str_len);
+            tok = malloc(str_len + 1);
             tok_idx = 0;
-            
             str++;
         } else {
             tok[tok_idx++] = *str;
@@ -200,6 +210,8 @@ vector_t c_strtok(char* str, char delimiter){
     if (tok_idx > 0) {
         tok[tok_idx] = '\0';
         vector_push_back(&tokens, &tok);
+    } else {
+        free(tok);
     }
     
     return tokens;
