@@ -109,6 +109,15 @@ void vector_free(vector_t* vec){
     vec->capacity = 0;
 }
 
+void vector_free_destructor(vector_t* vec, void (*destructor)(void*)) {
+    while (!vector_empty(vec)) {
+        void* element = vector_pop_back(vec);
+        destructor(element);
+    }
+
+    vector_free(vec);
+}
+
 void* vector_get(const vector_t* vec, int index){
     if (index >= vector_size(vec)){
         return NULL;

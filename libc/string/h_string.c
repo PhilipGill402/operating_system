@@ -173,7 +173,7 @@ void h_strcpy_cstr(string_t* dst, const char* src) {
 }
 
 
-int h_strlen(string_t* string) {
+uint32_t h_strlen(string_t* string) {
     return string->len;
 }
 
@@ -234,13 +234,13 @@ void h_strncpy_hstr(string_t* dst, string_t* src, size_t len) {
 
         dst->str[i] = src->str[i];
     }
-
-    dst->len += i;
+    
+    dst->len = i;
 }
 
 void h_strncpy_cstr(string_t* dst, char* src, size_t len) {
     uint32_t i;
-    for (i = 0; i < dst->len && src[i] != '\0' && i < len; i++) {
+    for (i = 0; src[i] != '\0' && i < len; i++) {
         if (i >= dst->capacity) {
             int ret = string_resize(dst, dst->capacity * 2);
             // we failed to allocate memory so just exit 
@@ -251,7 +251,7 @@ void h_strncpy_cstr(string_t* dst, char* src, size_t len) {
         dst->str[i] = src[i];
     }
     
-    dst->len += i; 
+    dst->len = i; 
 }
 
 void h_strncat_hstr(string_t* dst, string_t* src, size_t len) {

@@ -9,9 +9,9 @@
 
 uint32_t serial_fd;
 
-static void print_str(void* str) {
-    char* s = *(char**)str; 
-    printf(s);
+static void str_free(void* element) {
+    char* str = *(char**)element;
+    free(str);
 }
 
 static int read_line(char* buffer, uint32_t max_len) {
@@ -138,6 +138,7 @@ int main() {
         waitpid(child_pid, &status, 0);
         
         free(path);
+        vector_free_destructor(&tokens, str_free);
     }
 
     return 0;

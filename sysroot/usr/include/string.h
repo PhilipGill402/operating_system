@@ -28,14 +28,15 @@ int string_resize(string_t* str, int capacity);
     const char*:    c_strlen              \
 )(str)
 
-int h_strlen(string_t* string);
-int c_strlen(const char*);
+uint32_t h_strlen(string_t* string);
+uint32_t c_strlen(const char*);
 
 /* --- STRCAT --- */
 #define strcat(dst, src) _Generic((dst),        \
     string_t*: _Generic((src),                  \
                 string_t*: h_strcat_hstr,       \
                 char: h_strcat_c,               \
+                int: h_strcat_c,                \
                 char*: h_strcat_cstr,           \
                 const char*: h_strcat_cstr      \
                 ),                              \
@@ -43,14 +44,9 @@ int c_strlen(const char*);
                 string_t*: c_strcat_hstr,       \
                 char*: c_strcat_cstr,           \
                 const char*: c_strcat_cstr,     \
-                char: c_strcat_c                \
-            ),                                  \
-    const char*: _Generic((src),                \
-                string_t*: c_strcat_hstr,       \
-                char*: c_strcat_cstr,           \
-                const char*: c_strcat_cstr,     \
-                char: c_strcat_c                \
-                )                               \
+                char: c_strcat_c,               \
+                int: c_strcat_c                 \
+            )                                   \
 )(dst, src)
 
 void h_strcat_c(string_t* string, char ch);
@@ -95,18 +91,13 @@ int c_strcmp_hstr(const char*, string_t*);
                 string_t*: c_strcpy_hstr,       \
                 char*: c_strcpy_cstr,           \
                 const char*: c_strcpy_cstr      \
-            ),                                  \
-    const char*: _Generic((src),                \
-                string_t*: c_strcpy_hstr,       \
-                char*: c_strcpy_cstr,           \
-                const char*: c_strcpy_cstr      \
-                )                               \
+            )                                   \
 )(dst, src)
 
 void h_strcpy_hstr(string_t* dst, string_t* src);
 void h_strcpy_cstr(string_t* dst, const char* src);
-void c_strcpy_cstr(char*, const char*);
-void c_strcpy_hstr(char*, string_t*);
+void c_strcpy_cstr(char* dst, const char* src);
+void c_strcpy_hstr(char* dst, string_t* src);
 
 /* --- STRTOK --- */
 #define strtok(str, delimiter) _Generic((str),  \
@@ -153,12 +144,7 @@ int h_strncmp_cstr(string_t* a, const char* b, size_t len);
                 string_t*: c_strncpy_hstr,      \
                 char*: c_strncpy_cstr,          \
                 const char*: c_strncpy_cstr     \
-            ),                                  \
-    const char*: _Generic((src),                \
-                string_t*: c_strncpy_hstr,      \
-                char*: c_strncpy_cstr,          \
-                const char*: c_strncpy_cstr     \
-                )                               \
+            )                                   \
 )(dst, src, len)
 
 void c_strncpy_cstr(char* dst, char* src, size_t len);
@@ -167,23 +153,17 @@ void h_strncpy_hstr(string_t* dst, string_t* src, size_t len);
 void h_strncpy_cstr(string_t* dst, char* src, size_t len);
 
 /* --- STRNCAT --- */
-#define strncat(dst, src, len) _Generic((dst),        \
+#define strncat(dst, src, len) _Generic((dst),  \
     string_t*: _Generic((src),                  \
-                string_t*: h_strncat_hstr,       \
-                char: h_strncat_c                \
-                char*: h_strncat_cstr,           \
-                const char*: h_strncat_cstr      \
+                string_t*: h_strncat_hstr,      \
+                char*: h_strncat_cstr,          \
+                const char*: h_strncat_cstr     \
                 ),                              \
     char*: _Generic((src),                      \
-                string_t*: c_strncat_hstr,       \
-                char*: c_strncat_cstr,           \
-                const char*: c_strncat_cstr      \
-            ),                                  \
-    const char*: _Generic((src),                \
-                string_t*: c_strncat_hstr,       \
-                char*: c_strncat_cstr,           \
-                const char*: c_strncat_cstr      \
-                )                               \
+                string_t*: c_strncat_hstr,      \
+                char*: c_strncat_cstr,          \
+                const char*: c_strncat_cstr     \
+            )                                   \
 )(dst, src, len)
 
 void c_strncat_cstr(char* dst, char* src, size_t len);
