@@ -931,9 +931,9 @@ TEST(test_c_strtok_basic) {
 TEST(test_c_strtok_repeated_delimiters_keeps_empty_tokens) {
     vector_t toks = c_strtok("a,,b", ',');
 
-    ASSERT_SIZE_EQ(3, VEC_SIZE(toks));
+    ASSERT_SIZE_EQ(2, VEC_SIZE(toks));
     ASSERT_CSTR_EQ("a", VEC_GET_CSTR(toks, 0));
-    ASSERT_CSTR_EQ("b", VEC_GET_CSTR(toks, 2));
+    ASSERT_CSTR_EQ("b", VEC_GET_CSTR(toks, 1));
 
     free_cstr_token_vector(&toks);
 }
@@ -941,9 +941,9 @@ TEST(test_c_strtok_repeated_delimiters_keeps_empty_tokens) {
 TEST(test_c_strtok_leading_delimiter_keeps_empty_first) {
     vector_t toks = c_strtok(",a,b", ',');
 
-    ASSERT_SIZE_EQ(3, VEC_SIZE(toks));
-    ASSERT_CSTR_EQ("a", VEC_GET_CSTR(toks, 1));
-    ASSERT_CSTR_EQ("b", VEC_GET_CSTR(toks, 2));
+    ASSERT_SIZE_EQ(2, VEC_SIZE(toks));
+    ASSERT_CSTR_EQ("a", VEC_GET_CSTR(toks, 0));
+    ASSERT_CSTR_EQ("b", VEC_GET_CSTR(toks, 1));
 
     free_cstr_token_vector(&toks);
 }

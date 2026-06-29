@@ -179,23 +179,25 @@ uint32_t h_strlen(string_t* string) {
 
 vector_t h_strtok(string_t* str, char a) {
     vector_t tokens = vector_create(sizeof(string_t));
-    string_t token = string_create();
 
-    for (uint32_t i = 0; i < str->len; i++) {
-        if (str->str[i] == a && token.len > 0) {
-            string_t copy = string_clone(&token);
-            vector_push_back(&tokens, &copy);
-            string_clear(&token);
+    uint32_t i = 0;
+    while (i < str->len) {
+        // skip leading delims 
+        while (str->str[i] == a)
+            i++;
+
+        if (i >= str->len)
+            break;
+
+        string_t tok = string_create();
+        
+        while (i < str->len && str->str[i] != a) {
+            h_strcat_c(&tok, str->str[i]);
+            i++;
         }
-        else {
-            h_strcat_c(&token, str->str[i]);
-        }  
-    }
 
-    string_t copy = string_clone(&token);
-    vector_push_back(&tokens, &copy);
-    
-    string_free(&token);
+        vector_push_back(&tokens, &tok);
+    }
 
     return tokens;
 }

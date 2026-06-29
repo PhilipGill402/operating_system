@@ -14,6 +14,10 @@ static void str_free(void* element) {
     free(str);
 }
 
+static void str_print(void* str) {
+    printf(*(char**)str);
+}
+
 static int read_line(char* buffer, uint32_t max_len) {
     uint32_t len = 0;
 
@@ -95,10 +99,10 @@ int main() {
 
         vector_t tokens = strtok(buffer, ' ');
         int user_argc = vector_size(&tokens);
-
+        
         for (int i = 0; i < user_argc; i++)
             user_argv[i] = *(char**)vector_get(&tokens, i);
-        
+
         // if command is a builtin one then skip
         if (check_builtins(user_argc, user_argv)) {
             continue; 
@@ -118,9 +122,10 @@ int main() {
             free(path);
             continue;
         } else {
+            close(fd); 
             strcpy(path, user_argv[0]);
         }
-
+        
         uint32_t child_pid = fork();
         if (child_pid == 0) {
             errno = 0; 

@@ -180,59 +180,38 @@ char* c_strstr(char* str, char* substr){
 }
 
 vector_t c_strtok(char* str, char delimiter){
-    vector_t tokens = vector_create(sizeof(char*));
-    int str_len = c_strlen(str); 
-    char* tok = malloc(str_len + 1);
-    int tok_idx = 0;
-/*   
+    vector_t tokens = vector_create(sizeof(char *));
+
+    if (str == NULL) {
+        return tokens;
+    }
+
+    int str_len = c_strlen(str);
+
     while (*str != '\0') {
-        if (*str == delimiter) {
-            while (*str == delimiter)
-                str++;
-
-            tok[tok_idx] = '\0';
-            vector_push_back(&tokens, &tok);
-            
-            tok = malloc(str_len + 1);
-            tok_idx = 0;
+        while (*str == delimiter)
             str++;
-        } else {
+
+        if (*str == '\0')
+            break;
+
+        char* tok = malloc(str_len + 1);
+        if (tok == NULL)
+            return tokens;
+
+        int tok_idx = 0;
+
+        while (*str != '\0' && *str != delimiter) {
             tok[tok_idx++] = *str;
             str++;
         }
-    }
 
-    if (tok_idx > 0) {
         tok[tok_idx] = '\0';
         vector_push_back(&tokens, &tok);
-    } else {
-        free(tok);
-    }
-    
-    return tokens;
-*/
-    for (int i = 0; i < str_len; i++) {
-        if (*str == delimiter) {
-            tok[tok_idx] = '\0';
-            vector_push_back(&tokens, &tok);
-            
-            tok = malloc(str_len + 1);
-            tok_idx = 0;
-            str++;
-        } else {
-            tok[tok_idx++] = *str;
-            str++;
-        }
     }
 
-    if (tok_idx > 0) {
-        tok[tok_idx] = '\0';
-        vector_push_back(&tokens, &tok);
-    } else {
-        free(tok);
-    }
-    
     return tokens;
+
 }
 
 void c_strcpy_cstr(char* dst, const char* src){
