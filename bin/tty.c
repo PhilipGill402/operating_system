@@ -15,6 +15,7 @@ typedef struct {
     gfx_context_t* ctx;
     uint32_t x;
     uint32_t y;
+    uint32_t prompt_width;
 } tty_t;
 
 void tty_clear_cursor(tty_t* tty) {
@@ -41,7 +42,7 @@ void tty_put_char(char c, tty_t* tty) {
     } else if (c == '\r') {
         tty->x = 0;
     } else if (c == '\b') {
-        if (tty->x >= FONT_WIDTH) {
+        if (tty->x >= FONT_WIDTH && tty->x > tty->prompt_width) {
             gfx_draw_char(tty->ctx, ' ', tty->x, tty->y, FB_WHITE, FB_BLACK);
             tty->x -= FONT_WIDTH;
         } 
@@ -64,7 +65,13 @@ void tty_put_char(char c, tty_t* tty) {
 }
 
 int main() {
-    tty_t tty = { 0 }; 
+    tty_t tty = {
+        .ctx = NULL,
+        .x = 0,
+        .y = 0,
+        .prompt_width = 5
+        }; 
+
     serial_fd = open("/dev/serial", O_WRONLY, 0); 
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);
     uint32_t ptm_fd = open("/dev/ptm", O_RDWR, 0);
