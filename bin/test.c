@@ -30,7 +30,6 @@ static int tests_failed = 0;
 #define RUN_TEST(name) do {                         \
     printf("[ RUN      ] %s\n", #name);             \
     name();                                         \
-    printf("[     DONE ] %s\n", #name);             \
 } while (0)
 
 #define ASSERT_TRUE(expr) do {                                      \

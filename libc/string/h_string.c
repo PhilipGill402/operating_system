@@ -113,25 +113,33 @@ void h_strcat_cstr(string_t* dst, const char* src) {
 }
 
 int h_strcmp_hstr(string_t* a, string_t* b) {
-    if (a->len == 0 && b->len == 0) return 0;
-    else if (a->len == 0) return b->str[0];
-    else if (b->len == 0) return a->str[0];
-
-    for (uint32_t i = 0; i < a->len && i < b->len; i++) {
+    uint32_t i;
+    for (i = 0; i < a->len && i < b->len; i++) {
         if (a->str[i] != b->str[i]) {
             return a->str[i] - b->str[i];
         }
-    } 
+    }
+
+    if (i < a->len)
+        return a->str[i];
+    else if (i < b->len)
+        return -(int)b->str[i];
 
     return 0;
 }
 
 int h_strcmp_cstr(string_t* a, const char* b) {
-    for (uint32_t i = 0; i < a->len && b[i] != '\0'; i++) {
+    uint32_t i = 0;
+    for (i = 0; i < a->len && b[i] != '\0'; i++) {
         if (a->str[i] != b[i]) {
             return a->str[i] - b[i];
         }
     }
+
+    if (i < a->len)
+        return a->str[i];
+    else if (b[i] != '\0')
+        return -(int)b[i];
 
     return 0;
 }
@@ -182,7 +190,6 @@ vector_t h_strtok(string_t* str, char a) {
 
     uint32_t i = 0;
     while (i < str->len) {
-        // skip leading delims 
         while (str->str[i] == a)
             i++;
 
@@ -203,22 +210,38 @@ vector_t h_strtok(string_t* str, char a) {
 }
 
 int h_strncmp_hstr(string_t* a, string_t* b, size_t len) {
-    for (uint32_t idx = 0; idx < a->len && idx < b->len && idx < len; idx++) {
+    uint32_t idx;
+    for (idx = 0; idx < a->len && idx < b->len && idx < len; idx++) {
         int diff = (int)a->str[idx] - (int)b->str[idx];
 
         if (diff != 0)
             return diff;
     }
 
+    if (idx < len) {
+        if (idx < a->len)
+            return a->str[idx];
+        else if (idx < b->len)
+            return -(int)b->str[idx];
+    }
+
     return 0;
 }
 
 int h_strncmp_cstr(string_t* a, const char* b, size_t len) {
-    for (uint32_t idx = 0; idx < a->len && b[idx] != '\0' && idx < len; idx++) {
+    uint32_t idx;
+    for (idx = 0; idx < a->len && b[idx] != '\0' && idx < len; idx++) {
         int diff = (int)a->str[idx] - (int)b[idx];
 
         if (diff != 0)
             return diff;
+    }
+
+    if (idx < len) {
+        if (idx < a->len)
+            return a->str[idx];
+        else if (b[idx] != '\0')
+            return -(int)b[idx];
     }
 
     return 0;

@@ -48,19 +48,31 @@ char* c_strchar(char* str, int c){
 }
 
 int c_strcmp_cstr(const char* s1, const char* s2){
-    for (uint32_t i = 0; s1[i] != '\0' && s2[i] != '\0'; i++) {
+    uint32_t i;
+    for (i = 0; s1[i] != '\0' && s2[i] != '\0'; i++) {
         if (s1[i] != s2[i])
             return s1[i] - s2[i];
     }
+
+    if (s1[i] != '\0')
+        return (int)s1[i];
+    else if (s2[i] != '\0')
+        return -(int)s2[i];
 
     return 0;
 }
 
 int c_strcmp_hstr(const char* s1, string_t* s2) {
-    for (uint32_t i = 0; i < s2->len && s1[i] != '\0'; i++) {
+    uint32_t i; 
+    for (i = 0; i < s2->len && s1[i] != '\0'; i++) {
         if (s2->str[i] != s1[i])
             return s1[i] - s2->str[i];
     }
+
+    if (s1[i] != '\0')
+        return (int)s1[i];
+    else if (i < s2->len)
+        return -(int)s2->str[i];
 
     return 0;
 }
@@ -102,22 +114,38 @@ void c_strncat_hstr(char* dst, string_t* src, size_t len) {
 }
 
 int c_strncmp_cstr(const char* a, const char* b, size_t n){
-    for (uint32_t idx = 0; a[idx] != '\0' && b[idx] != '\0' && idx < n; idx++) {
+    uint32_t idx;
+    for (idx = 0; a[idx] != '\0' && b[idx] != '\0' && idx < n; idx++) {
         int diff = (int)a[idx] - (int)b[idx];
 
         if (diff != 0)
             return diff;
-    } 
+    }
+
+    if (idx < n) {
+        if (a[idx] != '\0')
+            return a[idx];
+        else if (b[idx] != '\0')
+            return -(int)b[idx];
+    }
 
     return 0;
 }
 
 int c_strncmp_hstr(const char* a, string_t* b, size_t len) {
-    for (uint32_t idx = 0; idx < b->len && a[idx] != '\0' && idx < len; idx++) {
+    uint32_t idx;
+    for (idx = 0; idx < b->len && a[idx] != '\0' && idx < len; idx++) {
         int diff = (int)a[idx] - (int)b->str[idx];
 
         if (diff != 0)
             return diff;
+    }
+
+    if (idx < len) {
+        if (a[idx] != '\0')
+            return a[idx];
+        else if (idx < b->len)
+            return -(int)b->str[idx];
     }
 
     return 0;
