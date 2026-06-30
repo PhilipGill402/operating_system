@@ -46,8 +46,9 @@ void tty_put_char(char c, tty_t* tty) {
             gfx_draw_char(tty->ctx, ' ', tty->x, tty->y, FB_WHITE, FB_BLACK);
             tty->x -= FONT_WIDTH;
         } 
-    } else if (c >= ' ') { 
-        gfx_draw_char(tty->ctx, c, tty->x, tty->y, FB_WHITE, FB_BLACK); 
+    } else if (c >= ' ') {
+        gfx_draw_char(tty->ctx, c, tty->x, tty->y, FB_WHITE, FB_BLACK);
+
         tty->x += FONT_WIDTH;
     }
 
@@ -95,6 +96,8 @@ int main() {
     }
 
     gfx_context_t* ctx = gfx_get_context(NULL, NULL);
+    gfx_clear_screen(ctx, FB_BLACK);
+    
     tty.ctx = ctx;
 
     input_event_t input_event_buffer[256];

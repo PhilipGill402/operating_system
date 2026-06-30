@@ -49,5 +49,6 @@ uint32_t gfx_draw_string(gfx_context_t* ctx, char* str, uint32_t x, uint32_t y, 
 
 /* --- Rendering Shapes --- */
 uint32_t gfx_draw_rect(gfx_context_t* ctx, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color);
+uint32_t gfx_clear_screen(gfx_context_t* ctx, uint32_t color);
 
 #endif // !LIBC_INCLUDE_FRAMEBUFFER_H_

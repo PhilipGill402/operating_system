@@ -122,7 +122,7 @@ int main() {
             free(path);
             continue;
         } else {
-            close(fd); 
+            close(fd);
             strcpy(path, user_argv[0]);
         }
         

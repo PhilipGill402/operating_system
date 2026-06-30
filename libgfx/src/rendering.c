@@ -76,7 +76,7 @@ uint32_t gfx_draw_char(gfx_context_t* ctx, char c, uint32_t x, uint32_t y, uint3
                 return 0;
         }
     }
-
+    
     gfx_mark_dirty(ctx, x, y, FONT_WIDTH, FONT_HEIGHT);
 
     return 1;
@@ -122,6 +122,16 @@ uint32_t gfx_draw_rect(gfx_context_t* ctx, uint32_t x, uint32_t y, uint32_t widt
     }
 
     gfx_mark_dirty(ctx, x, y, width, height);
+
+    return 1;
+}
+
+uint32_t gfx_clear_screen(gfx_context_t* ctx, uint32_t color) {
+    if (!gfx_draw_rect(ctx, 0, 0, ctx->fb.width, ctx->fb.height, color))
+        return 0;
+    
+    if (fb_flush(0, 0, ctx->fb.width, ctx->fb.height) < 0)
+        return 0;
 
     return 1;
 }

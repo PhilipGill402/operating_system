@@ -273,7 +273,7 @@ int32_t sys_dup2(uint32_t old_fd, uint32_t new_fd) {
 int32_t sys_fb_flush(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
     if (x + width >= framebuffer.width)
         width = framebuffer.width - x;
-    if (y + width >= framebuffer.height)
+    if (y + height >= framebuffer.height)
         height = framebuffer.height - y;
 
     for (uint32_t row = 0; row < height; row++) {
