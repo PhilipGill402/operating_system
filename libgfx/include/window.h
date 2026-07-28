@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <gfx/gfx.h>
-#include <gfx/rendering.h>
+#include "gfx.h"
+#include "gfx/rendering.h"
 
 #define MAX_WINDOWS 32
 #define WINDOW_TITLE_MAX 64
@@ -30,14 +30,16 @@ typedef struct window {
     uint8_t focused;
     uint8_t in_use;
 
-    uint32_t* buffer;
+    gfx_context_t* ctx;
 } window_t;
 
-void window_init();
-uint32_t window_create(gfx_context_t* ctx, char* title);
+uint32_t window_create(char* title, uint32_t width, uint32_t height);
 void window_destroy(uint32_t id);
-void window_draw(gfx_context_t* ctx, uint32_t id);
-void window_render(gfx_context_t* ctx);
+void window_blit(gfx_context_t* ctx, uint32_t win_id);
+gfx_context_t* window_get_context(uint32_t id);
 int32_t window_hit_id(uint32_t x, uint32_t y);
+
+extern window_t windows[MAX_WINDOWS];
+extern int32_t focused_window;
 
 #endif // !INCLUDE_WINDOW_WINDOW_H_

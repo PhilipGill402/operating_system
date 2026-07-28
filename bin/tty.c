@@ -6,6 +6,7 @@
 #include <gfx/gfx.h>
 #include <gfx/rendering.h>
 #include <gfx/8x8font.h>
+#include <gfx/window.h>
 
 #define MAX_BUFFER_LENGTH 256
 
@@ -71,7 +72,7 @@ int main() {
         .x = 0,
         .y = 0,
         .prompt_width = 5
-        }; 
+    }; 
 
     serial_fd = open("/dev/serial", O_WRONLY, 0); 
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);

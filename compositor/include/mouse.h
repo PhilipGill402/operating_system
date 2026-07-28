@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <sys/events.h>
 #include <gfx/gfx.h>
-#include "window.h"
+#include <gfx/window.h>
 
 typedef struct {
     uint32_t x;

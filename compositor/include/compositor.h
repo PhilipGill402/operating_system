@@ -1,10 +1,11 @@
 #ifndef INCLUDE_COMPOSITOR_H_
+#define INCLUDE_COMPOSITOR_H_
 
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/events.h>
 #include <gfx/gfx.h>
-#include "window.h"
+#include <gfx/window.h>
 
 typedef struct {
     // graphics

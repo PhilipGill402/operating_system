@@ -19,6 +19,12 @@ static void compositor_handle_event(input_event_t* event) {
     }
 }
 
+static void compositor_windows_init() {
+    for (uint32_t i = 0; i < MAX_WINDOWS; i++) {
+        windows[i].id = i;
+    }
+}
+
 int main() {
     close(1); // close stdout
     int32_t serial_fd = open("/dev/serial", O_WRONLY, 0); // open serial for output
@@ -38,14 +44,23 @@ int main() {
         return -1;
     }
 
-    window_init();
+    compositor_windows_init();
 
-    window_create(ctx, "test");
+    uint32_t child_pid = fork();
+    if (child_pid == 0) {
+        errno = 0; 
+         
+        int ret = execve("/bin/tty", NULL);
+        
+        if (ret == -1) {
+            perror("execve");
+            exit(-1);
+        }
+    }
 
-    while(1) {
+    while (1) {
         input_event_t events[32];
         int32_t num_events = compositor_get_events(input_fd, events);
-        //printf("%d\n", num_events); 
         if (num_events <= 0) {
             yield();
             continue;
@@ -59,10 +74,10 @@ int main() {
             
             compositor_handle_event(&event); 
         }
-
+        
+        window_blit(ctx, 0); // hardcode for now, eventually loop
         gfx_flush(ctx);
     }
-
 
     gfx_free_context(ctx);
 }
