@@ -1,35 +1,50 @@
-ARCH := i686
+# libk/Makefile
+
+ARCH ?= i686
 TARGET := $(ARCH)-elf
 
 CC := $(TARGET)-gcc
 AR := $(TARGET)-ar
-ASM := $(TARGET)-as
 
-LIBK_DIR := .
-BUILD_DIR := ../build/libk
-LIBK := ../build/libk.a
-INC_DIR := include
+BUILD_DIR := build
+INCLUDE_DIR := include
+KERNEL_INCLUDE_DIR := ../include
+ARCH_INCLUDE_DIR := ../arch/$(ARCH)/include
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -D__is_libk -I../include
+LIBK := $(BUILD_DIR)/libk.a
 
-C_SOURCES := $(shell find . -type f -name '*.c' ! -path './include/*')
+CPPFLAGS := \
+	-I$(INCLUDE_DIR) \
+	-I$(KERNEL_INCLUDE_DIR) \
+	-I$(ARCH_INCLUDE_DIR) \
+	-D__is_libk
+
+CFLAGS := \
+	-std=gnu99 \
+	-ffreestanding \
+	-O2 \
+	-Wall \
+	-Wextra
+
+ARFLAGS := rcs
+
+C_SOURCES := $(shell find . -type f -name '*.c' \
+	! -path './include/*' \
+	! -path './build/*')
+
 OBJECTS := $(patsubst ./%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
 
-
-.PHONY: all clean dirs
+.PHONY: all clean
 
 all: $(LIBK)
 
-dirs:
-	mkdir -p $(BUILD_DIR)
-
 $(LIBK): $(OBJECTS)
-	mkdir -p ../build
-	$(AR) rcs $@ $^
+	@mkdir -p $(dir $@)
+	$(AR) $(ARFLAGS) $@ $^
 
-$(BUILD_DIR)/%.o: ./%.c | dirs
-	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/%.o: ./%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(LIBK)
+	rm -rf $(BUILD_DIR)

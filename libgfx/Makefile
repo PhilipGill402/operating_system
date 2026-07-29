@@ -1,41 +1,53 @@
-CC = i686-elf-gcc
-AR = i686-elf-ar
+# libgfx/Makefile
 
-BUILD_DIR = build
-SRC_DIR = src
-INCLUDE_DIR = include
+ARCH ?= i686
+TARGET := $(ARCH)-elf
 
-SYSROOT = ../sysroot
-LIB_NAME = libgfx.a
-LIB = $(SYSROOT)/usr/lib/$(LIB_NAME)
+CC := $(TARGET)-gcc
+AR := $(TARGET)-ar
 
-CFLAGS = -ffreestanding -O2 -Wall -Wextra \
-         -I$(INCLUDE_DIR) \
-         -I$(SYSROOT)/usr/include
+BUILD_DIR := build
+SOURCE_DIR := src
+INCLUDE_DIR := include
+SYSROOT ?= ../sysroot
 
-ARFLAGS = rcs
+LIBGFX := $(BUILD_DIR)/libgfx.a
 
-SRCS := $(shell find $(SRC_DIR) -name '*.c')
-OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+CPPFLAGS := \
+	-I$(INCLUDE_DIR) \
+	-I$(SYSROOT)/usr/include
 
-.PHONY: all clean install
+CFLAGS := \
+	-std=gnu99 \
+	-ffreestanding \
+	-O2 \
+	-Wall \
+	-Wextra
 
-all: install
+ARFLAGS := rcs
 
-$(LIB): $(OBJS) | $(SYSROOT)/usr/lib
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+C_SOURCES := $(shell find $(SOURCE_DIR) -type f -name '*.c')
+OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
+HEADERS := $(shell find $(INCLUDE_DIR) -type f -name '*.h')
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+.PHONY: all install clean
+
+all: $(LIBGFX)
+
+$(LIBGFX): $(OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(AR) $(ARFLAGS) $@ $^
 
-$(SYSROOT)/usr/lib:
-	mkdir -p $@
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-install: $(LIB)
+# Optional installation target for user-program linking.
+install: $(LIBGFX) $(HEADERS)
+	mkdir -p $(SYSROOT)/usr/lib
 	mkdir -p $(SYSROOT)/usr/include/gfx
-	cp $(INCLUDE_DIR)/*.h $(SYSROOT)/usr/include/gfx/
+	cp $(LIBGFX) $(SYSROOT)/usr/lib/
+	cp $(HEADERS) $(SYSROOT)/usr/include/gfx/
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(LIB)

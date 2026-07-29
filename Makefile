@@ -1,74 +1,229 @@
-# Bare Bones style Makefile adapted to:
-# - kernel/   -> source files (.c and .s)
-# - include/  -> header files (.h)
-# - build/    -> object files
-# - linker.ld -> linker script in project root
-#
-# Intended workflow:
-#   make        -> build kernel binary
-#   make run    -> run kernel directly in QEMU
-#   make iso    -> build bootable ISO inside Docker/container
+# =============================================================================
+# Target architecture
+# =============================================================================
 
-ARCH := i686
+ARCH ?= i686
 TARGET := $(ARCH)-elf
 
 CC := $(TARGET)-gcc
 AS := $(TARGET)-as
 LD := $(TARGET)-gcc
 
-SRC_DIR := kernel
-INC_DIR := include
-BUILD_DIR := build
+# =============================================================================
+# Project directories
+# =============================================================================
+
+KERNEL_DIR := kernel
+KERNEL_INC_DIR := include
+
+ARCH_DIR := arch/$(ARCH)
+ARCH_INC_DIR := $(ARCH_DIR)/include
+ARCH_LINKER_SCRIPT := $(ARCH_DIR)/linker.ld
+
+BUILD_ROOT := build
+BUILD_DIR := $(BUILD_ROOT)/$(ARCH)
+
 ISO_DIR := isodir
+SYSROOT := sysroot
+USER_DIR := bin
+
+# =============================================================================
+# Libraries
+# =============================================================================
 
 LIBC_DIR := libc
 LIBK_DIR := libk
+LIBGFX_DIR := libgfx
+
 LIBK := $(BUILD_DIR)/libk.a
 LIBC := $(LIBC_DIR)/build/libc.a
+CRT0 := $(LIBC_DIR)/build/crt0.o
+LIBGFX := $(LIBGFX_DIR)/build/libgfx.a
+
 LIBC_INC := $(LIBC_DIR)/include
 LIBK_INC := $(LIBK_DIR)/include
-CRT0 := $(LIBC_DIR)/build/crt0.o
-LIBGFX := libgfx/build/libgfx.a
-LIBGFX_DIR := libgfx
-SYSROOT := sysroot
 
 SYSROOT_LIBC := $(SYSROOT)/usr/lib/libc.a
 SYSROOT_CRT0 := $(SYSROOT)/usr/lib/crt0.o
 SYSROOT_STAMP := $(SYSROOT)/.libc-installed
 
+# =============================================================================
+# Output files
+# =============================================================================
+
 KERNEL_BIN := kernel.bin
 ISO := myos.iso
 FS := initrd.img
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I$(INC_DIR) -I$(LIBK_INC) -g
+# =============================================================================
+# Compiler and linker flags
+# =============================================================================
+
+CPPFLAGS := \
+	-I$(KERNEL_INC_DIR) \
+	-I$(ARCH_INC_DIR) \
+	-I$(LIBK_INC)
+
+CFLAGS := \
+	-std=gnu99 \
+	-ffreestanding \
+	-O2 \
+	-Wall \
+	-Wextra \
+	-g
+
 ASFLAGS :=
-LDFLAGS := -T linker.ld -ffreestanding -O2 -nostdlib
+
+LDFLAGS := \
+	-T $(ARCH_LINKER_SCRIPT) \
+	-ffreestanding \
+	-O2 \
+	-nostdlib
+
 LIBS := -lgcc
 
-C_SOURCES := $(shell find $(SRC_DIR) -type f -name '*.c')
-ASM_SOURCES := $(shell find $(SRC_DIR) -type f -name '*.s')
+# =============================================================================
+# Source discovery
+# =============================================================================
 
-C_OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
-ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/%.o,$(ASM_SOURCES))
-OBJECTS := $(ASM_OBJECTS) $(C_OBJECTS)
+KERNEL_C_SOURCES := \
+	$(shell find $(KERNEL_DIR) -type f -name '*.c')
 
-LIBC_HEADERS := $(shell find $(LIBC_DIR)/include -type f -name '*.h')
+KERNEL_ASM_SOURCES := \
+	$(shell find $(KERNEL_DIR) -type f -name '*.s')
 
-USER_DIR := bin
+ARCH_C_SOURCES := \
+	$(shell find $(ARCH_DIR) -type f -name '*.c')
 
-.PHONY: all run iso clean user libc libk
+ARCH_ASM_SOURCES := \
+	$(shell find $(ARCH_DIR) -type f -name '*.s')
+
+# Uppercase .S files are passed through the C preprocessor.
+ARCH_CPP_ASM_SOURCES := \
+	$(shell find $(ARCH_DIR) -type f -name '*.S')
+
+# =============================================================================
+# Object paths
+#
+# Examples:
+#
+# kernel/kernel.c
+#   -> build/i686/kernel/kernel.o
+#
+# arch/i686/boot/early_init.c
+#   -> build/i686/arch/i686/boot/early_init.o
+#
+# arch/i686/boot/boot.s
+#   -> build/i686/arch/i686/boot/boot.o
+# =============================================================================
+
+KERNEL_C_OBJECTS := \
+	$(patsubst %.c,$(BUILD_DIR)/%.o,$(KERNEL_C_SOURCES))
+
+KERNEL_ASM_OBJECTS := \
+	$(patsubst %.s,$(BUILD_DIR)/%.o,$(KERNEL_ASM_SOURCES))
+
+ARCH_C_OBJECTS := \
+	$(patsubst %.c,$(BUILD_DIR)/%.o,$(ARCH_C_SOURCES))
+
+ARCH_ASM_OBJECTS := \
+	$(patsubst %.s,$(BUILD_DIR)/%.o,$(ARCH_ASM_SOURCES))
+
+ARCH_CPP_ASM_OBJECTS := \
+	$(patsubst %.S,$(BUILD_DIR)/%.o,$(ARCH_CPP_ASM_SOURCES))
+
+OBJECTS := \
+	$(ARCH_ASM_OBJECTS) \
+	$(ARCH_CPP_ASM_OBJECTS) \
+	$(ARCH_C_OBJECTS) \
+	$(KERNEL_ASM_OBJECTS) \
+	$(KERNEL_C_OBJECTS)
+
+LIBC_HEADERS := \
+	$(shell find $(LIBC_INC) -type f -name '*.h')
+
+# =============================================================================
+# Phony targets
+# =============================================================================
+
+.PHONY: \
+	all \
+	kernel \
+	debug \
+	run \
+	iso \
+	img \
+	clean \
+	user \
+	libc \
+	libk \
+	libgfx
 
 all: kernel
 
-debug: CFLAGS += -DMALLOC_DEBUG
+kernel: $(KERNEL_BIN)
+
+debug: CPPFLAGS += -DMALLOC_DEBUG
 debug: kernel
 
-kernel: $(KERNEL_BIN)
+# =============================================================================
+# Kernel link
+# =============================================================================
+
+$(KERNEL_BIN): $(ARCH_LINKER_SCRIPT) $(OBJECTS) $(LIBK)
+	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBK) $(LIBS)
+	grub-file --is-x86-multiboot $@
+
+# =============================================================================
+# C compilation
+#
+# This one pattern rule handles both:
+#   kernel/*.c
+#   arch/i686/*.c
+#
+# because the prerequisite path is preserved after build/i686/.
+# =============================================================================
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# =============================================================================
+# Assembly compilation
+#
+# Lowercase .s:
+#   assembled directly without preprocessing
+#
+# Uppercase .S:
+#   compiled through GCC so CPPFLAGS and #include work
+# =============================================================================
+
+$(BUILD_DIR)/%.o: %.s
+	@mkdir -p $(dir $@)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: %.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# =============================================================================
+# Kernel library
+# =============================================================================
+
+libk: $(LIBK)
+
+$(LIBK):
+	$(MAKE) -C $(LIBK_DIR) ARCH=$(ARCH)
+	@mkdir -p $(dir $@)
+	cp $(LIBK_DIR)/build/libk.a $@
+
+# =============================================================================
+# C library and sysroot
+# =============================================================================
 
 libc: $(SYSROOT_STAMP)
 
 $(SYSROOT_STAMP): $(LIBC) $(CRT0) $(LIBC_HEADERS)
-	$(MAKE) -C $(LIBC_DIR)
 	mkdir -p $(SYSROOT)/usr/include
 	mkdir -p $(SYSROOT)/usr/lib
 	cp -Ru $(LIBC_INC)/* $(SYSROOT)/usr/include/
@@ -77,17 +232,20 @@ $(SYSROOT_STAMP): $(LIBC) $(CRT0) $(LIBC_HEADERS)
 	touch $@
 
 $(LIBC) $(CRT0):
-	$(MAKE) -C $(LIBC_DIR)
+	$(MAKE) -C $(LIBC_DIR) ARCH=$(ARCH)
 
-libk: $(LIBK)
-
-$(LIBK):
-	$(MAKE) -C $(LIBK_DIR)
+# =============================================================================
+# Graphics library
+# =============================================================================
 
 libgfx: $(LIBGFX)
 
 $(LIBGFX):
-	$(MAKE) -C $(LIBGFX_DIR)
+	$(MAKE) -C $(LIBGFX_DIR) ARCH=$(ARCH)
+
+# =============================================================================
+# User programs and initrd
+# =============================================================================
 
 user: libc
 	$(MAKE) -C $(USER_DIR)
@@ -97,35 +255,42 @@ $(FS): user
 
 img: $(FS)
 
-$(KERNEL_BIN): linker.ld $(OBJECTS) $(LIBK)
-	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBK) $(LIBS)
-	grub-file --is-x86-multiboot $@
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
-	mkdir -p $(dir $@)
-	$(AS) $(ASFLAGS) $< -o $@
+# =============================================================================
+# ISO
+# =============================================================================
 
 iso: kernel libc user $(FS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
 	cp grub.cfg $(ISO_DIR)/boot/grub
-	cp $(FS) $(ISO_DIR)/boot
+	cp $(FS) $(ISO_DIR)/boot/
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
+# =============================================================================
+# QEMU
+# =============================================================================
+
 run:
-	qemu-system-i386 -cdrom $(ISO) -serial stdio -monitor none
+	qemu-system-i386 \
+		-cdrom $(ISO) \
+		-serial stdio \
+		-monitor none
+
+# =============================================================================
+# Cleanup
+# =============================================================================
 
 clean:
 	$(MAKE) -C $(LIBC_DIR) clean
+	$(MAKE) -C $(LIBK_DIR) clean
+	$(MAKE) -C $(LIBGFX_DIR) clean
 	$(MAKE) -C $(USER_DIR) clean
-	rm -rf $(BUILD_DIR)
-	rm -f $(FS)
+
+	rm -rf $(BUILD_ROOT)
 	rm -rf $(SYSROOT)
-	rm -f $(KERNEL_BIN)
-	rm -f $(ISO)
 	rm -rf $(ISO_DIR)
+
+	rm -f $(KERNEL_BIN)
+	rm -f $(FS)
+	rm -f $(ISO)
