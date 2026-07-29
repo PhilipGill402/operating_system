@@ -227,8 +227,6 @@ fs_node_t* resolve_path_from(fs_node_t* start, const char* path) {
         }
 
         fs_node_t* old_current = current;
-        log_debug("AT: %s\n", current->name);
-        log_debug("LOOKING FOR: %s\n", component);
         current = fs_finddir(current, component);
         kfree(old_current);
 
