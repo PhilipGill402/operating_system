@@ -1,4 +1,5 @@
 #include <arch/boot.h>
+#include <log.h>
 
 #include "io/serial.h"
 #include "multiboot.h"
@@ -9,7 +10,7 @@
 
 
 __attribute__((noreturn))
-void arch_i686_switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
+void arch_switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
     asm volatile(
         "mov %0, %%esp    \n\t"
         "xor %%ebp, %%ebp \n\t"
@@ -22,7 +23,7 @@ void arch_i686_switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(v
     __builtin_unreachable();
 }
 
-void arch_i686_kernel_early_init(uint32_t mbi_phys, void (*kernel_finish_init)(void)) {
+void arch_kernel_early_init(uint32_t mbi_phys, void (*kernel_finish_init)(void)) {
     serial_init(); 
 
     // mapping mbi into virtual memory
@@ -48,11 +49,10 @@ void arch_i686_kernel_early_init(uint32_t mbi_phys, void (*kernel_finish_init)(v
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
             log_error("failed to allocate frame");
-            return;
         }
 
         map_page(addr, frame, PAGE_WRITE);
     }
 
-    arch_i686_kernel_early_init(KERNEL_STACK_TOP, kernel_finish_init);
+    arch_switch_to_new_kernel_stack(KERNEL_STACK_TOP, kernel_finish_init);
 }

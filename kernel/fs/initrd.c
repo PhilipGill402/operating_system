@@ -1,5 +1,7 @@
 #include "fs/initrd.h"
 
+#include <log.h>
+
 initrd_superblock_t* superblock;
 initrd_node_t* node_table;
 uint32_t num_nodes;
@@ -133,8 +135,11 @@ fs_dirent_t* initrd_readdir(fs_node_t* node, uint32_t index) {
 }
 
 fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
+    log_debug("LOOKING FOR: %s\n", name); 
     for (uint32_t i = 0; i < superblock->node_count; i++) {
         initrd_node_t* curr_node = &node_table[i];
+        log_debug("TESTING NODE: %s\n", curr_node->name);
+        log_debug("%d == %d", curr_node->parent_id, node->inode);
         if (strcmp(curr_node->name, name) == 0 && curr_node->parent_id == node->inode) {
             fs_node_t* file = kzmalloc(sizeof(fs_node_t));
             strcpy(file->name, curr_node->name);

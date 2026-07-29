@@ -30,8 +30,8 @@
 
 multiboot_info_t* mbi;
 
-__attribute__((noreturn)) 
-void kernel_finish_init(void) {
+__attribute__(())
+void kernel_finish_init() {
     gdt_install();
     idt_install();
     
@@ -69,5 +69,5 @@ void kernel_finish_init(void) {
 }
 
 void kernel_main(uint32_t mbi_phys) {
-    arch_i686_kernel_early_init(mbi_phys, kernel_finish_init);
+    arch_kernel_early_init(mbi_phys, kernel_finish_init);
 }

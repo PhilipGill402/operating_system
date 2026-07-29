@@ -103,7 +103,7 @@ def parse_directory(dir_name, parent_id):
     os.chdir(old_dir)
 
 # creates the nodes and files classses
-parse_directory("fs", 0xFFFFFFFF)
+parse_directory("fs/bin", 0xFFFFFFFF)
 
 # set offsets for each file
 data_offset = nodes_offset + len(nodes) * node_size

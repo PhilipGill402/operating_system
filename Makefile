@@ -241,7 +241,7 @@ $(LIBC) $(CRT0):
 libgfx: $(LIBGFX)
 
 $(LIBGFX):
-	$(MAKE) -C $(LIBGFX_DIR) ARCH=$(ARCH)
+	$(MAKE) -C $(LIBGFX_DIR) install ARCH=$(ARCH)
 
 # =============================================================================
 # User programs and initrd
