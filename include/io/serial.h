@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "interrupts/port.h"
+#include <arch/interrupts/port.h>
 
 #define COM1 0x3F8
 

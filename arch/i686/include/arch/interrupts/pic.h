@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "port.h"
+#include <arch/interrupts/port.h>
 
 #define IRQ_TIMER    0
 #define IRQ_KEYBOARD 1

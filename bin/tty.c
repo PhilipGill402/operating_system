@@ -103,8 +103,6 @@ int main() {
 
     input_event_t input_event_buffer[256];
     uint8_t bytes[256];
-    
-     
 
     while (1) {
         uint8_t did_work = 0;

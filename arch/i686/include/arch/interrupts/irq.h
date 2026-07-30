@@ -3,8 +3,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "interrupts/idt.h"
-#include "interrupts/pic.h"
+
+#include <arch/interrupts/idt.h>
+#include <arch/interrupts/pic.h>
+
 #include "interrupts/keyboard.h"
 #include "timer.h"
 

@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <queue.h>
 
+#include <arch/cpu/tss.h>
+
 #include "exec/process.h"
-#include "exec/tss.h"
 
 process_t* dequeue_ready();
 void scheduler_init();

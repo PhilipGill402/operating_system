@@ -172,7 +172,7 @@ uint32_t* create_page_table(uint32_t* page_directory, uint32_t pd_idx, uint32_t 
     return new_pt;
 }
 
-void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
+void arch_map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
 
@@ -190,7 +190,7 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     invlpg((void*)virt);
 }
 
-void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint32_t flags) {
+void arch_map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint32_t flags) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
 
@@ -210,7 +210,7 @@ void map_user_page(uint32_t* page_directory, uint32_t virt, uint32_t phys, uint3
     invlpg((void*)virt);
 }
 
-uint32_t unmap_page_from(uint32_t* pd, uint32_t virt) {
+uint32_t arch_unmap_page_from(uint32_t* pd, uint32_t virt) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
     
@@ -235,7 +235,7 @@ uint32_t unmap_page_from(uint32_t* pd, uint32_t virt) {
     return phys;
 }
 
-uint32_t unmap_page(uint32_t virt) {
+uint32_t arch_unmap_page(uint32_t virt) {
     uint32_t pd_idx = (uint32_t) virt >> 22;
     uint32_t pt_idx = ((uint32_t) virt >> 12) & 0x03FF;
     
@@ -260,7 +260,7 @@ uint32_t unmap_page(uint32_t virt) {
     return phys;
 }
 
-void* alloc_kernel_page(uint32_t flags) {
+void* arch_alloc_kernel_page(uint32_t flags) {
     if (next_free_virt + PAGE_SIZE > KERNEL_VIRT_END) {
         return NULL;
     }

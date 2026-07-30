@@ -11,12 +11,13 @@
 #include <sys/fb.h>
 #include <string.h>
 
+#include <arch/registers.h>
+
 #include "io/framebuffer.h"
 #include "exec/process.h"
 #include "exec/scheduler.h"
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
-#include "interrupts/registers.h"
 #include "timer.h"
 #include "fs/fs.h"
 

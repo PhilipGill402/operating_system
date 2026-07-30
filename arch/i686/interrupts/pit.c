@@ -1,4 +1,4 @@
-#include "interrupts/port.h"
+#include <arch/interrupts/port.h>
 
 void pit_init(uint32_t frequency) {
     uint32_t divisor = 1193180 / frequency;

@@ -1,4 +1,4 @@
-#include "interrupts/irq.h"
+#include <arch/interrupts/irq.h>
 
 void irq_install_handler(uint8_t irq, irq_handler_t handler) {
     irq_routines[irq] = handler;

@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "exec/tss.h"
+
+#include <arch/cpu/tss.h>
+
 #include "memory_mapping.h"
 
 #define PAGE_SIZE 4096

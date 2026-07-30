@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include "interrupts/registers.h"
+
+#include <arch/registers.h>
+
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "memory/heap.h"

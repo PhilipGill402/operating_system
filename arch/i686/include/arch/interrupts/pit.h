@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "interrupts/port.h"
+#include <arch/interrupts/port.h>
 
 void pit_init(uint32_t frequency);
 

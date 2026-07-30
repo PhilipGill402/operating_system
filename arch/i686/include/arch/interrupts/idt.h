@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "interrupts/registers.h"
+#include <arch/registers.h>
+
 #include "syscalls.h"
 
 #define KERNEL_CS 0x08

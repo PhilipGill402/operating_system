@@ -1,4 +1,4 @@
-#include "gdt.h"
+#include <arch/cpu/gdt.h>
 
 struct gdt_entry gdt[6];
 struct gdt_ptr gp;

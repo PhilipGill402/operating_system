@@ -4,9 +4,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <arch/interrupts/idt.h>
+#include <arch/interrupts/port.h>
+
 #include "io/io.h"
-#include "interrupts/idt.h"
-#include "interrupts/port.h"
 #include "interrupts/events.h"
 #include "exec/process.h"
 

@@ -5,10 +5,11 @@
 
 #include <log.h>
 
+#include <arch/interrupts/irq.h>
+#include <arch/interrupts/port.h>
+
 #include "io/framebuffer.h"
-#include "interrupts/irq.h"
 #include "interrupts/keyboard.h"
-#include "interrupts/port.h"
 #include "interrupts/events.h"
 
 #define PS2_DATA_PORT      0x60

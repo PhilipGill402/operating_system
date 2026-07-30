@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <arch/cpu/gdt.h>
+
 typedef struct {
     uint32_t prev_tss;
     uint32_t esp0;

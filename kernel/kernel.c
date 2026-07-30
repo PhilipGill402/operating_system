@@ -6,19 +6,18 @@
 #include <stack.h>
 #include <log.h>
 
-#include "arch/boot.h"
+#include <arch/boot.h>
+#include <arch/cpu/gdt.h>
+#include <arch/asm/helpers.h>
+
 #include "io/io.h"
 #include "io/vga.h"
 #include "io/serial.h"
 #include "io/framebuffer.h"
-#include "gdt.h"
 #include "multiboot.h"
 #include "memory/physical_allocator.h"
 #include "memory/paging.h"
 #include "memory/heap.h"
-#include "interrupts/idt.h"
-#include "interrupts/irq.h"
-#include "interrupts/pit.h"
 #include "interrupts/mouse.h"
 #include "interrupts/keyboard.h"
 #include "interrupts/events.h"
@@ -32,15 +31,7 @@ multiboot_info_t* mbi;
 
 __attribute__(())
 void kernel_finish_init() {
-    gdt_install();
-    idt_install();
-    
-    pic_remap(0x20, 0x28);
-    irq_init_handlers();
-    
-    pic_clear_mask(0);
-    pic_clear_mask(1);
-    pit_init(100);
+    arch_kernel_init(); 
      
     init_heap();
     
@@ -56,7 +47,8 @@ void kernel_finish_init() {
 
     scheduler_init();
     
-    __asm__ __volatile__("sti");
+    arch_enable_interrupts();
+
     fs_node_t* tty_elf = resolve_path("/bin/tty", fs_root);
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
@@ -65,7 +57,7 @@ void kernel_finish_init() {
         schedule_and_enter();
     }
 
-    for (;;) {}
+    arch_halt();
 }
 
 void kernel_main(uint32_t mbi_phys) {

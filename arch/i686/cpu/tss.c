@@ -1,4 +1,4 @@
-#include "exec/tss.h"
+#include <arch/cpu/tss.h>
 
 tss_t tss;
 

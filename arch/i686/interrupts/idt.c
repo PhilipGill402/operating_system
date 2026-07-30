@@ -1,16 +1,9 @@
-#include "interrupts/idt.h"
-
-#include <log.h>
+#include <arch/interrupts/idt.h>
 
 struct idt_entry idt[256];
 struct idt_ptr ip;
 
 struct idt_ptr cur;
-
-void idt_debug_dump_idtr(void) {
-    __asm__ __volatile__("sidt %0" : "=m"(cur));
-    serial_printf("IDTR loaded\n");
-}
 
 void idt_set_gate(unsigned char num, unsigned long base, unsigned short seg, unsigned char flags) {
     idt[num].base_hi = (base >> 16) & 0xFFFF;
@@ -112,10 +105,6 @@ void interrupt_dispatch(regs_t* regs) {
 
     if (regs->int_no >= 32 && regs->int_no < 48) {
         irq_handler(regs);
-        
-        
-        
-
         return;
     }
 }

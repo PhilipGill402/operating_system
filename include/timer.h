@@ -3,10 +3,12 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "interrupts/idt.h"
-#include "interrupts/registers.h"
+
+#include <arch/registers.h>
+#include <arch/interrupts/idt.h>
+#include <arch/interrupts/pic.h>
+
 #include "exec/process.h"
-#include "interrupts/pic.h"
 
 extern volatile uint32_t ticks;
 
