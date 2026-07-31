@@ -43,12 +43,14 @@ static int32_t framebuffer_shared_buffer_init() {
 
         fb_shared_buffer.frames[i] = frame;
 
-        uint32_t* page = FB_SHARED_KERNEL_VADDR + i * PAGE_SIZE;
-        map_page(page, frame, PAGE_WRITE);
+        uint32_t* page = (uint32_t*)FB_SHARED_KERNEL_VADDR + i * PAGE_SIZE;
+        arch_page_map(arch_kernel_address_space(), page, frame, ARCH_PAGE_WRITE);
         memset(page, 0, PAGE_SIZE);
     }
 
     framebuffer.backbuffer = (uint32_t*)FB_SHARED_KERNEL_VADDR;
+
+    return 1;
 }
 
 int32_t framebuffer_init(multiboot_info_t* mbi) {
@@ -62,7 +64,7 @@ int32_t framebuffer_init(multiboot_info_t* mbi) {
     uint32_t fb_size = mbi->framebuffer_pitch * mbi->framebuffer_height;
 
     for (uint32_t offset = 0; offset < fb_size; offset += PAGE_SIZE) {
-        map_page(FRAMEBUFFER_VIRT + offset, fb_phys + offset, PAGE_PRESENT | PAGE_WRITE);
+        arch_page_map(arch_kernel_address_space(), FRAMEBUFFER_VIRT + offset, fb_phys + offset, ARCH_PAGE_PRESENT | ARCH_PAGE_WRITE);
     }
 
     framebuffer.addr = (uint8_t*)FRAMEBUFFER_VIRT;

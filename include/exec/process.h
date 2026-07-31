@@ -7,8 +7,8 @@
 
 #include <arch/registers.h>
 
-#include "memory/physical_allocator.h"
-#include "memory/paging.h"
+#include <arch/memory/physical_allocator.h>
+#include <arch/memory/paging.h>
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "memory_mapping.h"
@@ -105,7 +105,7 @@ typedef struct {
     uint32_t saved_kernel_esp;
     uint32_t saved_kernel_ebp;
     
-    uint32_t page_directory_phys;
+    arch_address_space_t* space;
     mem_range_t mem_ranges[MAX_SEGMENTS];
     uint8_t num_ranges;
 

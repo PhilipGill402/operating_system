@@ -1,4 +1,5 @@
-#include "memory/physical_allocator.h"
+#include <arch/memory/physical_allocator.h>
+#include <memory/internal_paging.h>
 
 pmm_t pmm;
 
@@ -108,7 +109,7 @@ void pmm_init(multiboot_info_t* mbi) {
     
     // maps bitmap to virtual memory
     for (uint32_t page = bitmap_phys; page < bitmap_phys + bitmap_pages * PAGE_SIZE; page += PAGE_SIZE) {
-        map_boot_page(page);
+        i686_map_boot_page(page);
     } 
 
     uintptr_t bitmap_virt = bitmap_phys + KERNEL_BASE;
@@ -121,7 +122,7 @@ void pmm_init(multiboot_info_t* mbi) {
     
 
     bitmap_phys = bitmap_phys & 0xFFFFF000;
-    map_boot_page(bitmap_phys);
+    i686_map_boot_page(bitmap_phys);
 
     for (uint32_t i = 0; i < (bitmap_bytes + 3) / 4; i++) {
         pmm.bitmap[i] = 0xFFFFFFFF;

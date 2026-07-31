@@ -6,17 +6,17 @@
 #include <stack.h>
 #include <log.h>
 
-#include <arch/boot.h>
+#include <arch/boot/boot.h>
 #include <arch/cpu/gdt.h>
 #include <arch/asm/helpers.h>
+#include <arch/memory/physical_allocator.h>
+#include <arch/memory/paging.h>
 
 #include "io/io.h"
 #include "io/vga.h"
 #include "io/serial.h"
 #include "io/framebuffer.h"
 #include "multiboot.h"
-#include "memory/physical_allocator.h"
-#include "memory/paging.h"
 #include "memory/heap.h"
 #include "interrupts/mouse.h"
 #include "interrupts/keyboard.h"
@@ -61,5 +61,6 @@ void kernel_finish_init() {
 }
 
 void kernel_main(uint32_t mbi_phys) {
-    arch_kernel_early_init(mbi_phys, kernel_finish_init);
+    arch_kernel_early_init(mbi_phys);
+    arch_kernel_finish_init();
 }

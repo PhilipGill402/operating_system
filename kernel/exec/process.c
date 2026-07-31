@@ -21,7 +21,6 @@ void process_send_signal(process_t* proc, uint32_t sig) {
     if (!(sig & SIGTERM) && !(sig & SIGKILL) && !(sig & SIGSTOP) && !(sig & SIGCONT))
         return;
     
-    log_debug("made it\n");
     proc->pending_signals |= sig;
     proc->interrupted_by_signal = 1;
     proc->state = PROC_READY;
@@ -145,9 +144,9 @@ process_t* process_clone(process_t* process) {
 
     new->wait_channel = NULL;
 
-    new->page_directory_phys = clone_page_directory(process->page_directory_phys);
+    new->space = arch_clone_address_space(process->space);
     
-    if (!new->page_directory_phys) {
+    if (!new->space) {
         kfree(new->trapframe);
         kfree((void*)new->kernel_stack_bottom);
         kfree(new);
@@ -175,28 +174,9 @@ process_t* process_clone(process_t* process) {
     return new;
 }
 
-uint32_t process_create_page_directory() {
-    uint32_t pd_phys = pmm_alloc_frame();
-    
-    if (!pd_phys) {
-        return 0;
-    }
-
-    uint32_t* pd = temp_map_phys0(pd_phys);
-    memset(pd, 0, PAGE_SIZE);
-
-    for (uint32_t i = 768; i < 1024; i++) {
-        pd[i] = kernel_page_directory[i];
-    }
-
-    return pd_phys;
-}
-
 uint32_t process_init_stack(process_t* process) {
     uint32_t stack_bottom = USER_STACK_BOTTOM; 
     uint32_t stack_top = USER_STACK_TOP;
-
-    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
 
     for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();

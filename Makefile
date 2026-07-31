@@ -59,10 +59,17 @@ FS := initrd.img
 # Compiler and linker flags
 # =============================================================================
 
-CPPFLAGS := \
+# Include paths available to all kernel and architecture source files.
+COMMON_CPPFLAGS := \
 	-I$(KERNEL_INC_DIR) \
-	-I$(ARCH_INC_DIR) \
 	-I$(LIBK_INC)
+
+# Private architecture include path.
+#
+# Only source files under arch/$(ARCH) are compiled with this path.
+# Generic kernel files cannot include architecture-private headers.
+ARCH_CPPFLAGS := \
+	-I$(ARCH_INC_DIR)
 
 CFLAGS := \
 	-std=gnu99 \
@@ -91,6 +98,9 @@ KERNEL_C_SOURCES := \
 
 KERNEL_ASM_SOURCES := \
 	$(shell find $(KERNEL_DIR) -type f -name '*.s')
+
+KERNEL_CPP_ASM_SOURCES := \
+	$(shell find $(KERNEL_DIR) -type f -name '*.S')
 
 ARCH_C_SOURCES := \
 	$(shell find $(ARCH_DIR) -type f -name '*.c')
@@ -123,6 +133,9 @@ KERNEL_C_OBJECTS := \
 KERNEL_ASM_OBJECTS := \
 	$(patsubst %.s,$(BUILD_DIR)/%.o,$(KERNEL_ASM_SOURCES))
 
+KERNEL_CPP_ASM_OBJECTS := \
+	$(patsubst %.S,$(BUILD_DIR)/%.o,$(KERNEL_CPP_ASM_SOURCES))
+
 ARCH_C_OBJECTS := \
 	$(patsubst %.c,$(BUILD_DIR)/%.o,$(ARCH_C_SOURCES))
 
@@ -137,6 +150,7 @@ OBJECTS := \
 	$(ARCH_CPP_ASM_OBJECTS) \
 	$(ARCH_C_OBJECTS) \
 	$(KERNEL_ASM_OBJECTS) \
+	$(KERNEL_CPP_ASM_OBJECTS) \
 	$(KERNEL_C_OBJECTS)
 
 LIBC_HEADERS := \
@@ -163,7 +177,7 @@ all: kernel
 
 kernel: $(KERNEL_BIN)
 
-debug: CPPFLAGS += -DMALLOC_DEBUG
+debug: COMMON_CPPFLAGS += -DMALLOC_DEBUG
 debug: kernel
 
 # =============================================================================
@@ -175,36 +189,62 @@ $(KERNEL_BIN): $(ARCH_LINKER_SCRIPT) $(OBJECTS) $(LIBK)
 	grub-file --is-x86-multiboot $@
 
 # =============================================================================
-# C compilation
+# Generic kernel C compilation
 #
-# This one pattern rule handles both:
-#   kernel/*.c
-#   arch/i686/*.c
-#
-# because the prerequisite path is preserved after build/i686/.
+# Generic kernel files receive only public include paths.
+# They cannot include headers from arch/$(ARCH)/include.
 # =============================================================================
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/kernel/%.o: kernel/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(COMMON_CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # =============================================================================
-# Assembly compilation
+# Architecture-specific C compilation
 #
-# Lowercase .s:
-#   assembled directly without preprocessing
+# Architecture implementation files receive both:
 #
-# Uppercase .S:
-#   compiled through GCC so CPPFLAGS and #include work
+#   - public kernel include paths
+#   - private architecture include paths
 # =============================================================================
 
-$(BUILD_DIR)/%.o: %.s
+$(BUILD_DIR)/$(ARCH_DIR)/%.o: $(ARCH_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) \
+		$(COMMON_CPPFLAGS) \
+		$(ARCH_CPPFLAGS) \
+		$(CFLAGS) \
+		-c $< \
+		-o $@
+
+# =============================================================================
+# Generic kernel assembly compilation
+# =============================================================================
+
+$(BUILD_DIR)/kernel/%.o: kernel/%.s
 	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: %.S
+$(BUILD_DIR)/kernel/%.o: kernel/%.S
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(COMMON_CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# =============================================================================
+# Architecture-specific assembly compilation
+# =============================================================================
+
+$(BUILD_DIR)/$(ARCH_DIR)/%.o: $(ARCH_DIR)/%.s
+	@mkdir -p $(dir $@)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/$(ARCH_DIR)/%.o: $(ARCH_DIR)/%.S
+	@mkdir -p $(dir $@)
+	$(CC) \
+		$(COMMON_CPPFLAGS) \
+		$(ARCH_CPPFLAGS) \
+		$(CFLAGS) \
+		-c $< \
+		-o $@
 
 # =============================================================================
 # Kernel library

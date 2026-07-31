@@ -7,8 +7,9 @@
 
 #include <log.h>
 
+#include <arch/memory/paging.h>
+
 #include "multiboot.h"
-#include "memory/paging.h"
 #include "memory/heap.h"
 #include "memory_mapping.h"
 

@@ -12,12 +12,12 @@
 #include <string.h>
 
 #include <arch/registers.h>
+#include <arch/memory/physical_allocator.h>
+#include <arch/memory/paging.h>
 
 #include "io/framebuffer.h"
 #include "exec/process.h"
 #include "exec/scheduler.h"
-#include "memory/physical_allocator.h"
-#include "memory/paging.h"
 #include "timer.h"
 #include "fs/fs.h"
 

@@ -112,12 +112,12 @@ void init_heap(){
             return;
         }
 
-        map_page(addr, frame, PAGE_WRITE);
+        arch_page_map(arch_kernel_address_space(), addr, frame, ARCH_PAGE_WRITE);
     }
 
     heap.ptr = (uint8_t*)KHEAP_START;
     heap.size = KHEAP_END - KHEAP_START;
-    heap.end = KHEAP_END; 
+    heap.end = (uint8_t*)KHEAP_END; 
 
     kblock_t* block = (kblock_t*)heap.ptr;
     block->size = heap.size;

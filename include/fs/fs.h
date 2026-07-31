@@ -5,8 +5,10 @@
 #include <stddef.h>
 #include <string.h>
 #include <log.h>
+
+#include <arch/memory/paging.h>
+
 #include "multiboot.h"
-#include "memory/paging.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "fs/devfs/devfs.h"

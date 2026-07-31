@@ -123,10 +123,10 @@ static uint32_t vma_find_free_range(process_t* proc, uint32_t length) {
 }
 
 static uint32_t mmap_prot_to_page_flags(prot) {
-    uint32_t page_flags = PAGE_USER | PAGE_PRESENT;
+    uint32_t page_flags = ARCH_PAGE_USER | ARCH_PAGE_PRESENT;
 
     if (prot & PROT_WRITE) {
-        page_flags |= PAGE_WRITE;
+        page_flags |= ARCH_PAGE_WRITE;
     }
 
     return page_flags;
@@ -321,11 +321,11 @@ int32_t sys_munmap(void* addr, uint32_t length) {
     if (!area)
         return -1;
     
-    uint32_t* pd = temp_map_phys1(proc->page_directory_phys);
+    uint32_t* pd = arch_phys_temp_map(1, proc->page_directory_phys);
     
     for (uint32_t i = 0; i < area->frame_count; i++) {
         uint32_t virt = area->start + i * PAGE_SIZE;
-
+        
         uint32_t frame = unmap_page_from(pd, virt);
 
         if (area->frames[i] && area->owns_frames)
@@ -334,6 +334,7 @@ int32_t sys_munmap(void* addr, uint32_t length) {
 
     kfree(area->frames);
     kfree(area);
+    arch_phys_temp_unmap(1);
 
     return 0;
 }
@@ -393,7 +394,7 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
 
     uint32_t page_flags = mmap_prot_to_page_flags(prot);
     
-    uint32_t* pd = temp_map_phys0(proc->page_directory_phys); 
+    uint32_t* pd = arch_phys_temp_map(0, proc->page_directory_phys); 
     for (uint32_t i = 0; i < fb_shared_buffer.frame_count; i++) {
         map_user_page(pd, start + i * PAGE_SIZE, fb_shared_buffer.frames[i], page_flags);
     }
@@ -403,6 +404,8 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     area->next = proc->vmas;
     proc->vmas = area;
     
+    arch_phys_temp_unmap(0);
+
     return (void*)start;
 }
 
@@ -464,12 +467,14 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
 
         map_user_page(pd, start + i * PAGE_SIZE, frame, page_flags);
 
-        void* tmp = temp_map_phys0(frame);
+        void* tmp = arch_phys_temp_map(0, frame);
         memset(tmp, 0, PAGE_SIZE);
     }
 
     area->next = proc->vmas;
     proc->vmas = area;
+
+    arch_phys_temp_unmap(0);
 
     return (void*)start;
 }
@@ -626,22 +631,25 @@ void* sys_brk(void* new_addr) {
     }
     
 
-    uint32_t* pd = temp_map_phys0(current_process->page_directory_phys);
+    uint32_t* pd = arch_phys_temp_map(0, current_process->page_directory_phys);
     while (addr > current_process->heap_mapped_end) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
             return EFAULT;
         }
 
-        map_user_page(pd, current_process->heap_mapped_end, frame, PAGE_WRITE);
+        map_user_page(pd, current_process->heap_mapped_end, frame, ARCH_PAGE_WRITE);
         
-        uint8_t* page = temp_map_phys1(frame);
+        uint8_t* page = arch_phys_temp_map(1, frame);
         memset(page, 0, PAGE_SIZE);
 
         current_process->heap_mapped_end += PAGE_SIZE;
+        arch_phys_temp_unmap(1);
     }
     
     current_process->heap_break = addr;
+    arch_phys_temp_unmap(0);
+
     return (void*)addr;
 }
 
