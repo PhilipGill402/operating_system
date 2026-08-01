@@ -321,15 +321,15 @@ int32_t sys_munmap(void* addr, uint32_t length) {
     if (!area)
         return -1;
     
-    uint32_t* pd = arch_phys_temp_map(1, proc->page_directory_phys);
-    
     for (uint32_t i = 0; i < area->frame_count; i++) {
         uint32_t virt = area->start + i * PAGE_SIZE;
         
-        uint32_t frame = unmap_page_from(pd, virt);
+        uint32_t frame = arch_page_unmap(current_process->addr_space, virt);
 
-        if (area->frames[i] && area->owns_frames)
-            pmm_free_frame(area->frames[i]);
+        if (frame && area->owns_frames) {
+            if (area->frames[i] && frame == area->frames[i])
+                pmm_free_frame(area->frames[i]);
+        }
     }
 
     kfree(area->frames);
@@ -394,9 +394,11 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
 
     uint32_t page_flags = mmap_prot_to_page_flags(prot);
     
-    uint32_t* pd = arch_phys_temp_map(0, proc->page_directory_phys); 
     for (uint32_t i = 0; i < fb_shared_buffer.frame_count; i++) {
-        map_user_page(pd, start + i * PAGE_SIZE, fb_shared_buffer.frames[i], page_flags);
+        if (!arch_page_map(current_process->addr_space, start + i * PAGE_SIZE, fb_shared_buffer.frames[i], ARCH_PAGE_USER | page_flags)) {
+            log_error("Failed to map framebuffer frame");
+            return NULL;
+        }
     }
     
     fb_shared_buffer.owner_pid = proc->pid;
@@ -404,7 +406,6 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     area->next = proc->vmas;
     proc->vmas = area;
     
-    arch_phys_temp_unmap(0);
 
     return (void*)start;
 }
@@ -421,11 +422,8 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
     if ((flags & MAP_FRAMEBUFFER) == MAP_FRAMEBUFFER)
         return mmap_framebuffer(addr, length, prot, flags);
 
-    uint32_t* pd = temp_map_phys1(proc->page_directory_phys);
-
-    if (!proc || !pd) {
+    if (!proc)
         return NULL;
-    }
 
     uint32_t rounded_length = PAGE_ALIGN_UP(length);
 
@@ -465,7 +463,7 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
         uint32_t frame = pmm_alloc_frame();
         area->frames[i] = frame;
 
-        map_user_page(pd, start + i * PAGE_SIZE, frame, page_flags);
+        arch_page_map(current_process->addr_space, start + i * PAGE_SIZE, frame, ARCH_PAGE_USER | page_flags);
 
         void* tmp = arch_phys_temp_map(0, frame);
         memset(tmp, 0, PAGE_SIZE);
@@ -630,15 +628,13 @@ void* sys_brk(void* new_addr) {
         return EFAULT;
     }
     
-
-    uint32_t* pd = arch_phys_temp_map(0, current_process->page_directory_phys);
     while (addr > current_process->heap_mapped_end) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
             return EFAULT;
         }
 
-        map_user_page(pd, current_process->heap_mapped_end, frame, ARCH_PAGE_WRITE);
+        arch_page_map(current_process->addr_space, current_process->heap_mapped_end, frame, ARCH_PAGE_USER | ARCH_PAGE_WRITE);
         
         uint8_t* page = arch_phys_temp_map(1, frame);
         memset(page, 0, PAGE_SIZE);
@@ -648,7 +644,6 @@ void* sys_brk(void* new_addr) {
     }
     
     current_process->heap_break = addr;
-    arch_phys_temp_unmap(0);
 
     return (void*)addr;
 }

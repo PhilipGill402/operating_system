@@ -10,6 +10,7 @@
 #define I686_PAGE_USER      4
 
 #define I686_ADDR_MASK      0xFFFFF000
+#define I686_FLAG_MASK      0xFFF
 
 #define TEMP_PD_INDEX_0 769
 #define TEMP_PD_INDEX_1 770
@@ -17,10 +18,16 @@
 #define TEMP_PD_INDEX_3 772
 #define TEMP_PD_INDEX_4 773
 #define TEMP_PD_INDEX_5 774
+    
+// max processes
+#define MAX_ADDRESS_SPACES 64
 
 struct arch_address_space {
     uint32_t* directory_virt;
     uint32_t directory_phys;
 };
+
+static struct arch_address_space address_space_pool[MAX_ADDRESS_SPACES];
+static uint8_t address_space_used[MAX_ADDRESS_SPACES];
 
 #endif // !INCLUDE_ARCH_MEMORY_PAGING_DEFS_H_

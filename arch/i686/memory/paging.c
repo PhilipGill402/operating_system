@@ -38,6 +38,20 @@ static uint32_t i686_translate_page_flags(uint32_t flags) {
     return result;
 }
 
+static uint32_t i686_translate_to_arch_flags(uint32_t flags) {
+    uint32_t result = ARCH_PAGE_PRESENT;
+
+    if (flags & I686_PAGE_WRITE) {
+        result |= ARCH_PAGE_WRITE;
+    }
+
+    if (flags & I686_PAGE_USER) {
+        result |= ARCH_PAGE_USER;
+    }
+
+    return flags;
+}
+
 static uint32_t* create_page_table(arch_address_space_t* space, uint32_t pd_idx, uint32_t flags) {
     uint32_t pt_phys = pmm_alloc_frame();
     if (!pt_phys) {
@@ -87,7 +101,7 @@ void i686_map_boot_page(uint32_t phys_addr) {
     uint32_t virt_addr = phys_addr + KERNEL_BASE;
     uint32_t pt_idx = (virt_addr >> 12) & 0x3FF;
 
-    boot_page_table1[pt_idx] = (phys_addr & 0xFFFFF000) | I686_PAGE_PRESENT | I686_PAGE_WRITE;
+    boot_page_table1[pt_idx] = (phys_addr & I686_ADDR_MASK) | I686_PAGE_PRESENT | I686_PAGE_WRITE;
     i686_invlpg((void*)virt_addr);
 }
 
@@ -142,8 +156,8 @@ void* arch_phys_temp_map(uint32_t slot, uint32_t phys_addr) {
     uint32_t virt = TEMP_MAP_BASE + slot * PAGE_SIZE;
     uint32_t pt_idx = (virt >> 12) & 0x03FF;
 
-    uint32_t phys_page = phys_addr & 0xFFFFF000;
-    uint32_t offset = phys_addr & 0x00000FFF;
+    uint32_t phys_page = phys_addr & I686_ADDR_MASK;
+    uint32_t offset = phys_addr & I686_FLAG_MASK;
 
     temp_page_table[pt_idx] = phys_page | I686_PAGE_PRESENT | I686_PAGE_WRITE;
 
@@ -196,22 +210,22 @@ arch_address_space_t* arch_kernel_address_space(void) {
 }
 
 /* *** ADDRESS SPACE MANAGEMENT *** */
-uint8_t arch_address_space_create(arch_address_space_t* space) {
+arch_address_space_t* arch_address_space_create(void) {
     uint32_t phys = pmm_alloc_frame();
     if (!phys) {
-        return 0;
+        return NULL;
     }
 
     uint32_t* virt = (uint32_t*)get_address_space();
     if (!virt) {
         pmm_free_frame(phys);
-        return 0;
+        return NULL;
     }
 
     if (!arch_page_map(&kernel_space, (uintptr_t)virt, phys, ARCH_PAGE_WRITE)) {
         release_address_space(virt); 
         pmm_free_frame(phys);
-        return 0;
+        return NULL;
     }
 
     memset(virt, 0, PAGE_SIZE);
@@ -221,10 +235,91 @@ uint8_t arch_address_space_create(arch_address_space_t* space) {
         virt[entry] = kernel_space.directory_virt[entry];
     }
     
+    arch_address_space_t* space = allocate_address_space_object();
+    if (!space) {
+        arch_page_unmap(&kernel_space,(uintptr_t)virt);
+        release_address_space(virt);
+        pmm_free_frame(phys);
+        return NULL;
+    }
+
     space->directory_virt = virt;
     space->directory_phys = phys;
 
-    return 1;
+    return space;
+}
+
+arch_address_space_t* arch_address_space_clone(arch_address_space_t* old) {
+    arch_address_space_t* new = arch_address_space_create();
+    if (!new)
+        return NULL;
+    
+    for (uint32_t pd_idx = 0; pd_idx < 768; pd_idx++) {
+        if (!(old->directory_virt[pd_idx] & I686_PAGE_PRESENT)) continue;
+        if (!(old->directory_virt[pd_idx] & I686_PAGE_USER)) continue;
+
+        uint32_t parent_pt_phys = old->directory_virt[pd_idx] & I686_ADDR_MASK;
+        uint32_t* parent_pt = arch_phys_temp_map(1, parent_pt_phys);
+        if (!parent_pt)
+            return NULL;
+        
+        for (uint32_t pt_idx = 0; pt_idx < 1024; pt_idx++) {
+            uint32_t pte = parent_pt[pt_idx];
+
+            if (!(pte & I686_PAGE_PRESENT)) continue;
+
+            uint32_t parent_frame = pte & I686_ADDR_MASK;
+            uint32_t flags = pte & I686_FLAG_MASK;
+            
+            uint32_t child_frame = pmm_alloc_frame();
+            if (!child_frame) {
+                arch_phys_temp_unmap(1);
+                arch_address_space_destroy(new);
+                return NULL;
+            }
+
+            uint32_t* src = arch_phys_temp_map(3, parent_frame);
+            uint32_t* dst = arch_phys_temp_map(4, child_frame);
+            if (!src) {
+                arch_phys_temp_unmap(4);
+                arch_phys_temp_unmap(1);
+                arch_address_space_destroy(new);
+                pmm_free_frame(child_frame);
+                return NULL;
+            }
+
+            if (!dst) {
+                arch_phys_temp_unmap(3);
+                arch_phys_temp_unmap(1);
+                arch_address_space_destroy(new);
+                pmm_free_frame(child_frame);
+                return NULL;
+            }
+
+            memcpy(dst, src, PAGE_SIZE);
+
+            uint32_t virt = (pd_idx << 22) | (pt_idx << 12);
+            flags = i686_translate_to_arch_flags(flags); 
+
+            if (!arch_page_map(new, virt, child_frame, flags)) {
+                arch_phys_temp_unmap(4);
+                arch_phys_temp_unmap(3);
+                arch_phys_temp_unmap(1);
+                
+                pmm_free_frame(child_frame);
+                
+                arch_address_space_destroy(new);
+                return NULL;
+            }
+
+            arch_phys_temp_unmap(3);
+            arch_phys_temp_unmap(4);
+        }
+
+        arch_phys_temp_unmap(1);
+    }
+
+    return new;
 }
 
 void arch_address_space_destroy(arch_address_space_t* address_space) {
@@ -246,17 +341,12 @@ void arch_address_space_destroy(arch_address_space_t* address_space) {
 
         for (uint32_t pte_idx = 0; pte_idx < 1024; pte_idx++) {
             uint32_t pte = page_table[pte_idx];
-
-
-            if ((pte & I686_PAGE_PRESENT) == 0)
-                continue;
-
-            uint32_t pte_phys = pte & I686_ADDR_MASK;
             
-            // TODO: Check if the address space owns this frame 
-            pmm_free_frame(pte_phys);
-            page_table[pte_idx] = 0;
-
+            if (pte & I686_PAGE_PRESENT) {
+                log_error("unfreed frame found in address space, leaking memory");
+                arch_phys_temp_unmap(5); 
+                return;
+            }
         }
 
         address_space->directory_virt[pde_idx] = 0;
@@ -268,9 +358,7 @@ void arch_address_space_destroy(arch_address_space_t* address_space) {
     arch_page_unmap(&kernel_space, (uint32_t)address_space->directory_virt);
     release_address_space(address_space->directory_virt);
     pmm_free_frame(address_space->directory_phys);
-
-    address_space->directory_virt = NULL;
-    address_space->directory_phys = 0;
+    release_address_space_object(address_space); 
 }
 
 uint8_t arch_address_space_activate(arch_address_space_t* address_space) {

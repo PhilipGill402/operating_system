@@ -45,53 +45,11 @@ void process_init_trapframe(process_t* process) {
 
 }
 
-uint32_t clone_page_directory(uint32_t parent_page_directory_phys) {
-    uint32_t child_pd_phys = process_create_page_directory();
-    uint32_t* parent_pd = temp_map_phys0(parent_page_directory_phys);
-    uint32_t* child_pd  = temp_map_phys1(child_pd_phys);
-
-    for (uint32_t pd_idx = 0; pd_idx < 768; pd_idx++) {
-        if (!(parent_pd[pd_idx] & PAGE_PRESENT)) continue;
-        if (!(parent_pd[pd_idx] & PAGE_USER)) continue;
-
-        uint32_t parent_pt_phys = parent_pd[pd_idx] & 0xFFFFF000;
-        uint32_t* parent_pt = temp_map_phys2(parent_pt_phys);
-        
-        for (uint32_t pt_idx = 0; pt_idx < 1024; pt_idx++) {
-            uint32_t pte = parent_pt[pt_idx];
-
-            if (!(pte & PAGE_PRESENT)) continue;
-
-            uint32_t parent_frame = pte & 0xFFFFF000;
-            uint32_t flags = pte & 0xFFF;
-
-            uint32_t child_frame = pmm_alloc_frame();
-            if (!child_frame) {
-                return 0;
-            }
-
-            uint32_t* src = temp_map_phys3(parent_frame);
-            uint32_t* dst = temp_map_phys4(child_frame);
-            memcpy(dst, src, PAGE_SIZE);
-
-            uint32_t virt = (pd_idx << 22) | (pt_idx << 12);
-            
-            map_user_page(child_pd, virt, child_frame, flags);
-        }
-    }
-
-    
-
-    return child_pd_phys;
-}
-
 process_t* process_clone(process_t* process) {
     process_t* new = kzmalloc(sizeof(process_t));
     
-    
-    if (!new) {
+    if (!new)
         return NULL;
-    }
 
     memcpy(new, process, sizeof(process_t));
     
@@ -143,15 +101,15 @@ process_t* process_clone(process_t* process) {
     new->pending_signals = 0;
 
     new->wait_channel = NULL;
-
-    new->space = arch_clone_address_space(process->space);
     
-    if (!new->space) {
+    new->addr_space = arch_address_space_clone(process->addr_space);
+    if (!new->addr_space) {
         kfree(new->trapframe);
         kfree((void*)new->kernel_stack_bottom);
         kfree(new);
         return NULL;
     }
+    
     
     memset(new->fds, 0, sizeof(new->fds));
     new->open_fds = 0;
@@ -180,20 +138,34 @@ uint32_t process_init_stack(process_t* process) {
 
     for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
         uint32_t frame = pmm_alloc_frame();
-        if (!frame) {
-            return 0;
-        }
+        if (!frame)
+            goto fail;
 
-        map_user_page(pd, addr, frame, PAGE_WRITE);
+        if (!arch_page_map(process->addr_space, addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
+            goto fail;
 
-        uint8_t* page = (uint8_t*)temp_map_phys1(frame);
+        uint8_t* page = (uint8_t*)arch_phys_temp_map(1, frame);
+        if (!page)
+            goto fail;
+
         memset(page, 0, PAGE_SIZE);
+
+        arch_phys_temp_unmap(1);
     }
 
     process->user_stack_top = stack_top;
     process->user_stack_bottom = stack_bottom;
 
     return 1;
+
+fail:
+    for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
+        uint32_t frame = arch_page_unmap(process->addr_space, addr);
+        if (frame)
+            pmm_free_frame(frame);
+    }
+
+    return 0;
 }
 
 uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
@@ -225,16 +197,28 @@ uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
 
 uint32_t process_init_heap(process_t* process) {
     uint32_t heap_start = align_up(process->image_end, PAGE_SIZE);
-    
-    uint32_t* pd = temp_map_phys0(process->page_directory_phys);
-    uint32_t frame = pmm_alloc_frame();
-    if (!frame) {
-        return 0;
-    }
 
-    map_user_page(pd, heap_start, frame, PAGE_WRITE);
+    uint8_t frame_allocated = 0;
+    uint8_t page_allocated = 0;
+    uint8_t page_mapped = 0;
     
-    uint8_t* page = temp_map_phys1(frame);
+    uint32_t frame = pmm_alloc_frame();
+    if (!frame)
+        goto fail;
+
+    frame_allocated = 1;
+
+    if (!arch_page_map(process->addr_space, heap_start, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
+        goto fail;
+
+    page_allocated = 1;
+
+    uint8_t* page = arch_phys_temp_map(0, frame);
+    if (!page)
+        goto fail;
+
+    page_mapped = 1;
+
     memset(page, 0, PAGE_SIZE);
 
     process->heap_start = heap_start;
@@ -244,8 +228,22 @@ uint32_t process_init_heap(process_t* process) {
                                                               
     if (process->heap_max_end >= USER_MMAP_BASE)
         process->heap_max_end = USER_MMAP_BASE - 1;
-                                                             
+    
+    arch_phys_temp_unmap(0);
+    
     return 1;
+
+fail:
+    if (page_mapped)
+        arch_phys_temp_unmap(0);
+    
+    if (page_allocated)
+        arch_page_unmap(process->addr_space, heap_start);
+    
+    if (frame_allocated)
+        pmm_free_frame(frame);
+    
+    return 0;
 }
 
 void process_init_file_descriptors(process_t* process) {
@@ -277,7 +275,7 @@ void process_destroy(process_t* process) {
         uint32_t end = process->mem_ranges[i].end;
 
         for (uint32_t addr = start; addr < end; addr += PAGE_SIZE) {
-            uint32_t frame = unmap_page(addr);
+            uint32_t frame = arch_page_unmap(process->addr_space, addr);
             if (frame) {
                 pmm_free_frame(frame);
             }
@@ -286,18 +284,18 @@ void process_destroy(process_t* process) {
 
     // cleans up process virtual memory
     vm_area_t* vma = process->vmas;
-    uint32_t* pd = temp_map_phys1(process->page_directory_phys);
-    
     while (vma) {
         vm_area_t* next = vma->next;
 
         for (uint32_t i = 0; i < vma->frame_count; i++) {
             uint32_t virt = vma->start + i * PAGE_SIZE;
 
-            uint32_t frame = unmap_page_from(pd, virt);
+            uint32_t frame = arch_page_unmap(process->addr_space, virt);
 
-            if (vma->frames[i] && vma->owns_frames)
-                pmm_free_frame(vma->frames[i]);
+            if (vma->owns_frames && frame) {
+                if (vma->frames[i] && vma->frames[i] == frame)
+                    pmm_free_frame(vma->frames[i]);
+            }
         }
 
         kfree(vma->frames);
@@ -308,10 +306,17 @@ void process_destroy(process_t* process) {
 
     // cleans up the user stack memory
     for (uint32_t addr = process->user_stack_bottom; addr < process->user_stack_top; addr += PAGE_SIZE) {
-        uint32_t frame = unmap_page(addr);
-        if (frame) {
+        uint32_t frame = arch_page_unmap(process->addr_space, addr);
+        if (frame)
             pmm_free_frame(frame);
-        }
+    }
+
+    // cleans up heap memory
+    for (uint32_t addr = process->heap_start; addr < process->heap_mapped_end; addr += PAGE_SIZE) {
+        uint32_t frame = arch_page_unmap(process->addr_space, addr);
+
+        if (frame)
+            pmm_free_frame(frame);
     }
     
     // free all file descriptor nodes
@@ -321,15 +326,20 @@ void process_destroy(process_t* process) {
 
         memset(&process->fds[i], 0, sizeof(file_desc_t*));
     }
+    
+    if (current_process == process) {
+        arch_address_space_activate(arch_kernel_address_space());
+        current_process = NULL;
+    }
 
+    arch_address_space_destroy(process->addr_space);
     
     // frees heap allocated variables
     kfree(process->cwd);
     kfree(process->kernel_stack_bottom);
-    kfree(process);
     
     process_table[process->pid] = NULL;
 
-    process = NULL;
+    kfree(process);
 }
 

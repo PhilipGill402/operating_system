@@ -151,17 +151,23 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
         uint32_t page_start = seg_start & ~(PAGE_SIZE - 1);
         uint32_t page_end = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
-        uint32_t* pd = temp_map_phys0(process->page_directory_phys);
-
         for (uint32_t vaddr = page_start; vaddr < page_end; vaddr += PAGE_SIZE) {
             uint32_t frame = pmm_alloc_frame();
             if (!frame) {
                 return 0;
             }
 
-            map_user_page(pd, vaddr, frame, PAGE_WRITE);
+            if (!arch_page_map(process->addr_space, vaddr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER)) {
+                pmm_free_frame(frame);
+                return 0;
+            }
 
-            uint8_t* page = (uint8_t*)temp_map_phys1(frame);
+            uint8_t* page = (uint8_t*)arch_phys_temp_map(1, frame);
+            if (!page) {
+                pmm_free_frame(frame);
+                return 0;
+            }
+
             memset(page, 0, PAGE_SIZE);
 
             uint32_t copy_start = vaddr;
@@ -181,6 +187,8 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
 
                 memcpy(page + dst_off, elf + src_off, nbytes);
             }
+
+            arch_phys_temp_unmap(1);
         }
 
         process->mem_ranges[count++] = (mem_range_t){ .start = page_start, .end = page_end };
@@ -205,23 +213,21 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         return 0;
     }
     
-    uint32_t old_pd = process->page_directory_phys;
-    uint32_t new_pd = process_create_page_directory();
+    arch_address_space_t* old_addr_space = process->addr_space;
+    process->addr_space = arch_address_space_create();
     
-    if (!new_pd) {
+    if (!process->addr_space) {
         kfree(buffer);
-        process->page_directory_phys = old_pd;
+        process->addr_space = old_addr_space;
         return 0;
     }
 
-    process->page_directory_phys = new_pd;
-    
-    load_cr3(new_pd);
+    arch_address_space_activate(process->addr_space);
 
     if (!elf_load(buffer, size, process)) {
-        process->page_directory_phys = old_pd; 
+        process->addr_space = old_addr_space;
         kfree(buffer);
-        load_cr3(old_pd);
+        arch_address_space_activate(process->addr_space);
         return 0;
     }
     
@@ -229,18 +235,18 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
     process->entry = header->e_entry;
     
     if (!process_init_stack(process)) {
-        process->page_directory_phys = old_pd;
+        process->addr_space = old_addr_space;
         kfree(buffer);
-        load_cr3(old_pd);
+        arch_address_space_activate(process->addr_space);
         return 0;
     }
     
     uint32_t user_sp = process_add_argv_to_stack(process, args);
         
     if (!process_init_heap(process)) {
-        process->page_directory_phys = old_pd;
+        process->addr_space = old_addr_space;
         kfree(buffer);
-        load_cr3(old_pd);
+        arch_address_space_activate(old_addr_space);
         return 0;
     }
     
@@ -276,15 +282,15 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
     uint32_t entry = header->e_entry;
     process->entry = header->e_entry;
-    process->page_directory_phys = process_create_page_directory();
-    if (!process->page_directory_phys) {
-        log_error("failed to init the page directory\n"); 
+    process->addr_space = arch_address_space_create();
+    if (!process->addr_space) {
+        log_error("failed to init the address space"); 
         kfree(buf);
         process_destroy(process);
         return NULL;
     }
 
-    load_cr3(process->page_directory_phys);
+    arch_address_space_activate(process->addr_space);
     
     if (!elf_load(buf, size, process)) {
         log_error("failed to load the elf\n"); 
@@ -343,12 +349,6 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     
     process->pending_signals = 0;
 
-    if (!process->page_directory_phys) {
-        kfree(buf);
-        process_destroy(process);
-        return NULL;
-    }
-
     process_table[process->pid] = process;
     
     strcpy(process->name, elf->name);
@@ -367,6 +367,4 @@ void elf_execute(fs_node_t* elf) {
 
     enqueue(&current_processes, &process);
 }
-
-
 

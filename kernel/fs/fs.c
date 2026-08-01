@@ -112,7 +112,8 @@ uint8_t fs_init(multiboot_info_t* mbi) {
     }
 
     for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
-        map_page(MULTIBOOT_VIRT_START + offset, page, PAGE_WRITE);
+        if (!arch_page_map(arch_kernel_address_space(), MULTIBOOT_VIRT_START + offset, page, ARCH_PAGE_WRITE))
+            return 0;
     }
     
     uint32_t mods_offset = mods_start & (PAGE_SIZE - 1);
@@ -131,7 +132,8 @@ uint8_t fs_init(multiboot_info_t* mbi) {
     }
 
     for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
-        map_page(INITRD_VIRT_ADDRESS + offset, page, PAGE_WRITE);
+        if (!arch_page_map(arch_kernel_address_space(), INITRD_VIRT_ADDRESS + offset, page, ARCH_PAGE_WRITE))
+            return 0;
     }
 
     uint32_t initrd_location = INITRD_VIRT_ADDRESS + (mod_start & 0xFFF);

@@ -43,7 +43,7 @@ static int32_t framebuffer_shared_buffer_init() {
 
         fb_shared_buffer.frames[i] = frame;
 
-        uint32_t* page = (uint32_t*)FB_SHARED_KERNEL_VADDR + i * PAGE_SIZE;
+        uintptr_t page = FB_SHARED_KERNEL_VADDR + (uintptr_t)i * PAGE_SIZE;
         arch_page_map(arch_kernel_address_space(), page, frame, ARCH_PAGE_WRITE);
         memset(page, 0, PAGE_SIZE);
     }

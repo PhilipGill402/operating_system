@@ -31,8 +31,6 @@ multiboot_info_t* mbi;
 
 __attribute__(())
 void kernel_finish_init() {
-    arch_kernel_init(); 
-     
     init_heap();
     
     fs_init(mbi);
@@ -62,5 +60,4 @@ void kernel_finish_init() {
 
 void kernel_main(uint32_t mbi_phys) {
     arch_kernel_early_init(mbi_phys);
-    arch_kernel_finish_init();
 }

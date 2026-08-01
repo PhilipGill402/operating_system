@@ -88,7 +88,7 @@ void scheduler_idle_loop() {
         current_process->state = PROC_RUNNING;
         current_process->ticks_left = DEFAULT_MAX_TICKS;
 
-        load_cr3(current_process->page_directory_phys);
+        arch_address_space_activate(current_process->addr_space);
         tss_set_kernel_stack(current_process->kernel_stack_top);
         complete_pending_wait(current_process);
 
@@ -111,7 +111,7 @@ void schedule_and_enter() {
     current_process->state = PROC_RUNNING;
     current_process->ticks_left = DEFAULT_MAX_TICKS;
     
-    load_cr3(current_process->page_directory_phys);
+    arch_address_space_activate(current_process->addr_space);
     tss_set_kernel_stack(current_process->kernel_stack_top);
     complete_pending_wait(next);
     enter_user_mode_from_trapframe(current_process->trapframe);
@@ -158,7 +158,7 @@ void schedule_from_interrupt(regs_t* r) {
     current_process->state = PROC_RUNNING;
     current_process->ticks_left = DEFAULT_MAX_TICKS;
 
-    load_cr3(current_process->page_directory_phys);
+    arch_address_space_activate(current_process->addr_space);
     tss_set_kernel_stack(current_process->kernel_stack_top);
     complete_pending_wait(current_process);
     

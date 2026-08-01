@@ -23,7 +23,8 @@ uint8_t arch_paging_init_shared_region(void);
 arch_address_space_t* arch_kernel_address_space(void);
 
 // ADDRESS SPACE MANAGEMENT
-uint8_t arch_address_space_create(arch_address_space_t* address_space);
+arch_address_space_t* arch_address_space_create(void);
+arch_address_space_t* arch_address_space_clone(arch_address_space_t* old);
 void arch_address_space_destroy(arch_address_space_t* address_space);
 uint8_t arch_address_space_activate(arch_address_space_t* address_space);
 

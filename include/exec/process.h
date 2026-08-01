@@ -105,7 +105,7 @@ typedef struct {
     uint32_t saved_kernel_esp;
     uint32_t saved_kernel_ebp;
     
-    arch_address_space_t* space;
+    arch_address_space_t* addr_space;
     mem_range_t mem_ranges[MAX_SEGMENTS];
     uint8_t num_ranges;
 
