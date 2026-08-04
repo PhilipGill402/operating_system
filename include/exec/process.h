@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <arch/registers.h>
-
 #include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
 #include "memory/heap.h"
@@ -15,10 +13,6 @@
 
 #define MAX_FDS 128
 #define MAX_ARGV 32
-
-#define USER_CS_RING3 0x1B
-#define USER_DS_RING3 0x23
-#define MAX_SEGMENTS 8
 
 #define PAGE_SIZE 4096
 #define DEFAULT_MAX_TICKS 10
@@ -102,16 +96,15 @@ typedef struct {
 
     uint32_t kernel_stack_top;
     uint32_t kernel_stack_bottom;
-    uint32_t saved_kernel_esp;
-    uint32_t saved_kernel_ebp;
-    
+    arch_context_t context;
+   
     arch_address_space_t* addr_space;
     mem_range_t mem_ranges[MAX_SEGMENTS];
     uint8_t num_ranges;
 
     vm_area_t* vmas;
     
-    regs_t* trapframe;
+    arch_trapframe_t* trapframe;
     uint32_t ticks_left;
     
     file_desc_t* fds[MAX_FDS];
@@ -131,7 +124,7 @@ extern process_t* current_process;
 extern process_t* process_table[MAX_PROCESSES];
 extern uint32_t num_processes;
 
-__attribute__((noreturn)) void enter_user_mode_from_trapframe(const regs_t* tf);
+
 process_t* process_clone(process_t* process);
 void process_init_trapframe(process_t* process);
 void process_init_file_descriptors(process_t* process);

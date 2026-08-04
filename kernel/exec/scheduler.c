@@ -150,8 +150,6 @@ void schedule_from_interrupt(regs_t* r) {
         return;
     }
 
-    //log_debug("switching to process %s (%d)\n", next->name, next->pid);
-
     check_pending_signals(next);
 
     current_process = next;

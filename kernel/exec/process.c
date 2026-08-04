@@ -26,65 +26,77 @@ void process_send_signal(process_t* proc, uint32_t sig) {
     proc->state = PROC_READY;
 }
 
-void process_init_trapframe(process_t* process) {
-    regs_t* tf = (regs_t*)(process->kernel_stack_top - sizeof(regs_t));
-    memset(tf, 0, sizeof(regs_t));
-
-    tf->eip = process->entry;
-    tf->cs = USER_CS_RING3;
-    tf->eflags = 0x202;
-    tf->useresp = process->user_stack_top;
-    tf->ss = USER_DS_RING3;
-    tf->ds = USER_DS_RING3;
-
-    process->trapframe = kmalloc(sizeof(regs_t)); 
-    memcpy(process->trapframe, tf, sizeof(regs_t));
-
-    process->saved_kernel_esp = (uint32_t)tf;
-    process->saved_kernel_ebp = 0;
-
-}
-
 process_t* process_clone(process_t* process) {
-    process_t* new = kzmalloc(sizeof(process_t));
+    // ERROR CHECKING
+    if (!process || !process->trapframe || !process->addr_space)
+        return NULL;
+
     
+    if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + KERNEL_STACK_SIZE) {
+        log_error("clone: bad parent kernel stack bounds\n");
+        return NULL;
+    }
+
+    uint32_t new_pid = num_processes;
+    if (new_pid >= MAX_PROCESSES) {
+        log_error("clone: process table full\n");
+        return NULL; 
+    }
+    
+    // Create and shallow copy
+    process_t* new = kzmalloc(sizeof(process_t));
     if (!new)
         return NULL;
 
-    memcpy(new, process, sizeof(process_t));
+    memcpy(new, process, sizeof(*new));
+
+    new->kernel_stack_bottom = 0;
+    new->kernel_stack_top = 0;
+    new->trapframe = NULL;
+    new->addr_space = NULL;
+    new->cwd = NULL;
+
+    memset(new->fds, 0, sizeof(new->fds));
+    new->open_fds = 0;
     
+    // Init new kernel stack
     new->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
-    
     if (!new->kernel_stack_bottom) {
         kfree(new);
         return NULL;
     }
     
-    if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + KERNEL_STACK_SIZE) {
-        log_error("clone: bad parent kernel stack bounds\n");
-        kfree((void*)new->kernel_stack_bottom);
-        kfree(new);
-        return NULL;
-    }
-    
     new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
-    memcpy((void*)new->kernel_stack_bottom, (void*)process->kernel_stack_bottom, KERNEL_STACK_SIZE);
+    memset((void*)new->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
-    uint32_t delta = new->kernel_stack_bottom - process->kernel_stack_bottom;
-    new->saved_kernel_esp = process->saved_kernel_esp + delta;
-    new->saved_kernel_ebp = process->saved_kernel_ebp + delta;
-    
-    new->trapframe = kzmalloc(sizeof(regs_t));
+    // Copy over parent trapframe
+    new->trapframe = kmalloc(sizeof(*new->trapframe));
     if (!new->trapframe) {
         kfree((void*)new->kernel_stack_bottom);
         kfree(new);
         return NULL;
     }
 
-    memcpy(new->trapframe, process->trapframe, sizeof(regs_t));
-    new->trapframe->eax = 0;
+    memcpy(new->trapframe, process->trapframe, sizeof(*new->trapframe));
     
-    new->pid = num_processes++;
+    // Fork returns 0 from the child
+    arch_trapframe_set_ret(new->trapframe, 0);
+    
+    // Clone address space
+    new->addr_space = arch_address_space_clone(process->addr_space);
+    if (!new->addr_space) {
+        kfree(new->trapframe);
+        kfree((void*)new->kernel_stack_bottom);
+        kfree(new);
+        return NULL;
+    }
+
+    // Init child kernel context
+    arch_context_init(&new->context, new->kernel_stack_top, process_child_entry);
+    
+
+    // Init child metadata
+    new->pid = new_pid; 
     new->ppid = process->pid;
     
     new->exit_status = 0;
@@ -102,18 +114,7 @@ process_t* process_clone(process_t* process) {
 
     new->wait_channel = NULL;
     
-    new->addr_space = arch_address_space_clone(process->addr_space);
-    if (!new->addr_space) {
-        kfree(new->trapframe);
-        kfree((void*)new->kernel_stack_bottom);
-        kfree(new);
-        return NULL;
-    }
-    
-    
-    memset(new->fds, 0, sizeof(new->fds));
-    new->open_fds = 0;
-
+    // Copy parent's open file descriptors
     for (uint32_t i = 0; i < MAX_FDS; i++) {
         file_desc_t* fd = process->fds[i];
         if (!fd)
@@ -123,11 +124,16 @@ process_t* process_clone(process_t* process) {
         new->fds[i] = fd;
         new->open_fds++;
     }
-
+    
+    // Copy new name
     strcpy(new->name, process->name);
+
+    // Deep copy current working directory
     new->cwd = fs_node_clone(process->cwd);
     
-    process_table[new->pid] = new;
+    // Add process to process table and increment num_processes
+    process_table[new_pid] = new;
+    num_processes++;
     
     return new;
 }
@@ -326,6 +332,9 @@ void process_destroy(process_t* process) {
 
         memset(&process->fds[i], 0, sizeof(file_desc_t*));
     }
+
+    // free trapframe
+    kfree(process->trapframe);
     
     if (current_process == process) {
         arch_address_space_activate(arch_kernel_address_space());
@@ -341,5 +350,21 @@ void process_destroy(process_t* process) {
     process_table[process->pid] = NULL;
 
     kfree(process);
+}
+
+void process_child_entry(void) {
+    process_t* child = current_process;
+    if (!child || !child->trapframe) {
+        log_error("child entry: invalid process\n");
+        for (;;)
+            arch_halt();
+    } 
+
+    arch_return_to_user(child->trapframe);
+
+    log_error("arch_return_to_user returned\n");
+    for (;;)
+        arch_halt();
+
 }
 
