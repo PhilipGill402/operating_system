@@ -2,7 +2,7 @@
 
 volatile uint32_t ticks = 0;
 
-void timer_callback(regs_t* r) {
+void timer_callback(arch_trapframe_t* tf) {
     ticks++;
     
     if (!current_process) {
@@ -10,10 +10,8 @@ void timer_callback(regs_t* r) {
         return;
     }
 
-
-    memcpy(current_process->trapframe, r, sizeof(regs_t)); 
-    //current_process->saved_kernel_esp = (uint32_t)r;
-
+    arch_trapframe_copy(current_process->trapframe, tf); 
+    
     if (current_process->ticks_left > 0 && current_process->state == PROC_RUNNING) {
         current_process->ticks_left--;
     }
@@ -21,9 +19,9 @@ void timer_callback(regs_t* r) {
     if (current_process->ticks_left == 0) {
         current_process->ticks_left = DEFAULT_MAX_TICKS;
 
-        if ((r->cs & 0x3) == 0x3) {
+        if (arch_trapframe_from_user(tf)) {
             pic_send_eoi(IRQ_TIMER);
-            schedule_from_interrupt(r);
+            schedule_from_interrupt(tf);
             return;
         }
     } 

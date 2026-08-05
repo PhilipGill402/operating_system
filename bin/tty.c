@@ -97,6 +97,9 @@ int main() {
     }
 
     gfx_context_t* ctx = gfx_get_context(NULL, NULL);
+    if (!ctx)
+        return -1;
+
     gfx_clear_screen(ctx, FB_BLACK);
     
     tty.ctx = ctx;

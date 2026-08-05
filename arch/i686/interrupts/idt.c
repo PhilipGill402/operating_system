@@ -1,4 +1,6 @@
 #include <arch/interrupts/idt.h>
+#include <arch/interrupts/irq.h>
+#include <exec/trapframe.h>
 
 struct idt_entry idt[256];
 struct idt_ptr ip;
@@ -92,19 +94,45 @@ void idt_load() {
     __asm__ __volatile__ ("lidt %0" : : "m"(ip) : "memory");
 }
 
-void interrupt_dispatch(regs_t* regs) {
-    if (regs->int_no == 0x80) {
-        syscall_handler(regs);
+void exception_handler(arch_trapframe_t* tf) {
+    serial_printf("EXCEPTION %d: %s\n", (int)tf->int_no, exc_names[(int)tf->int_no]);
+
+    serial_printf("PF pid=%d name=%s\n",
+    current_process ? current_process->pid : -1,
+    current_process ? current_process->name : "none");
+
+    if (tf->int_no == 14) {
+        uint32_t cr2;
+        __asm__ __volatile__("mov %%cr2, %0" : "=r"(cr2));
+        
+
+        serial_printf("PAGE FAULT\n");
+        serial_printf("cr2 = %x\n", cr2);
+        serial_printf("eip = %x\n", tf->eip);
+        serial_printf("err = %x\n", tf->err_code);
+        serial_printf("cs  = %x\n", tf->cs);
+        serial_printf("useresp = %x\n", tf->useresp);
+    }
+    
+    //infinite wait
+    while (1) {
+        __asm__ __volatile__("hlt");
+    }
+}
+
+void interrupt_dispatch(arch_trapframe_t* tf) {
+    if (tf->int_no == 0x80) {
+        syscall_handler(tf);
         return;
     }
 
-    if (regs->int_no < 32) {
-        exception_handler(regs);
+    if (tf->int_no < 32) {
+        exception_handler(tf);
         return;
     }
 
-    if (regs->int_no >= 32 && regs->int_no < 48) {
-        irq_handler(regs);
+    if (tf->int_no >= 32 && tf->int_no < 48) {
+        irq_handler(tf);
         return;
     }
 }
@@ -118,32 +146,6 @@ static inline uint32_t read_cr2(void) {
     );
 
     return cr2;
-}
-
-void exception_handler(regs_t* reg) {
-    serial_printf("EXCEPTION %d: %s\n", (int)reg->int_no, exc_names[(int)reg->int_no]);
-
-    serial_printf("PF pid=%d name=%s\n",
-    current_process ? current_process->pid : -1,
-    current_process ? current_process->name : "none");
-
-    if (reg->int_no == 14) {
-        uint32_t cr2;
-        __asm__ __volatile__("mov %%cr2, %0" : "=r"(cr2));
-        
-
-        serial_printf("PAGE FAULT\n");
-        serial_printf("cr2 = %x\n", cr2);
-        serial_printf("eip = %x\n", reg->eip);
-        serial_printf("err = %x\n", reg->err_code);
-        serial_printf("cs  = %x\n", reg->cs);
-        serial_printf("useresp = %x\n", reg->useresp);
-    }
-    
-    //infinite wait
-    while (1) {
-        __asm__ __volatile__("hlt");
-    }
 }
 
 

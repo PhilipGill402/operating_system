@@ -375,8 +375,8 @@ static uint32_t keyboard_decode(uint8_t scancode, input_event_t* event) {
     return 1;
 }
 
-void keyboard_callback(regs_t* r) {
-    (void)r;
+void keyboard_callback(arch_trapframe_t* tf) {
+    (void)tf;
     
     input_event_t event;
 

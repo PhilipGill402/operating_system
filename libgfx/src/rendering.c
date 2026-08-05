@@ -127,6 +127,9 @@ uint32_t gfx_draw_rect(gfx_context_t* ctx, uint32_t x, uint32_t y, uint32_t widt
 }
 
 uint32_t gfx_clear_screen(gfx_context_t* ctx, uint32_t color) {
+    if (!ctx)
+        return 0;
+
     if (!gfx_draw_rect(ctx, 0, 0, ctx->fb.width, ctx->fb.height, color))
         return 0;
     

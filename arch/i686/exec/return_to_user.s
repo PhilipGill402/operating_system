@@ -1,7 +1,7 @@
-.global arch_enter_user_from_trapframe 
-.type arch_enter_user_from_trapframe, @function
+.global arch_return_to_user 
+.type arch_return_to_user, @function
 
-arch_enter_user_from_trapframe:
+arch_return_to_user:
     cli
 
     # Stack on entry:

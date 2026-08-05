@@ -1,16 +1,5 @@
 #include "syscalls.h"
 
-static inline uint32_t read_cr3(void) {
-    uint32_t cr3;
-
-    __asm__ volatile (
-        "mov %%cr3, %0"
-        : "=r"(cr3)
-    );
-
-    return cr3;
-}
-
 static char* trim_path(const char* path) {
     uint32_t last_slash = -1;
 
@@ -122,7 +111,7 @@ static uint32_t vma_find_free_range(process_t* proc, uint32_t length) {
     return 0;
 }
 
-static uint32_t mmap_prot_to_page_flags(prot) {
+static uint32_t mmap_prot_to_page_flags(int32_t prot) {
     uint32_t page_flags = ARCH_PAGE_USER | ARCH_PAGE_PRESENT;
 
     if (prot & PROT_WRITE) {
@@ -163,7 +152,7 @@ int32_t sys_poll(pollfd_t* fds, uint32_t nfds) {
     for (uint32_t i = 0; i < nfds; i++) {
         uint32_t fd = fds[i].fd;
 
-        if (fd >= MAX_FDS || fd < 0) {
+        if (fd >= MAX_FDS) {
             fds[i].revents = 0;
             continue;
         }
@@ -183,14 +172,22 @@ int32_t sys_poll(pollfd_t* fds, uint32_t nfds) {
 
 int32_t sys_mkdir(const char* path, uint32_t mode) {
     char* trim = trim_path(path);
+    if (!trim)
+        return ENOMEM;
+
     fs_node_t* dir;
     char* file_name;
 
     //relative pathname 
     if (!trim) {
         dir = fs_node_clone(current_process->cwd);
+        if (!dir)
+            return ENOMEM;
         
-        file_name = kmalloc(strlen(path)); 
+        file_name = kmalloc(strlen(path) + 1);
+        if (!file_name)
+            return ENOMEM;
+
         strcpy(file_name, path);
     } else {
         dir = resolve_path(trim, current_process->cwd);
@@ -244,6 +241,7 @@ int32_t sys_dup(uint32_t old_fd) {
     old_file_desc->num_refs++;
     
     current_process->fds[fd] = old_file_desc;
+    current_process->open_fds++;
 
     return fd;
 }
@@ -327,21 +325,20 @@ int32_t sys_munmap(void* addr, uint32_t length) {
         uint32_t frame = arch_page_unmap(current_process->addr_space, virt);
 
         if (frame && area->owns_frames) {
-            if (area->frames[i] && frame == area->frames[i])
+            if (area->frames[i] && frame != area->frames[i])
                 pmm_free_frame(area->frames[i]);
         }
     }
 
     kfree(area->frames);
     kfree(area);
-    arch_phys_temp_unmap(1);
 
     return 0;
 }
 
 static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t flags) {
     process_t* proc = current_process;
-
+    log_debug("made it\n");
     if (fb_shared_buffer.owner_pid != -1 && fb_shared_buffer.owner_pid != proc->pid)
         return NULL;
     
@@ -406,7 +403,6 @@ static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t
     area->next = proc->vmas;
     proc->vmas = area;
     
-
     return (void*)start;
 }
 
@@ -467,12 +463,12 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
 
         void* tmp = arch_phys_temp_map(0, frame);
         memset(tmp, 0, PAGE_SIZE);
+        arch_phys_temp_unmap(0);
     }
 
     area->next = proc->vmas;
     proc->vmas = area;
 
-    arch_phys_temp_unmap(0);
 
     return (void*)start;
 }
@@ -502,12 +498,15 @@ int32_t sys_lseek(uint32_t fd, uint32_t offset) {
 
 int32_t sys_waitpid(uint32_t pid, int* status, int options) {
     (void)options;
-    
+
     while (1) {
         process_t* child = get_process(pid);
 
         if (!child)
             return ESRCH;
+
+        if (child->ppid != current_process->pid)
+            return ECHILD;
         
         if (child->state == PROC_TERMINATED && !child->waited_on) {
             int child_status = child->exit_status;
@@ -572,7 +571,7 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
         if (!trim) {
             dir = fs_node_clone(current_process->cwd);
             
-            file_name = kmalloc(strlen(path)); 
+            file_name = kmalloc(strlen(path) + 1); 
             strcpy(file_name, path);
         } else {
             dir = resolve_path(trim, current_process->cwd);
@@ -675,7 +674,8 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     }
     */
     
-    current_process->fds[fd]->offset += bytes_read;
+    if (bytes_read >= 0)
+        current_process->fds[fd]->offset += bytes_read;
 
     return bytes_read;
 }
@@ -701,11 +701,11 @@ int32_t sys_fork() {
     process_t* new = process_clone(current_process);
     
     // dont know if this is right, check later
-    if (!new) return ESRCH;
-    new->trapframe->eax = 0; // child process must return 0
+    if (!new)
+        return ESRCH;
     
     current_process->ticks_left = 1;
-    int result = enqueue(&current_processes, &new);
+    enqueue(&current_processes, &new);
 
     return new->pid;
 }
@@ -738,18 +738,19 @@ int32_t sys_execve(const char* file_name, const char* argv[]) {
     return 1;
 }
 
-int32_t sys_exit(regs_t* reg, int32_t status) {
-    memcpy(current_process->trapframe, reg, sizeof(regs_t)); 
-    current_process->saved_kernel_esp = (uint32_t)reg;
-    current_process->state = PROC_TERMINATED;
-    current_process->exit_status = status;
+_Noreturn int32_t sys_exit(int32_t status) {
+    process_t* exiting = current_process;
+
+    exiting->state = PROC_TERMINATED;
+    exiting->exit_status = status;
     
     log_debug("Process %d (%s) exited with status %d\n", current_process->pid, current_process->name, current_process->exit_status);
 
-    process_wake_parent(current_process->pid);
+    process_wake_parent(exiting->pid);
 
     schedule_and_enter();
-
+    
+    // should never get here
     return 0;
 }
 
@@ -789,6 +790,9 @@ int32_t sys_getcwd(char* buffer, size_t size) {
     buffer[0] = '\0';
 
     while (start) {
+        if (idx >= 10)
+            return ENOMEM;
+        
         path[idx++] = start;
          
         if (strcmp(start->name, fs_root->name) == 0) {
@@ -835,99 +839,166 @@ int32_t sys_getpid() {
     return current_process->pid;
 }
 
-void syscall_handler(regs_t* reg) {
-    int32_t ret = 0;
-    memcpy(current_process->trapframe, reg, sizeof(regs_t));
-     
-    switch (reg->eax) {
+void syscall_handler(arch_trapframe_t* tf) {
+    process_t* caller = current_process;
+    caller->trapframe = tf;
+
+    int32_t ret = ENOSYS;
+    switch (arch_trapframe_get_arg(caller->trapframe, 1)) {
         case SYS_READ:
-            ret = sys_read(reg->ebx, (char*)reg->ecx, (size_t)reg->edx);
+            ret = sys_read(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                (char*)arch_trapframe_get_arg(caller->trapframe, 3),
+                (size_t)arch_trapframe_get_arg(caller->trapframe, 4)
+            );
             break;
         case SYS_WRITE:
-            ret = sys_write(reg->ebx, (char*)reg->ecx, (size_t)reg->edx);
+            ret = sys_write(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                (char*)arch_trapframe_get_arg(caller->trapframe, 3),
+                (size_t)arch_trapframe_get_arg(caller->trapframe, 4)
+            );
             break;
         case SYS_FORK:
-            ret = sys_fork(reg);
+            ret = sys_fork();
             break;
         case SYS_EXECVE:
-            ret = sys_execve((char*)reg->ebx, (char**)reg->ecx);
+            ret = sys_execve(
+                (char*)arch_trapframe_get_arg(caller->trapframe, 2),
+                (char**)arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             
-            if (ret >= 0) {
-                memcpy(reg, current_process->trapframe, sizeof(regs_t));
+            if (ret >= 0)
                 return;
-            }
             
             break;
         case SYS_EXIT:
-            ret = sys_exit(reg, (int32_t)reg->ebx);
+            ret = sys_exit(
+                (int32_t)arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_GETCWD:
-            ret = sys_getcwd((char*)reg->ebx, (size_t)reg->ecx);
+            ret = sys_getcwd(
+                (char*)arch_trapframe_get_arg(caller->trapframe, 2),
+                (size_t)arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_CHDIR:
-            ret = sys_chdir((char*)reg->ebx);
+            ret = sys_chdir(
+                (char*)arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_GETPID:
             ret = sys_getpid();
             break;
         case SYS_BRK:
-            ret = (int32_t)sys_brk((void*)reg->ebx);
+            ret = (int32_t)sys_brk(
+                (void*)arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_OPEN:
-            ret = sys_open((char*)reg->ebx, reg->ecx, (sys_mode_t)reg->edx);
+            ret = sys_open(
+                (char*)arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3),
+                (sys_mode_t)arch_trapframe_get_arg(caller->trapframe, 4)
+            );
             break;
         case SYS_GETDENTS:
-            ret = sys_getdents(reg->ebx, (sys_dirent_t*)reg->ecx, reg->edx);
+            ret = sys_getdents(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                (sys_dirent_t*)arch_trapframe_get_arg(caller->trapframe, 3),
+                arch_trapframe_get_arg(caller->trapframe, 4)
+            );
             break;
         case SYS_WAITPID:
-            ret = sys_waitpid(reg->ebx, (int*)reg->ecx, reg->edx);
+            ret = sys_waitpid(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                (int*)arch_trapframe_get_arg(caller->trapframe, 3),
+                arch_trapframe_get_arg(caller->trapframe, 4)
+            );
             break;
         case SYS_CLOSE:
-            ret = sys_close(reg->ebx);
+            ret = sys_close(
+                arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_LSEEK:
-            ret = sys_lseek(reg->ebx, reg->ecx);
+            ret = sys_lseek(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_KILL:
-            ret = sys_kill(reg->ebx, reg->ecx);
+            ret = sys_kill(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_MMAP:
-            ret = (int32_t)sys_mmap((void*)reg->ebx, reg->ecx, (int32_t)reg->edx, (int32_t)reg->esi, (int32_t)reg->edi, reg->ebp);
+            ret = (int32_t)sys_mmap(
+                (void*)arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3),
+                (int32_t)arch_trapframe_get_arg(caller->trapframe, 4),
+                (int32_t)arch_trapframe_get_arg(caller->trapframe, 5),
+                (int32_t)arch_trapframe_get_arg(caller->trapframe, 6),
+                arch_trapframe_get_arg(caller->trapframe, 7)
+            );
             break;
         case SYS_MUNMAP:
-            ret = sys_munmap((void*)reg->ebx, reg->ecx);
+            ret = sys_munmap(
+                (void*)arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_FB_INFO:
-            ret = sys_fb_info((sys_fb_info_t*)reg->ebx);
+            ret = sys_fb_info(
+                (sys_fb_info_t*)arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_FB_FLUSH:
-            ret = sys_fb_flush(reg->ebx, reg->ecx, reg->edx, reg->esi);
+            ret = sys_fb_flush(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3),
+                arch_trapframe_get_arg(caller->trapframe, 4),
+                arch_trapframe_get_arg(caller->trapframe, 5)
+            );
             break;
         case SYS_YIELD:
-            reg->eax = 0;
-            schedule_from_interrupt(reg);
+            arch_trapframe_set_ret(caller->trapframe, 0);
+            caller->state = PROC_READY;
+            schedule_from_interrupt(caller->trapframe);
             return;
         case SYS_DUP2:
-            ret = sys_dup2(reg->ebx, reg->ecx);
+            ret = sys_dup2(
+                arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_DUP:
-            ret = sys_dup(reg->ebx);
+            ret = sys_dup(
+                arch_trapframe_get_arg(caller->trapframe, 2)
+            );
             break;
         case SYS_MKDIR:
-            ret = sys_mkdir((char*)reg->ebx, reg->ecx);
+            ret = sys_mkdir(
+                (char*)arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
         case SYS_POLL:
-            ret = sys_poll((pollfd_t*)reg->ebx, reg->ecx);
+            ret = sys_poll(
+                (pollfd_t*)arch_trapframe_get_arg(caller->trapframe, 2),
+                arch_trapframe_get_arg(caller->trapframe, 3)
+            );
             break;
     }
-
-    reg->eax = ret;
-    reg->eflags |= 0x200;
-
-    check_pending_signals(current_process);
     
-    if (current_process->state != PROC_RUNNING) {
-        schedule_from_interrupt(reg);
+    arch_trapframe_set_ret(caller->trapframe, ret);
+
+    check_pending_signals(caller);
+    
+    if (caller->state != PROC_RUNNING) {
+        schedule_from_interrupt(caller->trapframe);
         return;
     }
 

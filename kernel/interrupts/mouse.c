@@ -40,8 +40,8 @@ static uint8_t mouse_read(void) {
     return ps2_read_data();
 }
 
-void mouse_irq_handler(regs_t* regs) {
-    (void)regs;
+void mouse_irq_handler(arch_trapframe_t* tf) {
+    (void)tf;
 
     uint8_t status = inb(PS2_STATUS_PORT);
     if (!(status & PS2_STATUS_OUTPUT_FULL)) {

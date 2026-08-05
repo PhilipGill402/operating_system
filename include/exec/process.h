@@ -5,8 +5,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <arch/asm/helpers.h>
 #include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
+#include <arch/exec/user_mode.h>
+#include <arch/asm/helpers.h>
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "memory_mapping.h"
@@ -96,7 +99,7 @@ typedef struct {
 
     uint32_t kernel_stack_top;
     uint32_t kernel_stack_bottom;
-    arch_context_t context;
+    arch_context_t* context;
    
     arch_address_space_t* addr_space;
     mem_range_t mem_ranges[MAX_SEGMENTS];
@@ -126,7 +129,6 @@ extern uint32_t num_processes;
 
 
 process_t* process_clone(process_t* process);
-void process_init_trapframe(process_t* process);
 void process_init_file_descriptors(process_t* process);
 uint32_t process_init_stack(process_t* process);
 uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
@@ -134,5 +136,7 @@ uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();
 process_t* get_process(uint32_t pid);
+void process_child_entry(void);
+void process_first_entry(void);
 
 #endif // !INCLUDE_EXEC_PROCESS_H_

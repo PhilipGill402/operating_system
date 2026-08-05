@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <arch/registers.h>
+#include <arch/exec/proc.h>
 #include <arch/interrupts/idt.h>
 #include <arch/interrupts/pic.h>
 
@@ -12,7 +12,7 @@
 
 extern volatile uint32_t ticks;
 
-void timer_callback(regs_t* r);
+void timer_callback(arch_trapframe_t* tf);
 uint32_t timer_get_ticks();
 
 #endif // !INCLUDE_TIMER_H_

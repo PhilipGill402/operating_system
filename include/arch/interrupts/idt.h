@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <arch/registers.h>
+#include <arch/exec/proc.h>
+#include <arch/interrupts/irq.h>
 
 #include "syscalls.h"
 
@@ -93,6 +94,6 @@ void idt_create_isr_stubs();
 void idt_create_irq_stubs();
 void idt_install();
 void idt_load();
-void isr_handler(regs_t* reg);
+void isr_handler(arch_trapframe_t* tf);
 
 #endif

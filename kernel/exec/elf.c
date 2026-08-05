@@ -214,11 +214,13 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
     }
     
     arch_address_space_t* old_addr_space = process->addr_space;
-    process->addr_space = arch_address_space_create();
+    arch_address_space_t* new_addr_space = arch_address_space_create();
+    process->addr_space = new_addr_space;
     
     if (!process->addr_space) {
         kfree(buffer);
         process->addr_space = old_addr_space;
+        arch_address_space_destroy(new_addr_space);
         return 0;
     }
 
@@ -228,6 +230,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         process->addr_space = old_addr_space;
         kfree(buffer);
         arch_address_space_activate(process->addr_space);
+        arch_address_space_destroy(new_addr_space);
         return 0;
     }
     
@@ -238,6 +241,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         process->addr_space = old_addr_space;
         kfree(buffer);
         arch_address_space_activate(process->addr_space);
+        arch_address_space_destroy(new_addr_space);
         return 0;
     }
     
@@ -247,18 +251,13 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         process->addr_space = old_addr_space;
         kfree(buffer);
         arch_address_space_activate(old_addr_space);
+        arch_address_space_destroy(new_addr_space);
         return 0;
     }
     
-    memset(process->trapframe, 0, sizeof(regs_t));
     strcpy(process->name, elf->name);
-    process->trapframe->eip = process->entry;
-    process->trapframe->useresp = user_sp;
-    process->trapframe->esp = user_sp;
-    process->trapframe->cs = USER_CS_RING3;
-    process->trapframe->ss = USER_DS_RING3;
-    process->trapframe->ds = USER_DS_RING3;
-    process->trapframe->eflags = 0x202;
+    
+    arch_trapframe_init(process->kernel_stack_top, user_sp, process->entry);
     
     kfree(buffer);
     return 1;
@@ -327,11 +326,18 @@ process_t* process_create_from_elf(fs_node_t* elf) {
 
     process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
+    memset((void*)process->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
-    process_init_trapframe(process);
+    process->trapframe = arch_trapframe_init(process->kernel_stack_top, user_sp, process->entry);
+    if (!process->trapframe) {
+        kfree(buf);
+        process_destroy(process);
+        return NULL;
+    }
 
-    process->trapframe->useresp = user_sp;
-    process->trapframe->esp = user_sp; 
+    uintptr_t context_stack_top = (uintptr_t)process->trapframe;
+    process->context = arch_context_init(context_stack_top, process_first_entry);
+         
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;

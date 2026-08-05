@@ -1,3 +1,4 @@
+#include <arch/exec/proc.h>
 #include "exec/process.h"
 
 process_t* current_process = NULL;
@@ -69,15 +70,9 @@ process_t* process_clone(process_t* process) {
     new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memset((void*)new->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
-    // Copy over parent trapframe
-    new->trapframe = kmalloc(sizeof(*new->trapframe));
-    if (!new->trapframe) {
-        kfree((void*)new->kernel_stack_bottom);
-        kfree(new);
-        return NULL;
-    }
-
-    memcpy(new->trapframe, process->trapframe, sizeof(*new->trapframe));
+    // Init and copy over trapframe
+    new->trapframe = arch_trapframe_init(new->kernel_stack_top, new->user_stack_top, new->entry);
+    arch_trapframe_copy(new->trapframe, process->trapframe);
     
     // Fork returns 0 from the child
     arch_trapframe_set_ret(new->trapframe, 0);
@@ -85,15 +80,13 @@ process_t* process_clone(process_t* process) {
     // Clone address space
     new->addr_space = arch_address_space_clone(process->addr_space);
     if (!new->addr_space) {
-        kfree(new->trapframe);
         kfree((void*)new->kernel_stack_bottom);
         kfree(new);
         return NULL;
     }
 
-    // Init child kernel context
-    arch_context_init(&new->context, new->kernel_stack_top, process_child_entry);
-    
+    // Init child kernel context past the trapframe
+    new->context = arch_context_init((uintptr_t)new->trapframe, process_child_entry);
 
     // Init child metadata
     new->pid = new_pid; 
@@ -333,9 +326,6 @@ void process_destroy(process_t* process) {
         memset(&process->fds[i], 0, sizeof(file_desc_t*));
     }
 
-    // free trapframe
-    kfree(process->trapframe);
-    
     if (current_process == process) {
         arch_address_space_activate(arch_kernel_address_space());
         current_process = NULL;
@@ -345,7 +335,7 @@ void process_destroy(process_t* process) {
     
     // frees heap allocated variables
     kfree(process->cwd);
-    kfree(process->kernel_stack_bottom);
+    kfree((uintptr_t)process->kernel_stack_bottom);
     
     process_table[process->pid] = NULL;
 
@@ -366,5 +356,14 @@ void process_child_entry(void) {
     for (;;)
         arch_halt();
 
+}
+
+_Noreturn void process_first_entry(void) {
+    if (!current_process || !current_process->trapframe) {
+        log_error("cant enter null process or null trapframe\n");
+        arch_halt();
+    }
+
+    arch_return_to_user(current_process->trapframe);
 }
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <arch/exec/proc.h>
 #include <arch/interrupts/idt.h>
 #include <arch/interrupts/port.h>
 
@@ -144,7 +145,7 @@ typedef enum {
     KEY_MAX
 } keycode_t;
 
-void keyboard_callback(regs_t* r);
+void keyboard_callback(arch_trapframe_t* tf);
 void keyboard_init();
 
 extern queue_t input_buffer;

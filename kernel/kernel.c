@@ -51,6 +51,7 @@ void kernel_finish_init() {
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {
+        log_debug("loading init file\n"); 
         elf_execute(tty_elf);
         schedule_and_enter();
     }

@@ -11,7 +11,7 @@
 #include <sys/fb.h>
 #include <string.h>
 
-#include <arch/registers.h>
+#include <arch/exec/proc.h>
 #include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
 
@@ -48,7 +48,7 @@
 #define SYS_FB_FLUSH    201
 #define SYS_YIELD       202
 
-void syscall_handler(regs_t* reg);
+void syscall_handler(arch_trapframe_t* tf);
 
 #endif // !INCLUDE_SYSCALLS_H_
 
