@@ -1,11 +1,7 @@
-#ifndef HARDWARE_H_
-#define HARDWARE_H_
+#ifndef INCLUDE_ARCH_CPU_CPU_INFO_H_ 
+#define INCLUDE_ARCH_CPU_CPU_INFO_H_
 
 #include <stdint.h>
-
-#include <string.h>
-
-#include "memory/heap.h"
 
 static inline void cpuid(uint32_t leaf, uint32_t* a, uint32_t* b, uint32_t* c, uint32_t* d) {
     __asm__ volatile (

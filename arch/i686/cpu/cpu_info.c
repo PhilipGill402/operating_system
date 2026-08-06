@@ -1,4 +1,7 @@
-#include "hardware.h"
+#include <arch/cpu/cpu_info.h>
+
+#include <string.h>
+#include "memory/heap.h"
 
 char* cpu_get_vendor() {
     char* vendor = kmalloc(13);

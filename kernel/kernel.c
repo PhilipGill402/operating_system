@@ -11,6 +11,7 @@
 #include <arch/asm/helpers.h>
 #include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
+#include <arch/cpu/cpu_info.h>
 
 #include "io/io.h"
 #include "io/vga.h"
@@ -24,7 +25,6 @@
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
-#include "hardware.h"
 #include "memory_mapping.h"
 
 multiboot_info_t* mbi;
