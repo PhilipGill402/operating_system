@@ -5,30 +5,30 @@ static uint8_t mouse_packet[3];
 static uint8_t mouse_cycle = 0;
 
 static void ps2_wait_read(void) {
-    while (!(inb(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL)) {
+    while (!(arch_read_byte(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL)) {
         asm volatile("pause");
     }
 }
 
 static void ps2_wait_write(void) {
-    while (inb(PS2_STATUS_PORT) & PS2_STATUS_INPUT_FULL) {
+    while (arch_read_byte(PS2_STATUS_PORT) & PS2_STATUS_INPUT_FULL) {
         asm volatile("pause");
     }
 }
 
 static uint8_t ps2_read_data(void) {
     ps2_wait_read();
-    return inb(PS2_DATA_PORT);
+    return arch_read_byte(PS2_DATA_PORT);
 }
 
 static void ps2_write_command(uint8_t cmd) {
     ps2_wait_write();
-    outb(PS2_COMMAND_PORT, cmd);
+    arch_write_byte(PS2_COMMAND_PORT, cmd);
 }
 
 static void ps2_write_data(uint8_t data) {
     ps2_wait_write();
-    outb(PS2_DATA_PORT, data);
+    arch_write_byte(PS2_DATA_PORT, data);
 }
 
 static void mouse_write(uint8_t data) {
@@ -43,12 +43,12 @@ static uint8_t mouse_read(void) {
 void mouse_irq_handler(arch_trapframe_t* tf) {
     (void)tf;
 
-    uint8_t status = inb(PS2_STATUS_PORT);
+    uint8_t status = arch_read_byte(PS2_STATUS_PORT);
     if (!(status & PS2_STATUS_OUTPUT_FULL)) {
         return;
     }
 
-    uint8_t data = inb(PS2_DATA_PORT);
+    uint8_t data = arch_read_byte(PS2_DATA_PORT);
     
     // the third bit is always set on the first packet
     if (mouse_cycle == 0 && !(data & 0x08))

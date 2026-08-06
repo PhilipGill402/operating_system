@@ -382,7 +382,7 @@ void keyboard_callback(arch_trapframe_t* tf) {
     
     input_event_t event;
 
-    uint8_t scancode = inb(0x60);
+    uint8_t scancode = arch_read_byte(0x60);
 
     if (keyboard_decode(scancode, &event)) {
         enqueue(&input_buffer, &event);
