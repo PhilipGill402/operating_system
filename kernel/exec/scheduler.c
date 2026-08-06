@@ -168,27 +168,7 @@ void schedule_from_interrupt(arch_trapframe_t* tf) {
     complete_pending_wait(current_process);
 
     process_t *incoming = next;
-
-    log_debug(
-        "SWITCH outgoing=%u live_tf=%x outgoing_tf=%x "
-        "incoming=%u incoming_tf=%x\n",
-        outgoing ? outgoing->pid : 0xFFFFFFFF,
-        (uint32_t)(uintptr_t)tf,
-        outgoing ? (uint32_t)(uintptr_t)outgoing->trapframe : 0,
-        incoming ? incoming->pid : 0xFFFFFFFF,
-        incoming ? (uint32_t)(uintptr_t)incoming->trapframe : 0
-    );
-
-    log_debug("outgoing before copy:\n");
-    arch_trapframe_debug(outgoing->trapframe);
-
-    log_debug("incoming before copy:\n");
-    arch_trapframe_debug(incoming->trapframe);
-    
     arch_trapframe_copy(tf, current_process->trapframe);
-
-    log_debug("outgoing after copy:\n");
-    arch_trapframe_debug(outgoing->trapframe);
 }
 
 

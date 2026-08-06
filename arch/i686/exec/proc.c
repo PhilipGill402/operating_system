@@ -8,10 +8,10 @@
 
 #include <log.h>
 
-arch_trapframe_t* arch_trapframe_init(uint32_t* kernel_stack_top, uintptr_t user_stack_top, uintptr_t entry) {
-    uintptr_t tf_addr = (uintptr_t)kernel_stack_top - sizeof(arch_trapframe_t);
-    arch_trapframe_t* tf = (arch_trapframe_t*)tf_addr;
-    memset(tf, 0, sizeof(*tf));
+arch_trapframe_t* arch_trapframe_init(uintptr_t user_stack_top, uintptr_t entry) {
+    arch_trapframe_t* tf = kzmalloc(sizeof(*tf));
+    if (!tf)
+        return NULL;
 
     tf->eip = (uint32_t)entry;
     tf->cs = USER_CS_RING3;
@@ -39,6 +39,10 @@ void arch_trapframe_copy(arch_trapframe_t* dst, arch_trapframe_t* src) {
         return;
 
     memcpy(dst, src, sizeof(*src));
+}
+
+void arch_trapframe_destroy(arch_trapframe_t* tf) {
+    kfree(tf);
 }
 
 void arch_trapframe_set_ret(arch_trapframe_t* tf, uint32_t ret) {
@@ -92,6 +96,10 @@ arch_context_t* arch_context_init(uintptr_t kernel_stack_top, void (*entry)(void
     ctx->esp = (uint32_t)sp;
 
     return ctx;
+}
+
+void arch_context_destroy(arch_context_t* ctx) {
+    kfree(ctx);
 }
 
 uint8_t arch_trapframe_from_user(arch_trapframe_t* tf) {

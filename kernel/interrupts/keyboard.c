@@ -1,5 +1,7 @@
 #include "interrupts/keyboard.h"
 
+#include <log.h>
+
 static volatile keyboard_modifiers = 0;
 
 static const keycode_t scancode_set1_map[128] = {

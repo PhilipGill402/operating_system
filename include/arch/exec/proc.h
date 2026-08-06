@@ -10,9 +10,10 @@ typedef struct arch_context arch_context_t;
 #define USER_DS_RING3 0x23
 #define MAX_SEGMENTS 8
 
-arch_trapframe_t* arch_trapframe_init(uint32_t* kernel_stack_top, uintptr_t user_stack_top, uintptr_t entry);
+arch_trapframe_t* arch_trapframe_init(uintptr_t user_stack_top, uintptr_t entry);
 void arch_trapframe_copy(arch_trapframe_t* dst, arch_trapframe_t* src);
 void arch_trapframe_reset(arch_trapframe_t* tf, uintptr_t user_stack_top, uintptr_t entry);
+void arch_trapframe_destroy(arch_trapframe_t* tf);
 void arch_trapframe_set_ret(arch_trapframe_t* tf, uint32_t ret);
 uint32_t arch_trapframe_get_arg(arch_trapframe_t* tf, uint32_t idx);
 uint8_t arch_trapframe_from_user(arch_trapframe_t* tf);

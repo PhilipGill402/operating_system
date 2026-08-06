@@ -1,5 +1,7 @@
 #include "gfx.h"
 
+#include <stdio.h>
+
 gfx_context_t* gfx_get_context(fb_info_t* info, uint32_t* pixels) {
     gfx_context_t* ctx = malloc(sizeof(gfx_context_t));
     if (!ctx)

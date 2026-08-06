@@ -71,7 +71,7 @@ process_t* process_clone(process_t* process) {
     memset((void*)new->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
     // Init and copy over trapframe
-    new->trapframe = arch_trapframe_init(new->kernel_stack_top, new->user_stack_top, new->entry);
+    new->trapframe = arch_trapframe_init(new->user_stack_top, new->entry);
     arch_trapframe_copy(new->trapframe, process->trapframe);
     
     // Fork returns 0 from the child
@@ -86,7 +86,7 @@ process_t* process_clone(process_t* process) {
     }
 
     // Init child kernel context past the trapframe
-    new->context = arch_context_init((uintptr_t)new->trapframe, process_child_entry);
+    new->context = arch_context_init(new->kernel_stack_top, process_child_entry);
 
     // Init child metadata
     new->pid = new_pid; 
@@ -335,7 +335,15 @@ void process_destroy(process_t* process) {
     
     // frees heap allocated variables
     kfree(process->cwd);
-    kfree((uintptr_t)process->kernel_stack_bottom);
+    
+    if (process->trapframe)
+        arch_trapframe_destroy(process->trapframe);
+
+    if (process->context)
+        arch_context_destroy(process->context);
+    
+    if (process->kernel_stack_bottom)
+        kfree((uintptr_t)process->kernel_stack_bottom);
     
     process_table[process->pid] = NULL;
 

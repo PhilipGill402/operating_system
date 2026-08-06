@@ -338,7 +338,6 @@ int32_t sys_munmap(void* addr, uint32_t length) {
 
 static void* mmap_framebuffer(void* addr, uint32_t length, int32_t prot, int32_t flags) {
     process_t* proc = current_process;
-    log_debug("made it\n");
     if (fb_shared_buffer.owner_pid != -1 && fb_shared_buffer.owner_pid != proc->pid)
         return NULL;
     
@@ -841,7 +840,7 @@ int32_t sys_getpid() {
 
 void syscall_handler(arch_trapframe_t* tf) {
     process_t* caller = current_process;
-    caller->trapframe = tf;
+    arch_trapframe_copy(caller->trapframe, tf); 
 
     int32_t ret = ENOSYS;
     switch (arch_trapframe_get_arg(caller->trapframe, 1)) {
@@ -868,8 +867,10 @@ void syscall_handler(arch_trapframe_t* tf) {
                 (char**)arch_trapframe_get_arg(caller->trapframe, 3)
             );
             
-            if (ret >= 0)
+            if (ret >= 0) {
+                arch_trapframe_copy(tf, caller->trapframe);
                 return;
+            }
             
             break;
         case SYS_EXIT:
@@ -964,9 +965,8 @@ void syscall_handler(arch_trapframe_t* tf) {
             );
             break;
         case SYS_YIELD:
-            arch_trapframe_set_ret(caller->trapframe, 0);
-            caller->state = PROC_READY;
-            schedule_from_interrupt(caller->trapframe);
+            arch_trapframe_set_ret(tf, 0);
+            schedule_from_interrupt(tf);
             return;
         case SYS_DUP2:
             ret = sys_dup2(
@@ -993,12 +993,12 @@ void syscall_handler(arch_trapframe_t* tf) {
             break;
     }
     
-    arch_trapframe_set_ret(caller->trapframe, ret);
+    arch_trapframe_set_ret(tf, ret);
 
     check_pending_signals(caller);
     
     if (caller->state != PROC_RUNNING) {
-        schedule_from_interrupt(caller->trapframe);
+        schedule_from_interrupt(tf);
         return;
     }
 

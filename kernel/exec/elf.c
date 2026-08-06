@@ -257,7 +257,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
     
     strcpy(process->name, elf->name);
     
-    arch_trapframe_init(process->kernel_stack_top, user_sp, process->entry);
+    arch_trapframe_reset(process->trapframe, user_sp, process->entry); 
     
     kfree(buffer);
     return 1;
@@ -328,15 +328,14 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memset((void*)process->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
-    process->trapframe = arch_trapframe_init(process->kernel_stack_top, user_sp, process->entry);
+    process->trapframe = arch_trapframe_init(user_sp, process->entry);
     if (!process->trapframe) {
         kfree(buf);
         process_destroy(process);
         return NULL;
     }
 
-    uintptr_t context_stack_top = (uintptr_t)process->trapframe;
-    process->context = arch_context_init(context_stack_top, process_first_entry);
+    process->context = arch_context_init(process->kernel_stack_top, process_first_entry);
          
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
