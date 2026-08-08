@@ -1,4 +1,5 @@
 #include "fs/devfs/dev_ptm.h"
+#include "exec/scheduler.h"
 
 static uint8_t poll_ptm_data(dev_file_t* file, uint32_t offset) {
     (void)file;
@@ -16,11 +17,14 @@ static int32_t write_ptm_data(dev_file_t* file, uint8_t* buffer, uint32_t offset
     (void)offset; 
 
     if (!file || !buffer)
-        return 0;
+        return EFAULT;
 
     for (uint32_t i = 0; i < size; i++) {
         enqueue(&pty.input, &buffer[i]);
     }
+
+    if (size > 0)
+        process_wake_blocked();
 
     return size;
 }
@@ -29,7 +33,10 @@ static int32_t read_ptm_data(dev_file_t* file, uint8_t* buffer, uint32_t offset,
     (void) offset;
 
     if (!file || !buffer)
-        return 0;
+        return EFAULT;
+
+    if (queue_empty(&pty.output))
+        return EAGAIN;
 
     if (size > queue_size(&pty.output))
         size = queue_size(&pty.output);

@@ -24,11 +24,8 @@ static int read_line(char* buffer, uint32_t max_len) {
     while (len < max_len - 1) {
         char c;
         int32_t n = read(0, &c, 1);
-
-        if (n <= 0) {
-            yield(); 
+        if (n <= 0)
             continue;
-        }
 
         if (c == '\r') {
             continue;

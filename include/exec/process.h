@@ -66,8 +66,41 @@ typedef enum {
     PROC_RUNNING,
     PROC_READY,
     PROC_BLOCKED,
-    PROC_TERMINATED
+    PROC_TERMINATED,
+    PROC_IDLE,
 } proc_state_t;
+
+typedef enum {
+    WAIT_NONE,
+    WAIT_FD,
+    WAIT_CHILD,
+    WAIT_CHANNEL,
+    WAIT_POLL,
+} wait_type_t;
+
+typedef struct {
+    wait_type_t type;
+
+    union {
+        struct {
+            uint32_t fd;
+            uint32_t events;
+        } fd;
+
+        struct {
+            uint32_t pid;
+        } child;
+
+        struct {
+            void* channel;
+        } channel;
+
+        struct {
+            pollfd_t* fds;
+            uint32_t nfds;
+        } poll;
+    };
+} wait_condition_t;
 
 typedef struct {
     char name[128]; 
@@ -75,17 +108,12 @@ typedef struct {
     uint32_t pid;
     uint32_t ppid; 
     proc_state_t state;
-    void* wait_channel;
     uint32_t entry;
 
-    int32_t exit_status;
-    uint8_t waited_on;
-    uint32_t waiting_for_pid;
-    uint32_t wait_result_pid;
-    int32_t wait_result_status; 
-    int32_t* waiting_status_ptr;
-    uint8_t wait_has_results;
+    wait_condition_t wait;
 
+    int32_t exit_status;
+    
     uint32_t image_base;
     uint32_t image_end;
     

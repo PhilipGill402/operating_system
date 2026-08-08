@@ -146,28 +146,40 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
 int32_t sys_poll(pollfd_t* fds, uint32_t nfds) {
     if (!fds)
         return EFAULT;
+    
+    while (1) {
+        int32_t num_events = 0;
 
-    int32_t num_events = 0;
+        for (uint32_t i = 0; i < nfds; i++) {
+            uint32_t fd = fds[i].fd;
 
-    for (uint32_t i = 0; i < nfds; i++) {
-        uint32_t fd = fds[i].fd;
+            if (fd >= MAX_FDS) {
+                fds[i].revents = 0;
+                continue;
+            }
 
-        if (fd >= MAX_FDS) {
-            fds[i].revents = 0;
-            continue;
+            file_desc_t* file_desc = current_process->fds[fd];
+
+            uint8_t poll = fs_poll(file_desc->node, file_desc->offset);
+
+            if (poll != 0)
+                num_events++;
+
+            fds[i].revents = fds[i].events & poll;
         }
 
-        file_desc_t* file_desc = current_process->fds[fd];
+        if (num_events > 0)
+            return num_events;
 
-        uint8_t poll = fs_poll(file_desc->node, file_desc->offset);
+        current_process->wait.type = WAIT_POLL;
+        current_process->wait.poll.fds = fds;
+        current_process->wait.poll.nfds = nfds;
+        current_process->state = PROC_BLOCKED;
+        
+        schedule();
 
-        if (poll != 0)
-            num_events++;
-
-        fds[i].revents = fds[i].events & poll;
+        current_process->wait.type = WAIT_NONE;
     }
-
-    return num_events;
 }
 
 int32_t sys_mkdir(const char* path, uint32_t mode) {
@@ -507,24 +519,24 @@ int32_t sys_waitpid(uint32_t pid, int* status, int options) {
         if (child->ppid != current_process->pid)
             return ECHILD;
         
-        if (child->state == PROC_TERMINATED && !child->waited_on) {
+        if (child->state == PROC_TERMINATED) {
             int child_status = child->exit_status;
             
             if (status)
                 *status = child_status;
 
-            child->waited_on = 1;
-
             process_destroy(child);
 
             return pid;
         }
-
+        
+        current_process->wait.type = WAIT_CHILD;
+        current_process->wait.child.pid = pid;
         current_process->state = PROC_BLOCKED;
-        current_process->waiting_for_pid = pid;
-        current_process->waiting_status_ptr = status;
 
-        schedule_and_enter();
+        schedule();
+
+        current_process->wait.type = WAIT_NONE;
     }
 
     return ECHILD;
@@ -655,28 +667,26 @@ int32_t sys_read(uint32_t fd, char* buffer, size_t count) {
     
     if (!file) return ENOENT;
     
-    int32_t bytes_read = fs_read(file, current_process->fds[fd]->offset, count, (uint8_t*)buffer);
-    
-    // TODO: Implement this later
-    /*
-    if (bytes_read == EAGAIN) {
-        current_process->state = PROC_BLOCKED;
-        current_process->interrupted_by_signal = 0;
+    while (1) {
+        int32_t bytes_read = fs_read(file, current_process->fds[fd]->offset, count, (uint8_t*)buffer);
+
+        if (bytes_read != EAGAIN) {
+            if (bytes_read > 0)
+                current_process->fds[fd]->offset += bytes_read;
         
-        enqueue(&current_processes, &current_process);
-        schedule_and_enter();
-
-        if (current_process->interrupted_by_signal) {
-            current_process->interrupted_by_signal = 0;
-            return EINTR;
+            return bytes_read;
         }
-    }
-    */
-    
-    if (bytes_read >= 0)
-        current_process->fds[fd]->offset += bytes_read;
+        
+        current_process->wait.type = WAIT_FD;
+        current_process->wait.fd.fd = fd;
+        current_process->wait.fd.events = POLLIN;
+        current_process->state = PROC_BLOCKED;
 
-    return bytes_read;
+        schedule();
+        current_process->wait.type = WAIT_NONE;
+    }
+    
+    return EAGAIN;
 }
 
 int32_t sys_write(uint32_t fd, char* str, size_t count) {
@@ -745,9 +755,7 @@ _Noreturn int32_t sys_exit(int32_t status) {
     
     log_debug("Process %d (%s) exited with status %d\n", current_process->pid, current_process->name, current_process->exit_status);
 
-    process_wake_parent(exiting->pid);
-
-    schedule_and_enter();
+    schedule();
     
     // should never get here
     return 0;
@@ -966,7 +974,7 @@ void syscall_handler(arch_trapframe_t* tf) {
             break;
         case SYS_YIELD:
             arch_trapframe_set_ret(tf, 0);
-            schedule_from_interrupt(tf);
+            schedule();
             return;
         case SYS_DUP2:
             ret = sys_dup2(
@@ -997,11 +1005,7 @@ void syscall_handler(arch_trapframe_t* tf) {
 
     check_pending_signals(caller);
     
-    if (caller->state != PROC_RUNNING) {
-        schedule_from_interrupt(tf);
-        return;
-    }
-
+    return;
 }
 
 

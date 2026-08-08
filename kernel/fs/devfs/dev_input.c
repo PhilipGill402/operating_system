@@ -14,17 +14,20 @@ static int32_t read_input_data(dev_file_t* file, uint8_t* buffer, uint32_t offse
     (void) offset;
     
     if (!file || !buffer)
-        return 0;
+        return EFAULT;
 
     if (size < sizeof(input_event_t))
         return 0;
+
+    if (queue_empty(&input_buffer))
+            return EAGAIN;
 
     uint32_t num_events = size / sizeof(input_event_t);
     uint32_t buf_offset = 0;
     
     for (uint32_t i = 0; i < num_events; i++) {
         if (queue_empty(&input_buffer))
-            break;
+            return buf_offset;
 
         input_event_t c = *(input_event_t*)dequeue(&input_buffer);
 

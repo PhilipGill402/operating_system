@@ -21,7 +21,7 @@ void timer_callback(arch_trapframe_t* tf) {
 
         if (arch_trapframe_from_user(tf)) {
             pic_send_eoi(IRQ_TIMER);
-            schedule_from_interrupt(tf);
+            schedule();
             return;
         }
     } 

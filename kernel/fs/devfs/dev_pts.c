@@ -1,5 +1,7 @@
 #include "fs/devfs/dev_pts.h"
 
+#include "exec/scheduler.h"
+
 static uint8_t poll_pts_data(dev_file_t* file, uint32_t offset) {
     (void)file;
     (void)offset;
@@ -16,11 +18,14 @@ static int32_t write_pts_data(dev_file_t* file, uint8_t* buffer, uint32_t offset
     (void)offset; 
 
     if (!file || !buffer)
-        return 0;
+        return EFAULT;
 
     for (uint32_t i = 0; i < size; i++) {
         enqueue(&pty.output, &buffer[i]);
     }
+
+    if (size > 0)
+        process_wake_blocked();
 
     return size;
 }
@@ -29,7 +34,10 @@ static int32_t read_pts_data(dev_file_t* file, uint8_t* buffer, uint32_t offset,
     (void) offset;
 
     if (!file || !buffer)
-        return 0;
+        return EFAULT;
+
+    if (queue_empty(&pty.input))
+        return EAGAIN;
 
     if (size > queue_size(&pty.input))
         size = queue_size(&pty.input);

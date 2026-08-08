@@ -88,7 +88,6 @@ int main() {
         dup2(pts, 2);
 
         errno = 0; 
-         
         int ret = execve("/bin/shell", NULL);
         
         if (ret == -1) {
@@ -107,47 +106,59 @@ int main() {
 
     input_event_t input_event_buffer[256];
     uint8_t bytes[256];
+    
+    pollfd_t polls[2];
+    // Input 
+    polls[0].fd = input_fd;
+    polls[0].events = POLLIN;
+    // PTM 
+    polls[1].fd = ptm_fd;
+    polls[1].events = POLLIN;
 
     while (1) {
-        uint8_t did_work = 0;
+        polls[0].revents = 0;
+        polls[1].revents = 0;
+        int32_t ready = poll(polls, 2);
 
-        uint32_t event_bytes_read = read(input_fd, (char*)input_event_buffer, sizeof(input_event_buffer));
-        if (event_bytes_read > 0)
-            did_work = 1;
-
-        uint32_t events_read = event_bytes_read / sizeof(input_event_t);
-         
-        uint8_t num_chars = 0;
-        for (uint32_t i = 0; i < events_read; i++) {
-            input_event_t event = input_event_buffer[i];
-
-            if (event.type == INPUT_EVENT_KEY && event.ch) {
-                bytes[num_chars++] = event.ch; 
-            }
-        }
-
-        uint32_t bytes_written = 0;
-        if (num_chars > 0) {
-            bytes_written = write(ptm_fd, bytes, num_chars);
-            did_work = 1;
-        }
-        
-        uint32_t bytes_read = read(ptm_fd, bytes, sizeof(bytes) - 1);
-        
-        if (bytes_read > 0) {
-            did_work = 1;
-            tty_clear_cursor(&tty);
-            for (int32_t i = 0; i < bytes_read; i++) {
-                tty_put_char((char)bytes[i], &tty);
-            }
-            tty_draw_cursor(&tty);
-
-            gfx_flush(ctx);
-        }
-
-        if (!did_work)
+        if (ready <= 0) {
             yield();
+            continue;
+        }
+        
+        if (polls[0].revents & POLLIN) {
+            uint32_t event_bytes_read = read(input_fd, (char*)input_event_buffer, sizeof(input_event_buffer));
+            
+            uint32_t events_read = event_bytes_read / sizeof(input_event_t);
+             
+            uint8_t num_chars = 0;
+            for (uint32_t i = 0; i < events_read; i++) {
+                input_event_t event = input_event_buffer[i];
 
+                if (event.type == INPUT_EVENT_KEY && event.ch) {
+                    bytes[num_chars++] = event.ch; 
+                }
+            }
+
+            uint32_t bytes_written = 0;
+            if (num_chars > 0) {
+                bytes_written = write(ptm_fd, bytes, num_chars);
+            }
+        }
+        
+        if (polls[1].revents & POLLIN) {
+            uint32_t bytes_read = read(ptm_fd, bytes, sizeof(bytes) - 1);
+            
+            if (bytes_read > 0) {
+                tty_clear_cursor(&tty);
+                for (int32_t i = 0; i < bytes_read; i++) {
+                    tty_put_char((char)bytes[i], &tty);
+                }
+                tty_draw_cursor(&tty);
+
+                gfx_flush(ctx);
+            }
+        }
+        
     }
 
     gfx_free_context(ctx);

@@ -1,27 +1,36 @@
 #include "exec/scheduler.h"
 
+#include "fs/fs.h"
 #include <arch/exec/user_mode.h>
+#include <arch/cpu/tss.h>
 
 queue_t current_processes;
 
-void scheduler_init() {
-    current_processes = queue_create(sizeof(process_t*));
+static process_t* idle_process;
+
+static _Noreturn void idle_entry(void) {
+    current_process = idle_process;
+    idle_process->state = PROC_IDLE; 
+    for (;;) {
+        arch_enable_interrupts();
+        arch_halt();
+        
+        schedule();
+    }
 }
 
-
-void complete_pending_wait(process_t* process) {
-    if (!process->wait_has_results) return;
+void scheduler_init(void) {
+    current_processes = queue_create(sizeof(process_t*));
     
-    if (process->waiting_status_ptr) {
-        *(process->waiting_status_ptr) = process->wait_result_status;
-    }
-    
-    arch_trapframe_set_ret(process->trapframe, process->wait_result_pid); 
+    idle_process = kmalloc(sizeof(process_t));
+    memset(idle_process, 0, sizeof(process_t));
+    idle_process->pid = UINT32_MAX;
+    idle_process->state = PROC_READY;
 
-    process->wait_has_results = 0;
-    process->wait_result_pid = 0; 
-    process->waiting_status_ptr = NULL;
-    process->waiting_for_pid = 0;
+    idle_process->kernel_stack_bottom = (uintptr_t)kmalloc(KERNEL_STACK_SIZE);
+    idle_process->kernel_stack_top = idle_process->kernel_stack_bottom + KERNEL_STACK_SIZE;
+    
+    idle_process->context = arch_context_init(idle_process->kernel_stack_top, idle_entry);
 }
 
 void check_pending_signals(process_t* proc) {
@@ -30,7 +39,6 @@ void check_pending_signals(process_t* proc) {
         proc->pending_signals &= ~SIGKILL;
         proc->exit_status = 128 + SIGKILL;
         proc->state = PROC_TERMINATED;
-        process_wake_parent(proc->pid);
         return;
     } 
     
@@ -39,7 +47,6 @@ void check_pending_signals(process_t* proc) {
         proc->pending_signals &= ~SIGTERM;
         proc->exit_status = 128 + SIGTERM; 
         proc->state = PROC_TERMINATED;
-        process_wake_parent(proc->pid);
         return;
     } 
     
@@ -58,7 +65,7 @@ void check_pending_signals(process_t* proc) {
     }
 }
 
-process_t* dequeue_ready() {
+process_t* dequeue_ready(void) {
     process_t* next;
     
     uint32_t size = queue_size(&current_processes);
@@ -80,36 +87,12 @@ process_t* dequeue_ready() {
     return NULL;
 }
 
-void scheduler_idle_loop() {
-    current_process = NULL;
-
-    for (;;) {
-        arch_enable_interrupts();
-        arch_halt();
-        process_t* next = dequeue_ready();
-
-        if (!next) {
-            continue;
-        }
-
-        current_process = next;
-        current_process->state = PROC_RUNNING;
-        current_process->ticks_left = DEFAULT_MAX_TICKS;
-
-        arch_address_space_activate(current_process->addr_space);
-        arch_set_kernel_stack(current_process->kernel_stack_top);
-        complete_pending_wait(current_process);
-
-        arch_return_to_user(current_process->trapframe);
-    }
-}
-
-void schedule_and_enter() {
+void schedule_and_enter(void) {
     process_t* next = dequeue_ready();
          
     if (!next) {
-        // TODO: made some sort of idle task 
-        scheduler_idle_loop();
+        // switch to idle process
+        arch_context_switch(current_process->context, idle_process->context);
         return;
     }
     
@@ -119,98 +102,114 @@ void schedule_and_enter() {
     
     arch_address_space_activate(current_process->addr_space);
     arch_set_kernel_stack(current_process->kernel_stack_top);
-    complete_pending_wait(next);
     arch_return_to_user(current_process->trapframe);
 }
 
-void schedule_from_interrupt(arch_trapframe_t* tf) {
-    if (!current_process || !tf)
-        return;
-
+void schedule(void) {
     process_t* outgoing = current_process;
-    
-    arch_trapframe_copy(current_process->trapframe, tf);
-    
-    if (current_process->state == PROC_RUNNING) {
-        check_pending_signals(current_process);
 
-        if (current_process->state == PROC_RUNNING) {
-            current_process->state = PROC_READY;
-        }
-
-        if (current_process->state == PROC_READY) {
-            enqueue(&current_processes, &current_process);
-        }
-    }
-
-    process_t* next = dequeue_ready();
-
-    if (!next) {
-        if (current_process->state == PROC_READY || current_process->state == PROC_RUNNING) {
-            current_process->state = PROC_RUNNING;
-            current_process->ticks_left = DEFAULT_MAX_TICKS;
-
-            return;
-        } 
-        
-        current_process = NULL;
-        arch_address_space_activate(arch_kernel_address_space());
-        scheduler_idle_loop();
+    if (!outgoing) {
+        log_error("no current process\n");
         return;
     }
 
-    current_process = next;
-    current_process->state = PROC_RUNNING;
-    current_process->ticks_left = DEFAULT_MAX_TICKS;
+    if (outgoing->state == PROC_RUNNING)
+        outgoing->state = PROC_READY;
 
-    arch_address_space_activate(current_process->addr_space);
-    arch_set_kernel_stack(current_process->kernel_stack_top);
-    complete_pending_wait(current_process);
+    if (outgoing->state == PROC_READY)
+        enqueue(&current_processes, &outgoing);
+    
+    process_wake_blocked();
+    process_t* incoming = dequeue_ready();
 
-    process_t *incoming = next;
-    arch_trapframe_copy(tf, current_process->trapframe);
+    if (!incoming) {
+        if (outgoing->state == PROC_READY) {
+            outgoing->state = PROC_RUNNING;
+            return;
+        }
+        // TODO: implement idle task
+        current_process = idle_process; 
+        arch_context_switch(outgoing->context, idle_process->context);
+        return;
+    }
+    
+    current_process = incoming;
+    incoming->state = PROC_RUNNING;
+    incoming->ticks_left = DEFAULT_MAX_TICKS;
+
+    arch_address_space_activate(incoming->addr_space);
+    arch_set_kernel_stack(incoming->kernel_stack_top);
+    arch_context_switch(outgoing->context, incoming->context);
 }
 
+static uint8_t process_is_blocked_ready(process_t* proc) {
+    if (!proc || proc->state != PROC_BLOCKED)
+        return 0;
 
+    switch (proc->wait.type) {
+        case WAIT_FD: {
+            uint32_t fd = proc->wait.fd.fd;
 
-void process_wake_parent(uint32_t child_pid) {
-    process_t* child = get_process(child_pid);
-    if (!child) return;
+            if (fd >= MAX_FDS)
+                return 1;
 
-    process_t* parent = get_process(child->ppid);
-    if (!parent) return;
-    
-    if (parent->state == PROC_BLOCKED && parent->waiting_for_pid == child_pid) {
-        parent->state = PROC_READY;
-        parent->waiting_for_pid = 0;
-        parent->wait_result_pid = child_pid;
-        parent->wait_result_status = child->exit_status;
-        parent->wait_has_results = 1;
+            file_desc_t* desc = proc->fds[fd];
 
-        enqueue(&current_processes, &parent);
-        process_destroy(child);
+            if (!desc || !desc->node)
+                return 1;
+
+            uint32_t events = fs_poll(desc->node, desc->offset);
+
+            return (events & proc->wait.fd.events) != 0;
+        }
+
+        case WAIT_CHILD: {
+            process_t* child = get_process(proc->wait.child.pid);
+
+            return !child || child->state == PROC_TERMINATED;
+        }
+
+        case WAIT_POLL: {
+            for (uint32_t i = 0; i < proc->wait.poll.nfds; ++i) {
+                uint32_t fd = proc->wait.poll.fds[i].fd;
+                uint32_t event_mask = proc->wait.poll.fds[i].events;
+                
+                if (fd >= MAX_FDS)
+                    continue;
+
+                file_desc_t* desc = proc->fds[fd];
+
+                if (!desc || !desc->node)
+                    continue;
+
+                if (fs_poll(desc->node, desc->offset) & event_mask)
+                    return 1;
+            } 
+
+            return 0;
+        }
+
+        case WAIT_CHANNEL:
+        case WAIT_NONE:
+        default:
+            return 0;
     }
 }
 
-void process_block_current_process(void* channel) {
-    current_process->state = PROC_BLOCKED;
-    current_process->wait_channel = channel;
-
-    //schedule();
-}
-
-void process_wake_blocked(void* channel) {
+void process_wake_blocked(void) {
     for (uint32_t i = 0; i < MAX_PROCESSES; i++) {
         process_t* proc = process_table[i];
         if (!proc)
             continue;
 
-        if (proc->state == PROC_BLOCKED && proc->wait_channel == channel) {
-            proc->state = PROC_READY;
-            proc->wait_channel = NULL;
-            enqueue(&current_processes, &proc);
-        }
+        if (proc->state != PROC_BLOCKED)
+            continue;
+
+        if (!process_is_blocked_ready(proc))
+            continue;
+        
+        proc->state = PROC_READY;
+        enqueue(&current_processes, &proc);
     }
 }
-
 

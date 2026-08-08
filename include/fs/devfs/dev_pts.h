@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include <queue.h>
+#include <errno.h>
 
 #include "fs/fs_types.h"
 #include "fs/devfs/dev_defs.h"

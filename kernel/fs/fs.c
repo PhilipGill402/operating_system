@@ -58,9 +58,10 @@ int32_t fs_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_t si
         log_error("node->writefile is at %x and node->flags == FS_DIR = %d\n", node->writefile, node->flags == FS_DIR);        
         return 0;
     }
-        
+    
+    int32_t bytes_written = node->writefile(node, buffer, offset, size);
 
-    return node->writefile(node, buffer, offset, size);
+    return bytes_written;
 }
 
 int32_t fs_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer) {

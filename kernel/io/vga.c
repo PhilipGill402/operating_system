@@ -16,11 +16,11 @@ uint16_t vga_entry(unsigned char c, uint8_t color) {
 void vga_move_cursor(uint16_t row, uint16_t col) {
     uint16_t pos = row * 80 + col;
 
-    outb(0x3D4, 14);
-    outb(0x3D5, (uint8_t)(pos >> 8));
+    arch_write_byte(0x3D4, 14);
+    arch_write_byte(0x3D5, (uint8_t)(pos >> 8));
 
-    outb(0x3D4, 15);
-    outb(0x3D5, (uint8_t)(pos & 0xFF));
+    arch_write_byte(0x3D4, 15);
+    arch_write_byte(0x3D5, (uint8_t)(pos & 0xFF));
 }
 
 void terminal_initialize() {

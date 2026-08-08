@@ -93,20 +93,14 @@ process_t* process_clone(process_t* process) {
     new->ppid = process->pid;
     
     new->exit_status = 0;
-    new->waited_on = 0;
-    new->waiting_for_pid = 0;
-    new->wait_result_pid = 0;
-    new->wait_result_status = 0;
-    new->waiting_status_ptr = NULL;
-    new->wait_has_results = 0;
-
+    
     new->ticks_left = DEFAULT_MAX_TICKS;
     new->state = PROC_READY;
 
     new->pending_signals = 0;
 
-    new->wait_channel = NULL;
-    
+    new->wait.type = WAIT_NONE;
+
     // Copy parent's open file descriptors
     for (uint32_t i = 0; i < MAX_FDS; i++) {
         file_desc_t* fd = process->fds[i];

@@ -1,6 +1,6 @@
 #include "interrupts/keyboard.h"
 
-#include <log.h>
+#include "exec/scheduler.h"
 
 static volatile keyboard_modifiers = 0;
 
@@ -386,6 +386,7 @@ void keyboard_callback(arch_trapframe_t* tf) {
 
     if (keyboard_decode(scancode, &event)) {
         enqueue(&input_buffer, &event);
+        process_wake_blocked();
     }
 }
 
