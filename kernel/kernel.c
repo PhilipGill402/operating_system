@@ -7,7 +7,6 @@
 #include <log.h>
 
 #include <arch/boot/boot.h>
-#include <arch/cpu/gdt.h>
 #include <arch/asm/helpers.h>
 #include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>

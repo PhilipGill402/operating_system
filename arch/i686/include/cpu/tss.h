@@ -1,10 +1,10 @@
-#ifndef INCLUDE_EXEC_TSS_H_
-#define INCLUDE_EXEC_TSS_H_
+#ifndef ARCH_INCLUDE_CPU_TSS_H_
+#define ARCH_INCLUDE_CPU_TSS_H_
 
 #include <stdint.h>
 #include <string.h>
 
-#include <arch/cpu/gdt.h>
+#include "cpu/gdt.h"
 
 typedef struct {
     uint32_t prev_tss;

@@ -2,7 +2,6 @@
 #include <log.h>
 
 #include <arch/memory/physical_allocator.h>
-#include <arch/cpu/gdt.h>
 #include <arch/asm/helpers.h>
 #include <arch/memory/paging.h>
 #include <arch/interrupts/idt.h>
@@ -12,6 +11,7 @@
 
 #include <memory/internal_paging.h>
 
+#include "cpu/gdt.h"
 #include "io/serial.h"
 #include "multiboot.h"
 #include "memory_mapping.h"

@@ -1,11 +1,10 @@
-#ifndef INCLUDE_GDT_H_
-#define INCLUDE_GDT_H_
+#ifndef ARCH_INCLUDE_CPU_GDT_H_
+#define ARCH_INCLUDE_CPU_GDT_H_
 
 #include <stdint.h>
 #include <string.h>
 
-#include <arch/cpu/tss.h>
-
+#include "cpu/tss.h"
 #include "memory_mapping.h"
 
 #define PAGE_SIZE 4096

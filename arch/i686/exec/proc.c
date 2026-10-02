@@ -1,9 +1,9 @@
 #include <arch/exec/proc.h>
-#include <arch/cpu/tss.h>
 #include <exec/trapframe.h>
 #include <exec/context.h>
 #include <string.h>
 
+#include "cpu/tss.h"
 #include "memory/heap.h"
 
 #include <log.h>
