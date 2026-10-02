@@ -3,11 +3,14 @@
 # =============================================================================
 
 ARCH ?= i686
-TARGET := $(ARCH)-elf
 
-CC := $(TARGET)-gcc
-AS := $(TARGET)-as
-LD := $(TARGET)-gcc
+ARCH_DIR := arch/$(ARCH)
+ARCH_INC_DIR := $(ARCH_DIR)/include
+ARCH_LINKER_SCRIPT := $(ARCH_DIR)/linker.ld
+ARCH_CONFIG := $(ARCH_DIR)/config.mk
+
+# Allow architectures/toolchains to override this from config.mk if needed.
+TARGET ?= $(ARCH)-elf
 
 # =============================================================================
 # Project directories
@@ -15,10 +18,6 @@ LD := $(TARGET)-gcc
 
 KERNEL_DIR := kernel
 KERNEL_INC_DIR := include
-
-ARCH_DIR := arch/$(ARCH)
-ARCH_INC_DIR := $(ARCH_DIR)/include
-ARCH_LINKER_SCRIPT := $(ARCH_DIR)/linker.ld
 
 BUILD_ROOT := build
 BUILD_DIR := $(BUILD_ROOT)/$(ARCH)
@@ -51,23 +50,49 @@ SYSROOT_STAMP := $(SYSROOT)/.libc-installed
 # Output files
 # =============================================================================
 
-KERNEL_BIN := kernel.bin
-ISO := myos.iso
-FS := initrd.img
+KERNEL_ELF := $(BUILD_DIR)/kernel.elf
+KERNEL_BIN := $(BUILD_DIR)/kernel.bin
+ISO := $(BUILD_DIR)/myos.iso
+FS := $(BUILD_DIR)/initrd.img
+
+# =============================================================================
+# Architecture configuration
+#
+# Each architecture supplies things such as:
+#
+#   QEMU_ARCH
+#   QEMU_ARGS
+#   RUN_DEPS
+#   BOOT_MODE
+#   POST_LINK_CHECK
+#
+# =============================================================================
+
+ifeq ($(wildcard $(ARCH_CONFIG)),)
+$(error Unsupported architecture "$(ARCH)": missing $(ARCH_CONFIG))
+endif
+
+include $(ARCH_CONFIG)
+
+# =============================================================================
+# Toolchain
+#
+# TARGET may be overridden by arch/$(ARCH)/config.mk.
+# =============================================================================
+
+CC := $(TARGET)-gcc
+AS := $(TARGET)-as
+LD := $(TARGET)-gcc
+OBJCOPY := $(TARGET)-objcopy
 
 # =============================================================================
 # Compiler and linker flags
 # =============================================================================
 
-# Include paths available to all kernel and architecture source files.
 COMMON_CPPFLAGS := \
 	-I$(KERNEL_INC_DIR) \
 	-I$(LIBK_INC)
 
-# Private architecture include path.
-#
-# Only source files under arch/$(ARCH) are compiled with this path.
-# Generic kernel files cannot include architecture-private headers.
 ARCH_CPPFLAGS := \
 	-I$(ARCH_INC_DIR)
 
@@ -89,6 +114,12 @@ LDFLAGS := \
 
 LIBS := -lgcc
 
+# Allow an architecture to append its own flags.
+CFLAGS += $(ARCH_CFLAGS)
+ASFLAGS += $(ARCH_ASFLAGS)
+LDFLAGS += $(ARCH_LDFLAGS)
+COMMON_CPPFLAGS += $(ARCH_CPPFLAGS_EXTRA)
+
 # =============================================================================
 # Source discovery
 # =============================================================================
@@ -108,23 +139,17 @@ ARCH_C_SOURCES := \
 ARCH_ASM_SOURCES := \
 	$(shell find $(ARCH_DIR) -type f -name '*.s')
 
-# Uppercase .S files are passed through the C preprocessor.
 ARCH_CPP_ASM_SOURCES := \
 	$(shell find $(ARCH_DIR) -type f -name '*.S')
 
 # =============================================================================
 # Object paths
 #
-# Examples:
-#
 # kernel/kernel.c
-#   -> build/i686/kernel/kernel.o
+#   -> build/<arch>/kernel/kernel.o
 #
-# arch/i686/boot/early_init.c
-#   -> build/i686/arch/i686/boot/early_init.o
-#
-# arch/i686/boot/boot.s
-#   -> build/i686/arch/i686/boot/boot.o
+# arch/<arch>/boot/boot.S
+#   -> build/<arch>/arch/<arch>/boot/boot.o
 # =============================================================================
 
 KERNEL_C_OBJECTS := \
@@ -163,6 +188,7 @@ LIBC_HEADERS := \
 .PHONY: \
 	all \
 	kernel \
+	bin \
 	debug \
 	run \
 	iso \
@@ -175,7 +201,10 @@ LIBC_HEADERS := \
 
 all: kernel
 
-kernel: $(KERNEL_BIN)
+kernel: $(KERNEL_ELF)
+
+# Explicit target for a raw flat kernel binary.
+bin: $(KERNEL_BIN)
 
 debug: COMMON_CPPFLAGS += -DMALLOC_DEBUG
 debug: kernel
@@ -184,28 +213,32 @@ debug: kernel
 # Kernel link
 # =============================================================================
 
-$(KERNEL_BIN): $(ARCH_LINKER_SCRIPT) $(OBJECTS) $(LIBK)
+$(KERNEL_ELF): $(ARCH_LINKER_SCRIPT) $(OBJECTS) $(LIBK)
+	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIBK) $(LIBS)
-	grub-file --is-x86-multiboot $@
+	$(if $(POST_LINK_CHECK),$(POST_LINK_CHECK))
+
+# Convert the linked ELF into a genuine raw binary.
+$(KERNEL_BIN): $(KERNEL_ELF)
+	$(OBJCOPY) -O binary $< $@
 
 # =============================================================================
 # Generic kernel C compilation
 #
 # Generic kernel files receive only public include paths.
-# They cannot include headers from arch/$(ARCH)/include.
+# They cannot include architecture-private headers.
 # =============================================================================
 
 $(BUILD_DIR)/kernel/%.o: kernel/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(COMMON_CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) \
+		$(COMMON_CPPFLAGS) \
+		$(CFLAGS) \
+		-c $< \
+		-o $@
 
 # =============================================================================
 # Architecture-specific C compilation
-#
-# Architecture implementation files receive both:
-#
-#   - public kernel include paths
-#   - private architecture include paths
 # =============================================================================
 
 $(BUILD_DIR)/$(ARCH_DIR)/%.o: $(ARCH_DIR)/%.c
@@ -227,7 +260,11 @@ $(BUILD_DIR)/kernel/%.o: kernel/%.s
 
 $(BUILD_DIR)/kernel/%.o: kernel/%.S
 	@mkdir -p $(dir $@)
-	$(CC) $(COMMON_CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) \
+		$(COMMON_CPPFLAGS) \
+		$(CFLAGS) \
+		-c $< \
+		-o $@
 
 # =============================================================================
 # Architecture-specific assembly compilation
@@ -288,34 +325,51 @@ $(LIBGFX):
 # =============================================================================
 
 user: libc
-	$(MAKE) -C $(USER_DIR)
+	$(MAKE) -C $(USER_DIR) ARCH=$(ARCH)
 
 $(FS): user
+	@mkdir -p $(dir $@)
 	python3 initrd.py
+	@if [ -f initrd.img ]; then mv initrd.img $@; fi
 
 img: $(FS)
 
 # =============================================================================
 # ISO
+#
+# Only architectures whose config selects BOOT_MODE=grub-iso support this.
 # =============================================================================
 
-iso: kernel libc user $(FS)
+ifeq ($(BOOT_MODE),grub-iso)
+
+ISO_KERNEL_NAME ?= kernel.elf
+
+$(ISO): $(KERNEL_ELF) libc user $(FS)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
-	cp $(KERNEL_BIN) $(ISO_DIR)/boot/$(KERNEL_BIN)
-	cp grub.cfg $(ISO_DIR)/boot/grub
+
+	cp $(KERNEL_ELF) $(ISO_DIR)/boot/$(ISO_KERNEL_NAME)
+	cp grub.cfg $(ISO_DIR)/boot/grub/
 	cp $(FS) $(ISO_DIR)/boot/
-	grub-mkrescue -o $(ISO) $(ISO_DIR)
+
+	i686-elf-grub-mkrescue -o $(ISO) $(ISO_DIR)
+
+iso: $(ISO)
+
+else
+
+iso:
+	@echo "ISO boot is not supported for architecture $(ARCH)"
+	@false
+
+endif
 
 # =============================================================================
 # QEMU
 # =============================================================================
 
-run:
-	qemu-system-i386 \
-		-cdrom $(ISO) \
-		-serial stdio \
-		-monitor none
+run: $(RUN_DEPS)
+	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS)
 
 # =============================================================================
 # Cleanup
@@ -329,8 +383,3 @@ clean:
 
 	rm -rf $(BUILD_ROOT)
 	rm -rf $(SYSROOT)
-	rm -rf $(ISO_DIR)
-
-	rm -f $(KERNEL_BIN)
-	rm -f $(FS)
-	rm -f $(ISO)
