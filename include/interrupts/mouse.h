@@ -7,6 +7,7 @@
 
 #include <arch/interrupts/irq.h>
 #include <arch/interrupts/port.h>
+#include <arch/asm/helpers.h>
 
 #include "io/framebuffer.h"
 #include "interrupts/keyboard.h"

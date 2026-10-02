@@ -2,6 +2,7 @@
 
 #include "fs/fs.h"
 #include <arch/exec/user_mode.h>
+#include "exec/process.h"
 
 queue_t current_processes;
 

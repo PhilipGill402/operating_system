@@ -18,6 +18,7 @@
 #include "io/framebuffer.h"
 #include "exec/process.h"
 #include "exec/scheduler.h"
+#include "exec/elf.h"
 #include "timer.h"
 #include "fs/fs.h"
 

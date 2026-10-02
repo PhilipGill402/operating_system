@@ -635,13 +635,13 @@ void* sys_brk(void* new_addr) {
     }
     
     if (addr < current_process->heap_start || addr > current_process->heap_max_end) {
-        return EFAULT;
+        return (void*)EFAULT;
     }
     
     while (addr > current_process->heap_mapped_end) {
         uint32_t frame = pmm_alloc_frame();
         if (!frame) {
-            return EFAULT;
+            return (void*)EFAULT;
         }
 
         arch_page_map(current_process->addr_space, current_process->heap_mapped_end, frame, ARCH_PAGE_USER | ARCH_PAGE_WRITE);
@@ -872,7 +872,7 @@ void syscall_handler(arch_trapframe_t* tf) {
         case SYS_EXECVE:
             ret = sys_execve(
                 (char*)arch_trapframe_get_arg(caller->trapframe, 2),
-                (char**)arch_trapframe_get_arg(caller->trapframe, 3)
+                (const char**)arch_trapframe_get_arg(caller->trapframe, 3)
             );
             
             if (ret >= 0) {

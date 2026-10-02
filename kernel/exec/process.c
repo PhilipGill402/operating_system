@@ -337,7 +337,7 @@ void process_destroy(process_t* process) {
         arch_context_destroy(process->context);
     
     if (process->kernel_stack_bottom)
-        kfree((uintptr_t)process->kernel_stack_bottom);
+        kfree((void*)process->kernel_stack_bottom);
     
     process_table[process->pid] = NULL;
 

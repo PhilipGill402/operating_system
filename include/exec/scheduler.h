@@ -6,14 +6,14 @@
 
 #include <arch/exec/proc.h>
 
-
-#include "exec/process.h"
+typedef struct process process_t;
 
 process_t* dequeue_ready(void);
 void scheduler_init(void);
 void schedule_and_enter(void);
 void schedule(void);
 void process_wake_blocked(void);
+void check_pending_signals(process_t* proc);
 
 extern queue_t current_processes;
 

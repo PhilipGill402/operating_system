@@ -6,13 +6,13 @@ static uint8_t mouse_cycle = 0;
 
 static void ps2_wait_read(void) {
     while (!(arch_read_byte(PS2_STATUS_PORT) & PS2_STATUS_OUTPUT_FULL)) {
-        asm volatile("pause");
+        arch_cpu_relax();
     }
 }
 
 static void ps2_wait_write(void) {
     while (arch_read_byte(PS2_STATUS_PORT) & PS2_STATUS_INPUT_FULL) {
-        asm volatile("pause");
+        arch_cpu_relax();
     }
 }
 

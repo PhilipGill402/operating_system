@@ -2,7 +2,7 @@
 
 #include "exec/scheduler.h"
 
-static volatile keyboard_modifiers = 0;
+static volatile uint8_t keyboard_modifiers = 0;
 
 static const keycode_t scancode_set1_map[128] = {
     [0x00] = KEY_NONE,

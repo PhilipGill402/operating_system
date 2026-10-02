@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <arch/cpu/cpu_info.h>
 #include "fs/procfs/procfs_defs.h"
 #include "memory/heap.h"
 

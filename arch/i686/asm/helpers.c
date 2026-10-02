@@ -11,3 +11,7 @@ void arch_enable_interrupts(void) {
 void arch_halt(void) {
     __asm__ volatile("hlt" ::: "memory");
 }
+
+void arch_cpu_relax(void) {
+    __asm__ volatile("pause");
+}

@@ -45,7 +45,7 @@ static int32_t framebuffer_shared_buffer_init() {
 
         uintptr_t page = FB_SHARED_KERNEL_VADDR + (uintptr_t)i * PAGE_SIZE;
         arch_page_map(arch_kernel_address_space(), page, frame, ARCH_PAGE_WRITE);
-        memset(page, 0, PAGE_SIZE);
+        memset((void*)page, 0, PAGE_SIZE);
     }
 
     framebuffer.backbuffer = (uint32_t*)FB_SHARED_KERNEL_VADDR;

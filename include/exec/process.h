@@ -14,6 +14,9 @@
 #include "fs/fs_types.h"
 #include "memory_mapping.h"
 
+// forward declaration to avoid circular dependency
+fs_node_t* resolve_path(const char* path, fs_node_t* cwd);
+
 #define MAX_FDS 128
 #define MAX_ARGV 32
 
@@ -102,7 +105,7 @@ typedef struct {
     };
 } wait_condition_t;
 
-typedef struct {
+typedef struct process {
     char name[128]; 
 
     uint32_t pid;

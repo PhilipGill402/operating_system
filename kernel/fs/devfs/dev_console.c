@@ -2,7 +2,7 @@
 
 #include <log.h>
 
-int32_t poll_console_data(dev_file_t* file, uint32_t offset) {
+uint8_t poll_console_data(dev_file_t* file, uint32_t offset) {
     if (!file)
         return POLLERR;
 

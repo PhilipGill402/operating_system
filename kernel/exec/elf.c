@@ -1,4 +1,5 @@
 #include "exec/elf.h"
+#include "exec/process.h"
 
 static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
@@ -312,7 +313,10 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     
     cmd_args_t args = {
         .argc = 0,
-        .argv = init_argv 
+        .argv = {
+            init_argv[0],
+            NULL
+        }
     };
     
     uint32_t user_sp = process_add_argv_to_stack(process, &args);

@@ -9,8 +9,8 @@
 
 #include "fs/fs.h"
 #include "memory/heap.h"
-#include "exec/process.h"
 #include "exec/scheduler.h"
+#include "exec/process.h"
 
 #define PAGE_SIZE 4096
 

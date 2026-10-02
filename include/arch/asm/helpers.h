@@ -4,5 +4,6 @@
 void arch_disable_interrupts(void);
 void arch_enable_interrupts(void);
 void arch_halt(void);
+void arch_cpu_relax(void);
 
 #endif // !ARCH_ASM_
