@@ -5,7 +5,6 @@
 
 #include <log.h>
 
-#include <arch/interrupts/irq.h>
 #include <arch/interrupts/port.h>
 #include <arch/asm/helpers.h>
 

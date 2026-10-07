@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include <arch/exec/proc.h>
-#include <arch/interrupts/irq.h>
+#include "interrupts/irq.h"
 
 #include "syscalls.h"
 

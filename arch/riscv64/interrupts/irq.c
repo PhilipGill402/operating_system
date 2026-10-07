@@ -1,29 +1,8 @@
-#include <arch/interrupts/irq.h>
-#include <arch/asm/helpers.h>
+#include "interrupts/irq.h"
 
-extern void trap_entry(void);
+extern void riscv_trap_entry(void);
 
-void irq_install_handler(uint8_t irq, irq_handler_t handler) {
-    return;
-}
-
-void irq_uninstall_handler(uint8_t irq) {
-    return;
-}
-
-void irq_handler(arch_trapframe_t* tf) {
-    return;
-}
-
-void irq_init_handlers() {
-    return;
-}
-
-void riscv_trap_handler(arch_trapframe_t* tf) {
-
-}
-
-void arch_irq_init(void) {
+void riscv_irq_init(void) {
     // disable global interrupts
     arch_disable_interrupts();
     // set stvec with irq handler

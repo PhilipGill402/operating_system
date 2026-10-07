@@ -1,5 +1,5 @@
-#include <arch/interrupts/idt.h>
-#include <arch/interrupts/irq.h>
+#include "interrupts/idt.h"
+#include "interrupts/irq.h"
 #include <exec/trapframe.h>
 
 struct idt_entry idt[256];

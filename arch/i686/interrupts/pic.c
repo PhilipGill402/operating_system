@@ -1,4 +1,4 @@
-#include <arch/interrupts/pic.h>
+#include "interrupts/pic.h"
 
 void pic_remap(uint8_t offset1, uint8_t offset2) {
     uint8_t mask1 = arch_read_byte(PIC1_DATA);

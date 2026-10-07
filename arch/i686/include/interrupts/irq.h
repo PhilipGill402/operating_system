@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include <arch/exec/proc.h>
-#include <arch/interrupts/idt.h>
+#include "interrupts/idt.h"
 
 #include "interrupts/keyboard.h"
 #include "timer.h"

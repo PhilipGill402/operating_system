@@ -4,13 +4,13 @@
 #include <arch/memory/physical_allocator.h>
 #include <arch/asm/helpers.h>
 #include <arch/memory/paging.h>
-#include <arch/interrupts/idt.h>
-#include <arch/interrupts/pic.h>
-#include <arch/interrupts/irq.h>
-#include <arch/interrupts/pit.h>
 
-#include <memory/internal_paging.h>
 
+#include "interrupts/pic.h"
+#include "interrupts/pit.h"
+#include "memory/internal_paging.h"
+#include "interrupts/idt.h"
+#include "interrupts/irq.h"
 #include "cpu/gdt.h"
 #include "io/serial.h"
 #include "multiboot.h"

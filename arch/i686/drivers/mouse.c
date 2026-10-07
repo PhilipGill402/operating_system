@@ -1,4 +1,5 @@
 #include <arch/drivers/mouse.h>
+#include "interrupts/irq.h"
 
 #define PS2_DATA_PORT      0x60
 #define PS2_STATUS_PORT    0x64
