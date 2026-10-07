@@ -8,6 +8,7 @@
 #include <arch/interrupts/timer.h>
 
 #include "exec/process.h"
+#include "exec/scheduler.h"
 
 extern volatile uint32_t ticks;
 

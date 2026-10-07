@@ -16,6 +16,9 @@ __attribute__((noreturn)) void arch_switch_to_new_kernel_stack(uint32_t new_stac
 void arch_kernel_early_init(uint32_t mbi_phys) {
     serial_init();
     riscv_irq_init();
+    log_debug("traps initialized\n");
+
+    asm volatile("ebreak");
 
     for (;;) {
         arch_halt();

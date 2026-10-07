@@ -2,7 +2,7 @@
 # Target architecture
 # =============================================================================
 
-ARCH ?= i686
+ARCH ?= riscv64
 
 ARCH_DIR := arch/$(ARCH)
 ARCH_INC_DIR := $(ARCH_DIR)/include
