@@ -60,4 +60,8 @@ void kernel_finish_init() {
 
 void kernel_main(uint32_t mbi_phys) {
     arch_kernel_early_init(mbi_phys);
+
+    for (;;) {
+        arch_halt();
+    }
 }

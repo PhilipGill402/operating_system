@@ -1,4 +1,5 @@
 #include "io/serial.h"
+#include <arch/io/serial.h>
 
 static int serial_transmit_empty() {
     return arch_read_byte(COM1 + 5) & 0x20;

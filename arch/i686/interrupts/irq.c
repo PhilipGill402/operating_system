@@ -1,5 +1,6 @@
 #include <arch/interrupts/irq.h>
 #include <exec/trapframe.h>
+#include "include/interrupts/pic.h"
 
 void irq_install_handler(uint8_t irq, irq_handler_t handler) {
     irq_routines[irq] = handler;

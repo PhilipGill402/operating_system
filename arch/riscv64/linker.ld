@@ -21,24 +21,34 @@ SECTIONS
     {
         *(.data)
         *(.data.*)
+
+        PROVIDE(__global_pointer$ = . + 0x800);
+
+        *(.sdata)
+        *(.sdata.*)
     }
 
     .bss : ALIGN(4K)
     {
-        PROVIDE(bss_start = .);
+        bss_start = .;
+
+        *(.sbss)
+        *(.sbss.*)
 
         *(.bss)
         *(.bss.*)
+
         *(COMMON)
 
-        PROVIDE(bss_end = .);
+        . = ALIGN(8);
+        bss_end = .;
     }
 
     . = ALIGN(16);
 
-    PROVIDE(stack_bottom = .);
+    stack_bottom = .;
     . += 16K;
-    PROVIDE(stack_top = .);
+    stack_top = .;
 
-    PROVIDE(kernel_end = .);
+    kernel_end = .;
 }

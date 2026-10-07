@@ -1,5 +1,7 @@
 #include <arch/memory/physical_allocator.h>
 
+pmm_t pmm = { 0 };
+
 
 void pmm_init(multiboot_info_t* mbi) {
     return;

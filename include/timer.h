@@ -6,7 +6,7 @@
 
 #include <arch/exec/proc.h>
 #include <arch/interrupts/idt.h>
-#include <arch/interrupts/pic.h>
+#include <arch/interrupts/timer.h>
 
 #include "exec/process.h"
 

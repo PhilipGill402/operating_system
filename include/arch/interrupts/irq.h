@@ -6,10 +6,10 @@
 
 #include <arch/exec/proc.h>
 #include <arch/interrupts/idt.h>
-#include <arch/interrupts/pic.h>
 
 #include "interrupts/keyboard.h"
 #include "timer.h"
+
 
 typedef void(*irq_handler_t)(arch_trapframe_t* tf);
 

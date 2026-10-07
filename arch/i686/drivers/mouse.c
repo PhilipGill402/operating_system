@@ -1,4 +1,22 @@
-#include "interrupts/mouse.h"
+#include <arch/drivers/mouse.h>
+
+#define PS2_DATA_PORT      0x60
+#define PS2_STATUS_PORT    0x64
+#define PS2_COMMAND_PORT   0x64
+
+#define PS2_STATUS_OUTPUT_FULL 0x01
+#define PS2_STATUS_INPUT_FULL  0x02
+
+#define PS2_CMD_READ_CONFIG    0x20
+#define PS2_CMD_WRITE_CONFIG   0x60
+#define PS2_CMD_ENABLE_AUX     0xA8
+#define PS2_CMD_WRITE_MOUSE    0xD4
+
+#define MOUSE_CMD_RESET        0xFF
+#define MOUSE_CMD_ENABLE       0xF4
+#define MOUSE_CMD_SET_DEFAULTS 0xF6
+
+#define MOUSE_ACK              0xFA
 
 static mouse_state_t mouse = { 0 };
 static uint8_t mouse_packet[3];

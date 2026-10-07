@@ -6,7 +6,7 @@ void timer_callback(arch_trapframe_t* tf) {
     ticks++;
     
     if (!current_process) {
-        pic_send_eoi(IRQ_TIMER);
+        arch_timer_ack();
         return;
     }
 
@@ -20,13 +20,13 @@ void timer_callback(arch_trapframe_t* tf) {
         current_process->ticks_left = DEFAULT_MAX_TICKS;
 
         if (arch_trapframe_from_user(tf)) {
-            pic_send_eoi(IRQ_TIMER);
+            arch_timer_ack();
             schedule();
             return;
         }
     } 
 
-    pic_send_eoi(IRQ_TIMER);
+    arch_timer_ack();
 }
 
 uint32_t timer_get_ticks() {

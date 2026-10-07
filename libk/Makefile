@@ -44,7 +44,7 @@ $(LIBK): $(OBJECTS)
 
 $(BUILD_DIR)/%.o: ./%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(ARCH_CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)

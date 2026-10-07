@@ -102,7 +102,10 @@ CFLAGS := \
 	-O2 \
 	-Wall \
 	-Wextra \
-	-g
+	-g \
+	-DARCH_$(ARCH)
+
+CFLAGS += $(ARCH_CFLAGS)
 
 ASFLAGS :=
 
@@ -119,6 +122,7 @@ CFLAGS += $(ARCH_CFLAGS)
 ASFLAGS += $(ARCH_ASFLAGS)
 LDFLAGS += $(ARCH_LDFLAGS)
 COMMON_CPPFLAGS += $(ARCH_CPPFLAGS_EXTRA)
+QEMU_FLAGS := 
 
 # =============================================================================
 # Source discovery
@@ -207,7 +211,8 @@ kernel: $(KERNEL_ELF)
 bin: $(KERNEL_BIN)
 
 debug: COMMON_CPPFLAGS += -DMALLOC_DEBUG
-debug: kernel
+debug: QEMU_FLAGS += -S -s
+debug: run
 
 # =============================================================================
 # Kernel link
@@ -290,7 +295,7 @@ $(BUILD_DIR)/$(ARCH_DIR)/%.o: $(ARCH_DIR)/%.S
 libk: $(LIBK)
 
 $(LIBK):
-	$(MAKE) -C $(LIBK_DIR) ARCH=$(ARCH)
+	$(MAKE) -C $(LIBK_DIR) ARCH=$(ARCH) ARCH_CFLAGS="$(ARCH_CFLAGS)"
 	@mkdir -p $(dir $@)
 	cp $(LIBK_DIR)/build/libk.a $@
 
@@ -369,7 +374,7 @@ endif
 # =============================================================================
 
 run: $(RUN_DEPS)
-	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS)
+	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) $(QEMU_FLAGS)
 
 # =============================================================================
 # Cleanup
