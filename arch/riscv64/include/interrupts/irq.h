@@ -1,6 +1,8 @@
 #ifndef ARCH_RISCV64_INCLUDE_INTERRUPTS_IRQ_H_
 #define ARCH_RISCV64_INCLUDE_INTERRUPTS_IRQ_H_
 
+#define SCAUSE_INTERRUPT_BIT   (1ULL << 63)
+
 void riscv_irq_init(void);
 
 #endif

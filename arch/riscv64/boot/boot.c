@@ -18,8 +18,6 @@ void arch_kernel_early_init(uint32_t mbi_phys) {
     riscv_irq_init();
     log_debug("traps initialized\n");
 
-    asm volatile("ebreak");
-
     for (;;) {
         arch_halt();
     }

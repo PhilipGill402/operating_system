@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef struct trapframe {
+typedef struct arch_trapframe {
     uint64_t ra;
     uint64_t sp;
     uint64_t gp;
