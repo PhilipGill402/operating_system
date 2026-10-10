@@ -6,6 +6,7 @@
 #include <arch/asm/helpers.h>
 #include <stdint.h>
 #include <log.h>
+#include <stdlib.h>
 
 extern void riscv_trap_entry(void);
 
@@ -33,6 +34,5 @@ void riscv_irq_init(void) {
         }
     }
     // initialize PLIC
-
     arch_enable_interrupts();
 }

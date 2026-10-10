@@ -7,6 +7,7 @@
 
 __attribute__((__noreturn__))
 void abort(void);
+void panic(char* msg);
 
 int atoi(const char* str);
 long int atol(const char* str);
