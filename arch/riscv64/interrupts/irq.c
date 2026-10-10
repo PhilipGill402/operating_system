@@ -1,5 +1,6 @@
 #include "interrupts/irq.h"
 #include "interrupts/timer.h"
+#include "interrupts/plic.h"
 #include "interrupts/exceptions.h"
 #include "interrupts/interrupts.h"
 #include "trapframe.h"
@@ -34,5 +35,7 @@ void riscv_irq_init(void) {
         }
     }
     // initialize PLIC
+    riscv_plic_init();
+
     arch_enable_interrupts();
 }
