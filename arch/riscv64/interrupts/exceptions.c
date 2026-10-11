@@ -13,8 +13,18 @@ void riscv_exception_dispatcher(arch_trapframe_t* tf) {
     switch(cause) {
         case SCAUSE_BREAKPOINT: break;
         case SCAUSE_ILLEGAL_INSTRUCTION: break;
-        case SCAUSE_LOAD_ACCESS_FAULT: break;
-        case SCAUSE_STORE_ACCESS_FAULT: break;
+        
+        case SCAUSE_INST_ACCESS_FAULT:
+        case SCAUSE_LOAD_ACCESS_FAULT:
+        case SCAUSE_STORE_ACCESS_FAULT:
+        case SCAUSE_INST_PAGE_FAULT:
+        case SCAUSE_LOAD_PAGE_FAULT:
+        case SCAUSE_STORE_PAGE_FAULT: {
+            serial_printf("PAGE FAULT\n");
+            for (;;) {
+                arch_halt();
+            }
+        }
     }
     
     if (fatal) {

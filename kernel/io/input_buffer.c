@@ -14,12 +14,20 @@ void input_buffer_alloc(void) {
 }
 
 void input_buffer_write_char(char c) {
+    // should only happen when the input buffer hasn't been initialized so just ignore
+    if (!input_buffer.buffer)
+        return;
+
     input_buffer.buffer[input_buffer.write_idx] = c;
     input_buffer.write_idx = (input_buffer.write_idx + 1) % INPUT_BUFFER_SIZE;
     input_buffer.size++;
 }
 
 char input_buffer_read_char(void) {
+    // should only happen when the input buffer hasn't been initialized so just ignore 
+    if (!input_buffer.buffer)
+        return (char)0;
+
     char c = input_buffer.buffer[input_buffer.read_idx];
     input_buffer.read_idx = (input_buffer.read_idx + 1) % INPUT_BUFFER_SIZE;
     input_buffer.size--;
