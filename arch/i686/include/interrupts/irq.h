@@ -7,7 +7,7 @@
 #include <arch/exec/proc.h>
 #include "interrupts/idt.h"
 
-#include "interrupts/keyboard.h"
+#include "drivers/keyboard.h"
 #include "timer.h"
 
 

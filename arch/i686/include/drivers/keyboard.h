@@ -8,7 +8,7 @@
 #include <arch/interrupts/port.h>
 
 #include "io/io.h"
-#include "interrupts/events.h"
+#include "io/input_buffer.h"
 #include "exec/process.h"
 
 #define KEY_MOD_SHIFT 0x01
@@ -146,7 +146,5 @@ typedef enum {
 
 void keyboard_callback(arch_trapframe_t* tf);
 void keyboard_init();
-
-extern queue_t input_buffer;
 
 #endif // !INCLUDE_INTERRUPTS_KEYBOARD_H_

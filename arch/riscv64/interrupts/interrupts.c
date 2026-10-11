@@ -1,11 +1,12 @@
 #include "interrupts/interrupts.h"
 #include "interrupts/timer.h"
 #include "interrupts/plic.h"
+#include "drivers/uart.h"
 #include "timer.h"
 #include <log.h>
 #include <arch/interrupts/port.h>
-#include <arch/io/serial.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static void riscv_timer_handler(arch_trapframe_t* tf) {
     uint64_t time = riscv_read_time();
@@ -17,13 +18,9 @@ static void riscv_timer_handler(arch_trapframe_t* tf) {
 }
 
 static void riscv_external_handler(arch_trapframe_t* tf) {
-    log_debug("external irq\n");
     uint32_t irq = arch_read_u32(PLIC_SCLAIM(0));
-    if (irq == PLIC_UART0_IRQ) {
-        char c = (char)arch_read_byte(COM1 + 0);
-        log_debug("%c\n", c);
-        
-    }
+    if (irq == PLIC_UART0_IRQ)
+        uart_handler(tf);
 
     if (irq != 0)
         arch_write_u32(PLIC_SCLAIM(0), irq);

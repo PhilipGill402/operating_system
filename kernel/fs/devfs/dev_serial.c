@@ -1,4 +1,5 @@
 #include "fs/devfs/dev_serial.h"
+#include <arch/drivers/uart.h>
 
 static uint8_t poll_serial_data(dev_file_t* file, uint32_t offset) {
     (void)file;
@@ -14,7 +15,7 @@ static int32_t write_serial_data(dev_file_t* file, uint8_t* buffer, uint32_t off
         return 0;
 
     for (uint32_t i = 0; i < size; i++) {
-        serial_write_char(buffer[i], NULL);
+        uart_write_char(buffer[i], NULL);
     }
 
     return size;

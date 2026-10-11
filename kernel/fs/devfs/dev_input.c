@@ -4,7 +4,7 @@ static uint8_t poll_input_data(dev_file_t* file, uint32_t offset) {
     (void)file;
     (void)offset;
 
-    if (!queue_empty(&input_buffer))
+    if (input_buffer.size)
         return POLLIN;
     else
         return 0;
@@ -16,23 +16,20 @@ static int32_t read_input_data(dev_file_t* file, uint8_t* buffer, uint32_t offse
     if (!file || !buffer)
         return EFAULT;
 
-    if (size < sizeof(input_event_t))
-        return 0;
-
-    if (queue_empty(&input_buffer))
+    if (input_buffer.size == 0)
             return EAGAIN;
 
-    uint32_t num_events = size / sizeof(input_event_t);
+    uint32_t num_events = size;
     uint32_t buf_offset = 0;
     
     for (uint32_t i = 0; i < num_events; i++) {
-        if (queue_empty(&input_buffer))
+        if (input_buffer.size == 0)
             return buf_offset;
 
-        input_event_t c = *(input_event_t*)dequeue(&input_buffer);
+        char c = input_buffer_read_char();
 
-        memcpy(buffer + buf_offset, &c, sizeof(input_event_t));
-        buf_offset += sizeof(input_event_t);
+        memcpy(buffer + buf_offset, &c, sizeof(char));
+        buf_offset += sizeof(char);
     }
 
     return buf_offset;

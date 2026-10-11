@@ -8,10 +8,6 @@
 #include <arch/interrupts/port.h>
 #include <arch/asm/helpers.h>
 
-#include "io/framebuffer.h"
-#include "interrupts/keyboard.h"
-#include "interrupts/events.h"
-
 typedef struct {
     uint32_t x;
     uint32_t y;

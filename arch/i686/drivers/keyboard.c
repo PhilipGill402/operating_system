@@ -355,6 +355,7 @@ static char keycode_to_ascii(keycode_t key, uint32_t modifiers) {
     return key_ascii_normal[key];
 }
 
+/*
 static uint32_t keyboard_decode(uint8_t scancode, input_event_t* event) {
     if (!event)
         return 0;
@@ -376,17 +377,14 @@ static uint32_t keyboard_decode(uint8_t scancode, input_event_t* event) {
 
     return 1;
 }
+*/
 
 void keyboard_callback(arch_trapframe_t* tf) {
     (void)tf;
     
-    input_event_t event;
-
     uint8_t scancode = arch_read_byte(0x60);
-
-    if (keyboard_decode(scancode, &event)) {
-        enqueue(&input_buffer, &event);
-        process_wake_blocked();
-    }
+    input_buffer_write_char(keycode_to_ascii(scancode, 0));
+    
+    process_wake_blocked();
 }
 

@@ -14,13 +14,10 @@
 
 #include "io/io.h"
 #include "io/vga.h"
-#include "io/serial.h"
 #include "io/framebuffer.h"
+#include "io/input_buffer.h"
 #include "multiboot.h"
 #include "memory/heap.h"
-#include "interrupts/mouse.h"
-#include "interrupts/keyboard.h"
-#include "interrupts/events.h"
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
@@ -30,6 +27,8 @@ multiboot_info_t* mbi;
 
 __attribute__(())
 void kernel_finish_init() {
+    input_buffer_alloc();
+
     init_heap();
     
     fs_init(mbi);
@@ -39,8 +38,7 @@ void kernel_finish_init() {
         framebuffer_init(mbi);
     }
 
-    mouse_init();
-    events_init();
+    //mouse_init();
 
     scheduler_init();
     
