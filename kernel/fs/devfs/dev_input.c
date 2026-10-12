@@ -1,4 +1,5 @@
 #include "fs/devfs/dev_input.h"
+#include "io/input_buffer.h"
 
 static uint8_t poll_input_data(dev_file_t* file, uint32_t offset) {
     (void)file;

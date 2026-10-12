@@ -1,8 +1,16 @@
 #include "boot/dtb.h"
+#include "memory/heap.h"
+#include "interrupts/timer.h"
 #include <log.h>
+#include <stack.h>
+#include <string.h>
 
 static inline uint32_t be32_to_cpu(uint32_t x) {
     return __builtin_bswap32(x);
+}
+
+static inline uint64_t be64_to_cpu(uint64_t x) {
+    return __builtin_bswap64(x);
 }
 
 static inline uint8_t* align_to_4(uint8_t* ptr) {
@@ -28,8 +36,9 @@ uint8_t dtb_init(dtb_tree_t* dtb) {
     return 1;
 }
 
-void dtb_parse_struct(dtb_tree_t* dtb) {
+uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
     uint8_t* struct_ptr = (uint8_t*)dtb + dtb->off_dt_struct;
+    stack_t token_stack = stack_create(sizeof(dtb_struct_node_t));
 
     while (1) {
         uint32_t token = be32_to_cpu(*(uint32_t*)struct_ptr);
@@ -37,27 +46,93 @@ void dtb_parse_struct(dtb_tree_t* dtb) {
 
         switch (token) {
             case FDT_BEGIN_NODE: {
-                char node_name[256];
-                size_t size = 0;
-                while (*struct_ptr != 0) {
-                    if (size >= sizeof(node_name) - 1)
-                        break;
-
-                    node_name[size++] = *((char*)struct_ptr);
+                char* node_name = (char*)struct_ptr;
+                while (*struct_ptr != 0)
                     struct_ptr++;
-                }
 
-                node_name[size] = '\0';
-                struct_ptr++;
-                struct_ptr = align_to_4(struct_ptr);
+                struct_ptr = align_to_4(++struct_ptr); // align to 4 bytes and skip null terminator
+            
+                dtb_struct_node_t node = {
+                    .name = node_name,
+                    .address_cells = 2,
+                    .size_cells = 1,
+                };
+
+                stack_push(&token_stack, &node);
                     
                 break;
             }
-            case FDT_END_NODE: break;
-            case FDT_PROP: break;
+            
+            case FDT_END_NODE: {
+                if (stack_empty(&token_stack))
+                    return 0;
+
+                stack_pop(&token_stack);
+                break;
+            }
+
+            case FDT_PROP: {
+                if (stack_empty(&token_stack))
+                    return 0;
+
+                dtb_struct_node_t* node = (dtb_struct_node_t*)stack_top(&token_stack);
+                dtb_struct_node_t* parent = (dtb_struct_node_t*)(token_stack.stack + ((token_stack.top - 1) * token_stack.element_size));
+
+                uint32_t len = be32_to_cpu(*(uint32_t*)struct_ptr);
+                struct_ptr += 4;
+
+                uint32_t nameoff = be32_to_cpu(*(uint32_t*)struct_ptr);
+                if (nameoff >= dtb->size_dt_strings)
+                    return 0;
+
+                struct_ptr += 4;
+                char* name = (char*)((uint8_t*)dtb + dtb->off_dt_strings + nameoff);
+
+                uint8_t* value = (uint8_t*)struct_ptr;
+                if (strcmp(name, "#address-cells") == 0) {
+                    node->address_cells = be32_to_cpu(*(uint32_t*)value);
+                } else if (strcmp(name, "#size-cells") == 0) {
+                    node->size_cells = be32_to_cpu(*(uint32_t*)value);
+                } else if (strcmp(name, "device-type") == 0) {
+                    if (strcmp((char*)value, "memory") == 0) {
+                        node->is_memory = 1;
+                    }
+                } else if (strcmp(name, "reg") == 0) {
+                    if (len % ((parent->address_cells + parent->size_cells) * 4) != 0)
+                        return 0;
+                    
+                    for (uint32_t bytes_read = 0; bytes_read < len; bytes_read += (parent->address_cells + parent->size_cells) * 4) {
+                        uint64_t address = 0; 
+                        for (uint32_t i = 0; i < parent->address_cells; ++i) {
+                            address <<= 32;
+                            address |= be32_to_cpu(*(uint32_t*)value);
+                            value += 4;
+                        }
+
+                        uint64_t size = 0; 
+                        for (uint32_t i = 0; i < parent->size_cells; ++i) {
+                            size <<= 32;
+                            size |= be32_to_cpu(*(uint32_t*)value);
+                            value += 4;
+                        }
+
+                        log_debug("RAM: base=%x size=%x\n", address, size);                        
+                    }
+                } else if (strcmp(name, "timebase-frequency") == 0) {
+                    timebase_frequency = be64_to_cpu(*(uint64_t*)value);
+                    log_debug("timebase-frequency=%l\n", timebase_frequency);
+                }
+
+                struct_ptr += len;
+                struct_ptr = align_to_4(struct_ptr);
+
+                break;
+            } 
             case FDT_NOP: break;
-            case FDT_END: return;
-            default: log_error("received unknow DTB token\n"); return;
+            case FDT_END: return 1;
+            default: log_error("received unknow DTB token\n"); return 0;
         }
     }
+
+    return 1;
 }

@@ -27,7 +27,7 @@ void riscv_irq_init(void) {
     asm volatile("csrw stvec, %0" : : "r"(handler));
     
     // initialize timer
-    int64_t ret = riscv_timer_init(TIMEBASE_FREQUENCY);
+    int64_t ret = riscv_timer_init();
     if (ret < 0) {
         log_error("failed to initialize timer\n");
         for (;;) {

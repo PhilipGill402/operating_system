@@ -3,7 +3,7 @@
 int stack_push(stack_t* stack, void* val){
     //checks if stack is full and if so, it doubles its capacity
     if (stack->size == stack->capacity){
-        stack->stack = krealloc(stack->stack, sizeof(void*) * (stack->size * 2));
+        stack->stack = krealloc(stack->stack, stack->element_size * (stack->size * 2));
         
         if (!stack->stack){
             return 0;

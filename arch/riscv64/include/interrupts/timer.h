@@ -3,12 +3,11 @@
 
 #include <stdint.h>
 
-#define TIMEBASE_FREQUENCY 10000000ULL
-
 uint64_t riscv_read_time();
 int64_t riscv_set_timer(uint64_t deadline);
-int64_t riscv_timer_init(uint64_t timebase_frequency);
+int64_t riscv_timer_init();
 
 extern uint64_t timer_interval;
+extern uint64_t timebase_frequency;
 
 #endif

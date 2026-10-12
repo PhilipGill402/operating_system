@@ -4,6 +4,7 @@
 #define TIMER_EID 0x54494D45
 
 uint64_t timer_interval = 0;
+uint64_t timebase_frequency = 0;
 
 uint64_t riscv_read_time() {
     uint64_t time;
@@ -21,7 +22,7 @@ int64_t riscv_set_timer(uint64_t deadline) {
     return (int64_t)a0; 
 }
 
-int64_t riscv_timer_init(uint64_t timebase_frequency) {
+int64_t riscv_timer_init() {
     timer_interval = timebase_frequency / TIMER_FREQUENCY;
     if (timer_interval == 0)
         return -1;
