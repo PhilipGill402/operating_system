@@ -102,7 +102,7 @@ void schedule_and_enter(void) {
     
     arch_address_space_activate(current_process->addr_space);
     arch_set_kernel_stack(current_process->kernel_stack_top);
-    arch_return_to_user(current_process->trapframe);
+    arch_return_to_user(current_process->trapframe, current_process->kernel_stack_top);
 }
 
 void schedule(void) {
@@ -138,7 +138,6 @@ void schedule(void) {
     incoming->ticks_left = DEFAULT_MAX_TICKS;
 
     arch_address_space_activate(incoming->addr_space);
-    arch_set_kernel_stack(incoming->kernel_stack_top);
     arch_context_switch(outgoing->context, incoming->context);
 }
 

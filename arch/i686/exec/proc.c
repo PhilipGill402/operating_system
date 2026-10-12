@@ -106,8 +106,8 @@ uint8_t arch_trapframe_from_user(arch_trapframe_t* tf) {
     return (tf->cs & 0x3) == 0x3;
 }
 
-void arch_set_kernel_stack(uint32_t stack_top) {
-    tss_set_kernel_stack(stack_top);
+void arch_set_kernel_stack(uint64_t stack_top) {
+    tss_set_kernel_stack((uint32_t)stack_top);
 }
 
 void arch_trapframe_debug(const arch_trapframe_t *tf) {

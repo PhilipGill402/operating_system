@@ -21,8 +21,6 @@ uint8_t arch_trapframe_from_user(arch_trapframe_t* tf);
 arch_context_t* arch_context_init(uintptr_t kernel_stack_top, void (*entry)(void));
 void arch_context_destroy(arch_context_t* ctx);
 
-void arch_set_kernel_stack(uint32_t stack_top);
-
 void arch_trapframe_debug(const arch_trapframe_t* tf);
 
 #endif
