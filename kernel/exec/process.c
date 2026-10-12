@@ -352,7 +352,7 @@ void process_child_entry(void) {
             arch_halt();
     } 
 
-    arch_return_to_user(child->trapframe, kernel_stack_top);
+    arch_return_to_user(child->trapframe, child->kernel_stack_top);
 
     log_error("arch_return_to_user returned\n");
     for (;;)
@@ -366,6 +366,6 @@ _Noreturn void process_first_entry(void) {
         arch_halt();
     }
 
-    arch_return_to_user(current_process->trapframe, kernel_stack_top);
+    arch_return_to_user(current_process->trapframe, current_process->kernel_stack_top);
 }
 

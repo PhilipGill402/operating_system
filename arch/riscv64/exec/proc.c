@@ -1,4 +1,6 @@
 #include <arch/exec/proc.h>
+#include "trapframe.h"
+#include "exec/context.h"
 #include "memory/heap.h"
 #include <string.h>
 #include <log.h>

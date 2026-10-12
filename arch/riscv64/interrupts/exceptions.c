@@ -1,4 +1,5 @@
 #include "interrupts/exceptions.h"
+#include "syscalls.h"
 #include <arch/asm/helpers.h>
 #include <stdio.h>
 
@@ -24,6 +25,14 @@ void riscv_exception_dispatcher(arch_trapframe_t* tf) {
             for (;;) {
                 arch_halt();
             }
+    
+            break; // will never run, just in case though
+        }
+
+        case SCAUSE_ECALL_FROM_U: {
+            syscall_handler(tf);
+            tf->sepc += 4; // skip past the ecall instruction
+            break;
         }
     }
     

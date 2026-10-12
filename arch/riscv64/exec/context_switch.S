@@ -1,13 +1,13 @@
 .section .text
 .align 4
 
-.global riscv_context_switch
-.type riscv_context_switch, @function
+.global arch_context_switch
+.type arch_context_switch, @function
 
 # riscv_context_switch(arch_context_t* old, arch_context_t* new)
 # a0 = old
 # a1 = new
-riscv_context_switch:
+arch_context_switch:
 .cfi_startproc
     
 # save ra, sp, and s0-s11 into old
@@ -46,4 +46,4 @@ ret
 
 .cfi_endproc
 
-.size riscv_context_switch, . - riscv_context_switch
+.size arch_context_switch, . - arch_context_switch
