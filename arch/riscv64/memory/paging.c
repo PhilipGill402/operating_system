@@ -28,7 +28,9 @@ uint8_t arch_address_space_activate(arch_address_space_t* address_space) {
     return 0;
 }
 
-uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uint32_t phys, uint32_t flags) {
+uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags) {
+    
+
     return 0;
 }
 

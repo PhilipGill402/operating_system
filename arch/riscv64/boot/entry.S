@@ -48,7 +48,7 @@ bss_clear:
     j bss_clear
 
 bss_done:
-    tail kernel_main
+    tail riscv_kernel_entry
 
 
 early_trap:

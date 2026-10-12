@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "multiboot.h"
 #include "paging.h"
+#include "kernel.h"
 
 #define PAGE_SIZE 4096
 #define KERNEL_BASE 0xC0000000
@@ -27,8 +28,8 @@ typedef struct {
 
 extern pmm_t pmm;
 
-void pmm_init(multiboot_info_t* mbi);
-uint32_t pmm_alloc_frame(void);          // returns physical address
+void pmm_init(const kernel_boot_info_t* info);
+uintptr_t pmm_alloc_frame(void);          // returns physical address
 void pmm_free_frame(uint32_t phys_addr);
 
 #endif // !INCLUDE_PHYSICAL_ALLOCATOR_H_

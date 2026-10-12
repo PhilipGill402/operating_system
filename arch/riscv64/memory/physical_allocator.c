@@ -1,13 +1,14 @@
 #include <arch/memory/physical_allocator.h>
+#include "kernel.h"
 
 pmm_t pmm = { 0 };
 
 
-void pmm_init(multiboot_info_t* mbi) {
+void pmm_init(const kernel_boot_info_t* info) {
     return;
 }
 
-uint32_t pmm_alloc_frame(void)  {
+uintptr_t pmm_alloc_frame(void)  {
     return 0;
 }
 

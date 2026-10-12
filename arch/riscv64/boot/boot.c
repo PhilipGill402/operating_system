@@ -1,11 +1,12 @@
 #include <arch/boot/boot.h>
 #include <arch/asm/helpers.h>
+#include "kernel.h"
+#include "boot/dtb.h"
 #include "drivers/uart.h"
 #include "interrupts/irq.h"
 #include <log.h>
 #include <stdio.h>
-
-#define UART0 0x10000000UL
+#include <stdlib.h>
 
 __attribute__((noreturn)) void arch_switch_to_new_kernel_stack(uint32_t new_stack_top, void (*next)(void)) {
     for (;;) {
@@ -13,7 +14,13 @@ __attribute__((noreturn)) void arch_switch_to_new_kernel_stack(uint32_t new_stac
     } 
 }
 
-void arch_kernel_early_init(uint32_t mbi_phys) {
+void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
+    kernel_boot_info_t info;
+
+    dtb_tree_t* dtb = (dtb_tree_t*)dtb_phys;
+    if (!dtb_init(dtb))
+        panic("invalid DTB passed\n");
+
     uart_init();
     riscv_irq_init();
     log_debug("traps initialized\n");
@@ -21,6 +28,8 @@ void arch_kernel_early_init(uint32_t mbi_phys) {
     for (;;) {
         arch_halt();
     }
+
+    kernel_main(&info);
 
     return;
 }

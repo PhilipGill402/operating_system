@@ -12,6 +12,7 @@
 #include <arch/memory/paging.h>
 #include <arch/cpu/cpu_info.h>
 
+#include "kernel.h"
 #include "io/io.h"
 #include "io/vga.h"
 #include "io/framebuffer.h"
@@ -23,20 +24,20 @@
 #include "exec/elf.h"
 #include "memory_mapping.h"
 
-multiboot_info_t* mbi;
-
-__attribute__(())
-void kernel_finish_init() {
+void kernel_main(const kernel_boot_info_t* info) {
     input_buffer_alloc();
 
     init_heap();
     
-    fs_init(mbi);
+    
+    fs_init((multiboot_info_t*)info->boot_info);
 
+    /*
     // GRUB multiboot supports use of the framebuffer
     if (mbi->flags & (1 << 12)) {
         framebuffer_init(mbi);
     }
+    */
 
     //mouse_init();
 
@@ -52,13 +53,7 @@ void kernel_finish_init() {
         elf_execute(tty_elf);
         schedule_and_enter();
     }
-
-    arch_halt();
-}
-
-void kernel_main(uint32_t mbi_phys) {
-    arch_kernel_early_init(mbi_phys);
-
+    
     for (;;) {
         arch_halt();
     }

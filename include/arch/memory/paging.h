@@ -29,7 +29,7 @@ void arch_address_space_destroy(arch_address_space_t* address_space);
 uint8_t arch_address_space_activate(arch_address_space_t* address_space);
 
 // MEMORY PAGE OPERATIONS
-uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uint32_t phys, uint32_t flags);
+uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags);
 uint32_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
 void* arch_phys_temp_map(uint32_t tmp_slot, uint32_t phys);
 void arch_phys_temp_unmap(uint32_t slot);
