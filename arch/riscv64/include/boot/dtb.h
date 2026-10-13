@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "kernel.h"
+
 #define DTB_MAGIC           0xD00DFEED
 #define DTB_MAX_NODE_NAME   256
 #define DTB_STACK_SIZE      16
@@ -40,6 +42,6 @@ typedef struct dtb_token_stack {
 } dtb_token_stack_t;
 
 uint8_t dtb_init(dtb_tree_t* dtb);
-uint8_t dtb_parse_struct(dtb_tree_t* dtb);
+uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info);
 
 #endif

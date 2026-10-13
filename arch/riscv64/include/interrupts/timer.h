@@ -8,6 +8,6 @@ int64_t riscv_set_timer(uint64_t deadline);
 int64_t riscv_timer_init();
 
 extern uint64_t timer_interval;
-extern uint64_t timebase_frequency;
+extern uint32_t timebase_frequency;
 
 #endif

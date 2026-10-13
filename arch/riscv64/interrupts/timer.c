@@ -4,7 +4,7 @@
 #define TIMER_EID 0x54494D45
 
 uint64_t timer_interval = 0;
-uint64_t timebase_frequency = 0;
+uint32_t timebase_frequency = 0;
 
 uint64_t riscv_read_time() {
     uint64_t time;

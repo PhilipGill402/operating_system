@@ -30,7 +30,7 @@ void kernel_main(const kernel_boot_info_t* info) {
     init_heap();
     
     
-    fs_init((multiboot_info_t*)info->boot_info);
+    //fs_init((multiboot_info_t*)info->boot_info);
 
     /*
     // GRUB multiboot supports use of the framebuffer

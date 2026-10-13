@@ -16,12 +16,11 @@ static inline uint8_t* align_to_4(uint8_t* ptr) {
     return (uint8_t*)(((uintptr_t)ptr + 3) & ~3ULL);
 }
 
-static dtb_struct_node_t dtb_stack_top(dtb_token_stack_t* stack) {
-    dtb_struct_node_t token = { 0 };
+static dtb_struct_node_t* dtb_stack_top(dtb_token_stack_t* stack) {
     if (stack->size == 0)
-        return token;
+        return NULL;
 
-    return stack->stack[stack->size - 1];;
+    return &stack->stack[stack->size - 1];;
 }
 
 static inline void dtb_stack_push(dtb_token_stack_t* stack, dtb_struct_node_t node) {
@@ -57,15 +56,13 @@ uint8_t dtb_init(dtb_tree_t* dtb) {
     return 1;
 }
 
-uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
+uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
     uint8_t* struct_ptr = (uint8_t*)dtb + dtb->off_dt_struct;
     dtb_token_stack_t token_stack = { 0 };
 
     while (1) {
         uint32_t token = be32_to_cpu(*(uint32_t*)struct_ptr);
         struct_ptr += 4;
-
-        log_debug("%d\n", token);
 
         switch (token) {
             case FDT_BEGIN_NODE: {
@@ -80,7 +77,7 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
                     .address_cells = 2,
                     .size_cells = 1,
                 };
-                
+
                 dtb_stack_push(&token_stack, node);
                 break;
             }
@@ -97,7 +94,7 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
                 if (token_stack.size == 0)
                     return 0;
 
-                dtb_struct_node_t node = dtb_stack_top(&token_stack);
+                dtb_struct_node_t* node = dtb_stack_top(&token_stack);
                 dtb_struct_node_t parent = token_stack.stack[token_stack.size - 2];
 
                 uint32_t len = be32_to_cpu(*(uint32_t*)struct_ptr);
@@ -112,13 +109,12 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
 
                 uint8_t* value = (uint8_t*)struct_ptr;
                 if (strcmp(name, "#address-cells") == 0) {
-                    node.address_cells = be32_to_cpu(*(uint32_t*)value);
+                    node->address_cells = be32_to_cpu(*(uint32_t*)value);
                 } else if (strcmp(name, "#size-cells") == 0) {
-                    node.size_cells = be32_to_cpu(*(uint32_t*)value);
-                } else if (strcmp(name, "device-type") == 0) {
-                    if (strcmp((char*)value, "memory") == 0) {
-                        node.is_memory = 1;
-                    }
+                    node->size_cells = be32_to_cpu(*(uint32_t*)value);
+                } else if (strcmp(name, "device_type") == 0) {
+                    if (strcmp((char*)value, "memory") == 0)
+                        node->is_memory = 1;
                 } else if (strcmp(name, "reg") == 0) {
                     if (len % ((parent.address_cells + parent.size_cells) * 4) != 0)
                         return 0;
@@ -137,11 +133,31 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb) {
                             size |= be32_to_cpu(*(uint32_t*)value);
                             value += 4;
                         }
+                        
+                        memory_type_t type;
+                        if (node->is_memory)
+                            type = MEM_USABLE;
+                        else if (parent.name && strcmp(parent.name, "reserved-memory") == 0) 
+                            type = MEM_RESERVED;
+                        else
+                            continue;
 
-                        log_debug("RAM: base=%x size=%x\n", address, size);                        
+                        memory_region_t region = {
+                            .mem_addr = (uintptr_t)address,
+                            .mem_size = (size_t)size,
+                            .type = type,
+                        };
+
+                        if (info->region_count >= MAX_MEMORY_REGIONS) {
+                            log_error("ran out of room for the memory regions\n");
+                            return 0;
+                        }
+
+                        info->regions[info->region_count++] = region;
                     }
                 } else if (strcmp(name, "timebase-frequency") == 0) {
-                    timebase_frequency = be64_to_cpu(*(uint64_t*)value);
+                    timebase_frequency = be32_to_cpu(*(uint32_t*)value);
+                    info->timer_frequency = timebase_frequency;
                     log_debug("timebase-frequency=%l\n", timebase_frequency);
                 }
 

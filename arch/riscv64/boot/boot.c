@@ -23,7 +23,7 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
 
     log_debug("DTB initialized\n");
 
-    if (!dtb_parse_struct(dtb))
+    if (!dtb_parse_struct(dtb, &info))
         panic("invalid DTB passed\n");
 
     uart_init();
