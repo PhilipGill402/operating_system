@@ -2,9 +2,11 @@
 #define ARCH_RISCV64_INCLUDE_BOOT_DTB_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define DTB_MAGIC           0xD00DFEED
 #define DTB_MAX_NODE_NAME   256
+#define DTB_STACK_SIZE      16
 
 #define FDT_BEGIN_NODE 0x1
 #define FDT_END_NODE   0x2
@@ -31,6 +33,11 @@ typedef struct dtb_struct_node {
     uint32_t size_cells;
     uint8_t is_memory;
 } dtb_struct_node_t;
+
+typedef struct dtb_token_stack {
+    dtb_struct_node_t stack[DTB_STACK_SIZE];
+    size_t size;
+} dtb_token_stack_t;
 
 uint8_t dtb_init(dtb_tree_t* dtb);
 uint8_t dtb_parse_struct(dtb_tree_t* dtb);

@@ -21,6 +21,8 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
     if (!dtb_init(dtb))
         panic("invalid DTB passed\n");
 
+    log_debug("DTB initialized\n");
+
     if (!dtb_parse_struct(dtb))
         panic("invalid DTB passed\n");
 
