@@ -4,6 +4,8 @@ SECTIONS
 {
     . = 0x80200000;
 
+    kernel_start = .;
+
     .text : ALIGN(4K)
     {
         KEEP(*(.init))

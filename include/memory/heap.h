@@ -8,7 +8,7 @@
 #include <log.h>
 
 #include <arch/memory/paging.h>
-#include <arch/memory/physical_allocator.h>
+#include "memory/physical_allocator.h"
 #include "memory_mapping.h"
 
 #define HEAP_ALIGN 8

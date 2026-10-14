@@ -1,46 +1,15 @@
-#include <arch/memory/physical_allocator.h>
-#include <memory/internal_paging.h>
 
-pmm_t pmm;
+#define KERNEL_BASE 0xC0000000
 
-static inline void bitmap_set(uint64_t frame) {
-    uint32_t idx = frame / 32;
-    uint32_t bit = frame % 32;
-    uint32_t mask = 1u << bit;
+extern char _kernel_start;
+extern char _kernel_end;
 
-    if (!(pmm.bitmap[idx] & mask)) {
-        pmm.bitmap[idx] |= mask;
-        pmm.used_frames++;
-        pmm.free_frames--;
-    }
-}
+extern uint32_t boot_page_directory[1024];
+extern uint32_t boot_page_table1[1024];
 
-static inline void bitmap_clear(uint64_t frame) {
-    uint32_t idx = frame / 32;
-    uint32_t bit = frame % 32;
-    uint32_t mask = 1u << bit;
 
-    if (pmm.bitmap[idx] & mask) {
-        pmm.bitmap[idx] &= ~mask;
-        pmm.used_frames--;
-        pmm.free_frames++;
-    } 
-}
 
-static inline bool bitmap_test(uint64_t frame) {
-    return (pmm.bitmap[frame / 32] >> (frame % 32)) & 1;
-}
-
-void reserve_phys_range(uint32_t phys_start, uint32_t size) {
-    uint32_t page_start = phys_start & ~(PAGE_SIZE - 1);
-    uint32_t page_end = (phys_start + size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-    for (uint32_t page = page_start; page < page_end; page += PAGE_SIZE) {
-        bitmap_set(page / PAGE_SIZE);
-    }
-}
-
-void pmm_init(multiboot_info_t* mbi) {
+void multiboot_parsing(multiboot_info_t* mbi) {    
     // 1. verify mbi has a memory map
     // 2. find top of physical memory
     // 3. choose where bitmap storage lives
@@ -186,23 +155,3 @@ void pmm_init(multiboot_info_t* mbi) {
     multiboot_module_t initrd_mod = mods[0];
     reserve_phys_range(initrd_mod.mod_start, initrd_mod.mod_end - initrd_mod.mod_start);
 }
-
-uint32_t pmm_alloc_frame(void)  {          // returns physical address
-    for (uint32_t frame = pmm.search_hint, total = 0; total < pmm.total_frames; frame = (frame + 1) % pmm.total_frames, total++) {
-        // frame is free
-        if (!bitmap_test(frame)) {
-            bitmap_set(frame);
-            pmm.search_hint = frame;
-            return frame * PAGE_SIZE;
-        } 
-    }
-
-    return 0;
-}
-
-void pmm_free_frame(uint32_t phys_addr) {
-    uint32_t frame = (phys_addr & ~(PAGE_SIZE - 1)) / PAGE_SIZE;
-    bitmap_clear(frame);
-}
-
-

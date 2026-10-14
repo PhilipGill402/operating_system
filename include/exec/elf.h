@@ -5,9 +5,9 @@
 #include <string.h>
 
 #include <arch/memory/paging.h>
-#include <arch/memory/physical_allocator.h>
 
 #include "fs/fs.h"
+#include "memory/physical_allocator.h"
 #include "memory/heap.h"
 #include "exec/scheduler.h"
 #include "exec/process.h"

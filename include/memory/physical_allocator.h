@@ -3,23 +3,19 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "multiboot.h"
-#include "paging.h"
 #include "kernel.h"
 
 #define PAGE_SIZE 4096
-#define KERNEL_BASE 0xC0000000
 #define ALIGN_UP(x, a) (((x) + (a) - 1) & ~((a) - 1))
+#define ALIGN_DOWN(x, a) ((x) & ~((a) - 1))
+#define DIV_CEIL(x, y) (((x) + (y) - 1) / (y))
 
-extern char _kernel_start;
-extern char _kernel_end;
-
-extern uint32_t boot_page_directory[1024];
-extern uint32_t boot_page_table1[1024];
+extern uint8_t kernel_start[];
+extern uint8_t kernel_end[];
 
 typedef struct {
     uint32_t* bitmap;          // 1 bit per 4 KiB frame
-    uint32_t bitmap_bytes;
+    uintptr_t phys_base; 
     uint32_t total_frames;
     uint32_t used_frames;
     uint32_t free_frames;
@@ -30,7 +26,7 @@ extern pmm_t pmm;
 
 void pmm_init(const kernel_boot_info_t* info);
 uintptr_t pmm_alloc_frame(void);          // returns physical address
-void pmm_free_frame(uint32_t phys_addr);
+void pmm_free_frame(uintptr_t phys_addr);
 
 #endif // !INCLUDE_PHYSICAL_ALLOCATOR_H_
 

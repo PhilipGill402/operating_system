@@ -1,6 +1,7 @@
 #include <arch/boot/boot.h>
 #include <arch/asm/helpers.h>
 #include "kernel.h"
+#include "memory/physical_allocator.h"
 #include "boot/dtb.h"
 #include "drivers/uart.h"
 #include "interrupts/irq.h"
@@ -25,6 +26,12 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
 
     if (!dtb_parse_struct(dtb, &info))
         panic("invalid DTB passed\n");
+
+    pmm_init(&info);
+    log_debug("physical allocator initialized\n");
+
+    uintptr_t addr = pmm_alloc_frame();
+    log_debug("%l\n", addr);
 
     uart_init();
     riscv_irq_init();

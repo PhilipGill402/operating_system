@@ -6,10 +6,10 @@
 #include <string.h>
 
 #include <arch/asm/helpers.h>
-#include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
 #include <arch/exec/user_mode.h>
 #include <arch/asm/helpers.h>
+#include "memory/physical_allocator.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "memory_mapping.h"

@@ -12,9 +12,9 @@
 #include <string.h>
 
 #include <arch/exec/proc.h>
-#include <arch/memory/physical_allocator.h>
 #include <arch/memory/paging.h>
 
+#include "memory/physical_allocator.h"
 #include "io/framebuffer.h"
 #include "exec/process.h"
 #include "exec/scheduler.h"
