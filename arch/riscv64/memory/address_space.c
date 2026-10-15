@@ -206,13 +206,22 @@ arch_address_space_t* arch_address_space_create(void) {
 }
 
 arch_address_space_t* arch_address_space_clone(arch_address_space_t* old) {
+    if (!old)
+        return NULL;
+
     arch_address_space_t* addr_space = address_space_alloc();
     if (!addr_space)
         return NULL;
 
-    riscv_page_table_clone((uint64_t*)old->root_pt);
+    uint64_t* new_pt = riscv_page_table_clone((uint64_t*)old->root_pt);
+    if (!new_pt) {
+        address_space_free(addr_space);
+        return NULL;
+    }
 
-    return NULL;
+    addr_space->root_pt = (uintptr_t)new_pt;
+
+    return addr_space;
 }
 
 void arch_address_space_destroy(arch_address_space_t* address_space) {
