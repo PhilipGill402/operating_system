@@ -12,6 +12,8 @@ typedef struct arch_address_space arch_address_space_t;
 #define ARCH_PAGE_WRITE     0x010
 #define ARCH_PAGE_USER      0x100
 
+#define NUM_TEMP_REGIONS    8
+
 // INIT FUNCTIONS
 uint8_t arch_paging_transition(void);
 uint8_t arch_paging_init_shared_region(void);
@@ -28,7 +30,7 @@ uint8_t arch_address_space_activate(arch_address_space_t* address_space);
 // MEMORY PAGE OPERATIONS
 uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags);
 uintptr_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
-void* arch_phys_temp_map(uint32_t tmp_slot, uint32_t phys);
-void arch_phys_temp_unmap(uint32_t slot);
+uintptr_t arch_phys_temp_map(uint8_t slot, uintptr_t phys);
+void arch_phys_temp_unmap(uint8_t slot);
 
 #endif // !INCLUDE_ARCH_MEMORY_PAGING_H_

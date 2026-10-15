@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define MAX_ADDRESS_SPACES 64
+
 typedef struct arch_address_space arch_address_space_t;
 
 arch_address_space_t* address_space_alloc(void);

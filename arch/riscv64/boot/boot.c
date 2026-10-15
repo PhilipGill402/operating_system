@@ -2,6 +2,7 @@
 #include <arch/asm/helpers.h>
 #include "kernel.h"
 #include "memory/physical_allocator.h"
+#include "memory/paging.h"
 #include "boot/dtb.h"
 #include "drivers/uart.h"
 #include "interrupts/irq.h"
@@ -28,11 +29,20 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
     if (!dtb_parse_struct(dtb, &info))
         panic("invalid DTB passed\n");
 
+    riscv_irq_init();
+    log_debug("traps initialized\n");
+
     pmm_init(&info);
     log_debug("physical allocator initialized\n");
 
-    riscv_irq_init();
-    log_debug("traps initialized\n");
+    if (!riscv_paging_init())
+        panic("failed to initialize paging\n");
+    log_debug("paging initialized\n");
+
+    /* 
+    uintptr_t phys = pmm_alloc_frame();
+    arch_map_page(&kernel_address_space, )
+    */ 
 
     for (;;) {
         arch_halt();

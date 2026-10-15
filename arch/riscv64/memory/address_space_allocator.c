@@ -1,5 +1,5 @@
 #include <memory/address_space_allocator.h>
-#include <memory/address_space.h>
+#include "memory/paging.h"
 #include <string.h>
 
 static arch_address_space_t address_space_pool[MAX_ADDRESS_SPACES];

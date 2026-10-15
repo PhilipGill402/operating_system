@@ -1,6 +1,8 @@
 #ifndef ARCH_RISCV64_INCLUDE_MEMORY_PAGING_H_
 #define ARCH_RISCV64_INCLUDE_MEMORY_PAGING_H_
 
+#include <stdint.h>
+
 #define VPN0(va) (((va) >> 12) & 0x1FF)
 #define VPN1(va) (((va) >> 21) & 0x1FF)
 #define VPN2(va) (((va) >> 30) & 0x1FF)
@@ -19,6 +21,8 @@
 typedef struct arch_address_space {
     uint64_t root_pt;
 } arch_address_space_t;
+
+uint8_t riscv_paging_init();
 
 extern arch_address_space_t kernel_address_space;
 
