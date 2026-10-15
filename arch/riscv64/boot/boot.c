@@ -17,7 +17,8 @@ __attribute__((noreturn)) void arch_switch_to_new_kernel_stack(uint32_t new_stac
 
 void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
     kernel_boot_info_t info;
-
+    uart_init();
+    
     dtb_tree_t* dtb = (dtb_tree_t*)dtb_phys;
     if (!dtb_init(dtb))
         panic("invalid DTB passed\n");
@@ -30,10 +31,6 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
     pmm_init(&info);
     log_debug("physical allocator initialized\n");
 
-    uintptr_t addr = pmm_alloc_frame();
-    log_debug("%l\n", addr);
-
-    uart_init();
     riscv_irq_init();
     log_debug("traps initialized\n");
 

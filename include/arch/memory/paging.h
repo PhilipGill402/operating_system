@@ -8,12 +8,9 @@
 
 typedef struct arch_address_space arch_address_space_t;
 
-#define ARCH_PAGE_PRESENT   1
-#define ARCH_PAGE_WRITE     2
-#define ARCH_PAGE_USER      4
-
-extern uint32_t boot_page_directory[1024];
-extern uint32_t boot_page_table1[1024];
+#define ARCH_PAGE_PRESENT   0x001
+#define ARCH_PAGE_WRITE     0x010
+#define ARCH_PAGE_USER      0x100
 
 // INIT FUNCTIONS
 uint8_t arch_paging_transition(void);
@@ -30,7 +27,7 @@ uint8_t arch_address_space_activate(arch_address_space_t* address_space);
 
 // MEMORY PAGE OPERATIONS
 uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags);
-uint32_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
+uintptr_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
 void* arch_phys_temp_map(uint32_t tmp_slot, uint32_t phys);
 void arch_phys_temp_unmap(uint32_t slot);
 
