@@ -137,13 +137,13 @@ uint32_t process_init_stack(process_t* process) {
         if (!arch_page_map(process->addr_space, addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
             goto fail;
 
-        uint8_t* page = (uint8_t*)arch_phys_temp_map(1, frame);
+        uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
         if (!page)
             goto fail;
 
         memset(page, 0, PAGE_SIZE);
 
-        arch_phys_temp_unmap(1);
+        arch_phys_temp_unmap((uintptr_t)page);
     }
 
     process->user_stack_top = stack_top;
@@ -206,7 +206,7 @@ uint32_t process_init_heap(process_t* process) {
 
     page_allocated = 1;
 
-    uint8_t* page = arch_phys_temp_map(0, frame);
+    uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
     if (!page)
         goto fail;
 
@@ -222,13 +222,13 @@ uint32_t process_init_heap(process_t* process) {
     if (process->heap_max_end >= USER_MMAP_BASE)
         process->heap_max_end = USER_MMAP_BASE - 1;
     
-    arch_phys_temp_unmap(0);
+    arch_phys_temp_unmap((uintptr_t)page);
     
     return 1;
 
 fail:
     if (page_mapped)
-        arch_phys_temp_unmap(0);
+        arch_phys_temp_unmap((uintptr_t)page);
     
     if (page_allocated)
         arch_page_unmap(process->addr_space, heap_start);

@@ -5,9 +5,9 @@
 
 void riscv_exception_dispatcher(arch_trapframe_t* tf) {
     serial_printf("scause: %l\n", tf->scause);
-    serial_printf("sepc: %l\n", tf->sepc);
-    serial_printf("stval: %l\n", tf->stval);
-    serial_printf("sstatus: %l\n", tf->sstatus);
+    serial_printf("sepc: %lx\n", tf->sepc);
+    serial_printf("stval: %lx\n", tf->stval);
+    serial_printf("sstatus: %lx\n", tf->sstatus);
     
     uint64_t cause = tf->scause & SCAUSE_CODE_MASK;
     uint8_t fatal = 0;

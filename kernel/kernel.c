@@ -24,10 +24,11 @@
 #include "memory_mapping.h"
 
 void kernel_main(const kernel_boot_info_t* info) {
-    input_buffer_alloc();
-
     init_heap();
-    
+    log_debug("heap initialized\n");
+
+    input_buffer_alloc();
+    log_debug("input buffer initialized\n");
     
     //fs_init((multiboot_info_t*)info->boot_info);
 

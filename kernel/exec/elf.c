@@ -163,7 +163,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
                 return 0;
             }
 
-            uint8_t* page = (uint8_t*)arch_phys_temp_map(1, frame);
+            uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
             if (!page) {
                 pmm_free_frame(frame);
                 return 0;
@@ -189,7 +189,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
                 memcpy(page + dst_off, elf + src_off, nbytes);
             }
 
-            arch_phys_temp_unmap(1);
+            arch_phys_temp_unmap((uintptr_t)frame);
         }
 
         process->mem_ranges[count++] = (mem_range_t){ .start = page_start, .end = page_end };

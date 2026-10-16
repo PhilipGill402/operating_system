@@ -472,9 +472,9 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
 
         arch_page_map(current_process->addr_space, start + i * PAGE_SIZE, frame, ARCH_PAGE_USER | page_flags);
 
-        void* tmp = arch_phys_temp_map(0, frame);
+        void* tmp = (void*)arch_phys_temp_map(frame);
         memset(tmp, 0, PAGE_SIZE);
-        arch_phys_temp_unmap(0);
+        arch_phys_temp_unmap((uintptr_t)tmp);
     }
 
     area->next = proc->vmas;
@@ -646,11 +646,11 @@ void* sys_brk(void* new_addr) {
 
         arch_page_map(current_process->addr_space, current_process->heap_mapped_end, frame, ARCH_PAGE_USER | ARCH_PAGE_WRITE);
         
-        uint8_t* page = arch_phys_temp_map(1, frame);
+        uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
         memset(page, 0, PAGE_SIZE);
 
         current_process->heap_mapped_end += PAGE_SIZE;
-        arch_phys_temp_unmap(1);
+        arch_phys_temp_unmap((uintptr_t)page);
     }
     
     current_process->heap_break = addr;

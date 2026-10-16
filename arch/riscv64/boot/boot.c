@@ -44,10 +44,6 @@ void riscv_kernel_entry(uint64_t hart_id, uintptr_t dtb_phys) {
     arch_map_page(&kernel_address_space, )
     */ 
 
-    for (;;) {
-        arch_halt();
-    }
-
     kernel_main(&info);
 
     return;
