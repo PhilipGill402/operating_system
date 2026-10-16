@@ -106,13 +106,13 @@ void coalesce(kblock_t* block){
 
 /* Main Functions */
 void init_heap(){
-    for (uint32_t addr = KHEAP_START; addr < KHEAP_END; addr += PAGE_SIZE) {
-        uint32_t frame = pmm_alloc_frame();
+    for (uint64_t addr = KHEAP_START; addr < KHEAP_END; addr += PAGE_SIZE) {
+        uintptr_t frame = pmm_alloc_frame();
         if (!frame) {
             return;
         }
 
-        arch_page_map(arch_kernel_address_space(), addr, frame, ARCH_PAGE_WRITE);
+        arch_page_map(arch_kernel_address_space(), addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_READ);
     }
 
     heap.ptr = (uint8_t*)KHEAP_START;

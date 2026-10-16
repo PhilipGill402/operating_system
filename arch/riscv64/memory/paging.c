@@ -18,6 +18,24 @@ static inline uint8_t pte_leaf(uint64_t pte) {
     return (pte & (PTE_R | PTE_W | PTE_X)) != 0;
 }
 
+static uint64_t kernel_flags_to_riscv_flags(uint64_t flags) {
+    uint64_t riscv_flags = 0; 
+
+    if (flags & ARCH_PAGE_WRITE)
+        riscv_flags |= PTE_W;
+
+    if (flags & ARCH_PAGE_READ)
+        riscv_flags |= PTE_R;
+
+    if (flags & ARCH_PAGE_EXECUTE)
+        riscv_flags |= PTE_X;
+
+    if (flags & ARCH_PAGE_USER)
+        riscv_flags |= PTE_U;
+
+    return riscv_flags;
+}
+
 static uintptr_t riscv_alloc_page_table() {
     uintptr_t page_table = pmm_alloc_frame();
     if (!page_table)
@@ -101,9 +119,9 @@ uint8_t riscv_paging_init() {
         uint64_t start = ALIGN_DOWN(riscv_mmio_info[i].addr, PAGE_SIZE);
         uint64_t end = ALIGN_UP(riscv_mmio_info[i].addr + riscv_mmio_info[i].size, PAGE_SIZE);
         
-        uint64_t flags = PTE_R | PTE_W | PTE_A | PTE_D;
+        uint64_t flags = ARCH_PAGE_READ | ARCH_PAGE_WRITE | PTE_A | PTE_D;
         if (i == MMIO_RAM_IDX)
-            flags |= PTE_X;
+            flags |= ARCH_PAGE_EXECUTE;
 
         for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
             if (!arch_page_map(&kernel_address_space, addr, addr, flags)) {
@@ -134,7 +152,8 @@ uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phy
         return 0;
 
     // set pte to physical address and flags
-    *pte = ((phys >> 12) << 10) | flags | PTE_V;
+    uint64_t riscv_flags = kernel_flags_to_riscv_flags(flags);
+    *pte = ((phys >> 12) << 10) | riscv_flags | PTE_V;
 
     return 1;
 }

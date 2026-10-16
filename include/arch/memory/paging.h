@@ -8,9 +8,11 @@
 
 typedef struct arch_address_space arch_address_space_t;
 
-#define ARCH_PAGE_PRESENT   0x001
-#define ARCH_PAGE_WRITE     0x010
-#define ARCH_PAGE_USER      0x100
+#define ARCH_PAGE_PRESENT   0x00001
+#define ARCH_PAGE_WRITE     0x00010
+#define ARCH_PAGE_READ      0x00100
+#define ARCH_PAGE_EXECUTE   0x01000
+#define ARCH_PAGE_USER      0x10000
 
 #define NUM_TEMP_REGIONS    8
 

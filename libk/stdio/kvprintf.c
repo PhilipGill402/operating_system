@@ -242,7 +242,7 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
             if (*format == 'x') {
                 format++;
 
-                uint64_t hex = va_arg(args, unsigned int);
+                uint64_t hex = va_arg(args, uint64_t);
                 char str[20];
 
                 uint64_to_hex(hex, str);
@@ -258,22 +258,24 @@ int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_
                 }
 
                 written += len;
+            } else {
+                uint64_t num = va_arg(args, uint64_t);
+                char str[20];
+
+                uint64_to_str(num, str);
+
+                size_t len = strlen(str);
+
+                if (maxrem < len) return -1;
+
+                for (size_t i = 0; i < len; i++) {
+                    putc(str[i], ctx);
+                }
+
+                written += len;
             }
 
-            uint64_t num = va_arg(args, uint64_t);
-            char str[20];
-
-            uint64_to_str(num, str);
-
-            size_t len = strlen(str);
-
-            if (maxrem < len) return -1;
-
-            for (size_t i = 0; i < len; i++) {
-                putc(str[i], ctx);
-            }
-
-            written += len;
+            
         }
 
         else {
