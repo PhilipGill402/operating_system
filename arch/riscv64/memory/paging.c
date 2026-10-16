@@ -2,6 +2,7 @@
 #include "memory/paging.h"
 #include "memory/physical_allocator.h"
 #include "memory/temp_map_allocator.h"
+#include "memory/mmio.h"
 #include <string.h>
 
 #include <log.h>
@@ -95,12 +96,27 @@ uint8_t riscv_paging_init() {
     if (!riscv_temp_map_init())
         return 0;
 
-    // TODO:
-    // 1. identity map RAM
-    // 2. map UART
-    // 3. map PLIC
+    for (uint64_t addr = RAM_BASE; addr < RAM_BASE + RAM_SIZE; addr += PAGE_SIZE) {
+        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_X | PTE_D))
+            return 0;
+    }
+    
+    for (uint64_t addr = UART0_BASE; addr < UART0_BASE + UART0_SIZE; addr += PAGE_SIZE) {
+        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
+            return 0;
+    }
 
-    //arch_address_space_activate(&kernel_address_space);
+    for (uint64_t addr = PLIC_BASE; addr < PLIC_BASE + PLIC_SIZE; addr += PAGE_SIZE) {
+        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
+            return 0;
+    }
+
+    for (uint64_t addr = CLINT_BASE; addr < CLINT_BASE + CLINT_SIZE; addr += PAGE_SIZE) {
+        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
+            return 0;
+    }
+
+    arch_address_space_activate(&kernel_address_space);
 
     return 1;
 }
@@ -112,15 +128,15 @@ uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phy
 
     if (phys & (PAGE_SIZE - 1))
         return 0;
-
+    
     // get pte
     uint64_t* pte = riscv_walk_page_table((uint64_t*)space->root_pt, virt, 1);
     if (!pte)
         return 0;
-
-    if (!pte_valid(*pte))
-        return 0;
     
+    if (pte_valid(*pte))
+        return 0;
+
     // set pte to physical address and flags
     *pte = ((phys >> 12) << 10) | flags | PTE_V;
 
