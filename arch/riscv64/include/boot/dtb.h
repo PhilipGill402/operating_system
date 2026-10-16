@@ -33,7 +33,15 @@ typedef struct dtb_struct_node {
     char* name;
     uint32_t address_cells;
     uint32_t size_cells;
+    
     uint8_t is_memory;
+    uint8_t is_uart;
+    uint8_t is_plic;
+    uint8_t is_clint;
+
+    uint8_t seen_reg;
+    uintptr_t reg_addr;
+    size_t reg_size;
 } dtb_struct_node_t;
 
 typedef struct dtb_token_stack {

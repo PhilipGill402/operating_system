@@ -1,5 +1,6 @@
 #include "boot/dtb.h"
 #include "memory/heap.h"
+#include "memory/mmio.h"
 #include "interrupts/timer.h"
 #include <log.h>
 #include <string.h>
@@ -35,6 +36,19 @@ static dtb_struct_node_t dtb_stack_pop(dtb_token_stack_t* stack) {
     token = stack->stack[stack->size - 1];
     stack->size--;
     return token;
+}
+
+static uint8_t dtb_compatible_contains(uint8_t* value, uint32_t len, const char* target) {
+    uint32_t offset = 0;
+    while (offset < len) {
+        char* compatible = (char*)(value + offset);
+        if (strcmp(compatible, target) == 0)
+            return 1;
+
+        offset += strlen(compatible) + 1;
+    }
+
+    return 0;
 }
 
 uint8_t dtb_init(dtb_tree_t* dtb) {
@@ -86,6 +100,24 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                 if (token_stack.size == 0)
                     return 0;
 
+                dtb_struct_node_t* node = dtb_stack_top(&token_stack);
+                if (node->seen_reg) {
+                    if (node->is_uart) {
+                        riscv_mmio_info[MMIO_UART0_IDX].addr = node->reg_addr;
+                        riscv_mmio_info[MMIO_UART0_IDX].size = node->reg_size;
+                    }
+
+                    if (node->is_plic) {
+                        riscv_mmio_info[MMIO_PLIC_IDX].addr = node->reg_addr;
+                        riscv_mmio_info[MMIO_PLIC_IDX].size = node->reg_size;
+                    }
+
+                    if (node->is_clint) {
+                        riscv_mmio_info[MMIO_CLINT_IDX].addr = node->reg_addr;
+                        riscv_mmio_info[MMIO_CLINT_IDX].size = node->reg_size;
+                    }
+                }
+
                 dtb_stack_pop(&token_stack);
                 break;
             }
@@ -115,6 +147,13 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                 } else if (strcmp(name, "device_type") == 0) {
                     if (strcmp((char*)value, "memory") == 0)
                         node->is_memory = 1;
+                } else if (strcmp(name, "compatible") == 0) {
+                    if (dtb_compatible_contains(value, len, "ns16550a"))
+                        node->is_uart = 1;
+                    else if (dtb_compatible_contains(value, len, "sifive,plic-1.0.0"))
+                        node->is_plic = 1;
+                    else if (dtb_compatible_contains(value, len, "sifive,clint0"))
+                        node->is_clint = 1;
                 } else if (strcmp(name, "reg") == 0) {
                     if (len % ((parent.address_cells + parent.size_cells) * 4) != 0)
                         return 0;
@@ -134,13 +173,33 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                             value += 4;
                         }
                         
+                        node->seen_reg = 1;
+                        node->reg_addr = address;
+                        node->reg_size = size;
+                        
                         memory_type_t type;
-                        if (node->is_memory)
+                        if (node->is_memory) {
                             type = MEM_USABLE;
-                        else if (parent.name && strcmp(parent.name, "reserved-memory") == 0) 
+
+                            riscv_mmio_info[MMIO_RAM_IDX].addr = (uintptr_t)address;
+                            riscv_mmio_info[MMIO_RAM_IDX].size = (size_t)size;
+                        } else if (parent.name && strcmp(parent.name, "reserved-memory") == 0) {
                             type = MEM_RESERVED;
-                        else
+                        } else if (node->is_uart) {
+                            riscv_mmio_info[MMIO_UART0_IDX].addr = (uintptr_t)address;
+                            riscv_mmio_info[MMIO_UART0_IDX].size = (uintptr_t)size;
                             continue;
+                        } else if (node->is_plic) {
+                            riscv_mmio_info[MMIO_PLIC_IDX].addr = (uintptr_t)address;
+                            riscv_mmio_info[MMIO_PLIC_IDX].size = (uintptr_t)size;
+                            continue;
+                        } else if (node->is_clint) {
+                            riscv_mmio_info[MMIO_CLINT_IDX].addr = (uintptr_t)address;
+                            riscv_mmio_info[MMIO_CLINT_IDX].size = (uintptr_t)size;
+                            continue;
+                        } else {
+                            continue;
+                        }
 
                         memory_region_t region = {
                             .mem_addr = (uintptr_t)address,

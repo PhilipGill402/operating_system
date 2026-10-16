@@ -1,6 +1,7 @@
 #include "memory/physical_allocator.h"
 #include "kernel.h"
 #include <string.h>
+#include <helpers.h>
 
 pmm_t pmm;
 

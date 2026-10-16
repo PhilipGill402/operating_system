@@ -4,6 +4,7 @@
 #include "memory/temp_map_allocator.h"
 #include "memory/mmio.h"
 #include <string.h>
+#include <helpers.h>
 
 #include <log.h>
 
@@ -96,26 +97,21 @@ uint8_t riscv_paging_init() {
     if (!riscv_temp_map_init())
         return 0;
 
-    for (uint64_t addr = RAM_BASE; addr < RAM_BASE + RAM_SIZE; addr += PAGE_SIZE) {
-        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_X | PTE_D))
-            return 0;
-    }
-    
-    for (uint64_t addr = UART0_BASE; addr < UART0_BASE + UART0_SIZE; addr += PAGE_SIZE) {
-        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
-            return 0;
-    }
+    for (uint8_t i = 0; i < MMIO_NUM_REGIONS; ++i) {
+        uint64_t start = ALIGN_DOWN(riscv_mmio_info[i].addr, PAGE_SIZE);
+        uint64_t end = ALIGN_UP(riscv_mmio_info[i].addr + riscv_mmio_info[i].size, PAGE_SIZE);
+        
+        uint64_t flags = PTE_R | PTE_W | PTE_A | PTE_D;
+        if (i == MMIO_RAM_IDX)
+            flags |= PTE_X;
 
-    for (uint64_t addr = PLIC_BASE; addr < PLIC_BASE + PLIC_SIZE; addr += PAGE_SIZE) {
-        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
-            return 0;
+        for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
+            if (!arch_page_map(&kernel_address_space, addr, addr, flags)) {
+                return 0;
+            }
+        }
     }
-
-    for (uint64_t addr = CLINT_BASE; addr < CLINT_BASE + CLINT_SIZE; addr += PAGE_SIZE) {
-        if(!arch_page_map(&kernel_address_space, addr, addr, PTE_R | PTE_W | PTE_A | PTE_D))
-            return 0;
-    }
-
+   
     arch_address_space_activate(&kernel_address_space);
 
     return 1;
