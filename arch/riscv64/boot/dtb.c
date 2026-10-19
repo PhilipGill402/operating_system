@@ -13,6 +13,18 @@ static inline uint64_t be64_to_cpu(uint64_t x) {
     return __builtin_bswap64(x);
 }
 
+static uint64_t dtb_read_uint(uint8_t* value, uint32_t len) {
+    uint64_t result = 0;
+
+    for (uint32_t i = 0; i < len / 4; ++i) {
+        result <<= 32;
+        result |= be32_to_cpu(*(uint32_t*)value);
+        value += 4;
+    }
+
+    return result;
+}
+
 static inline uint8_t* align_to_4(uint8_t* ptr) {
     return (uint8_t*)(((uintptr_t)ptr + 3) & ~3ULL);
 }
@@ -102,20 +114,30 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
 
                 dtb_struct_node_t* node = dtb_stack_top(&token_stack);
                 if (node->seen_reg) {
-                    if (node->is_uart) {
+                    if (node->type == DTB_UART) {
                         riscv_mmio_info[MMIO_UART0_IDX].addr = node->reg_addr;
                         riscv_mmio_info[MMIO_UART0_IDX].size = node->reg_size;
                     }
 
-                    if (node->is_plic) {
+                    if (node->type == DTB_PLIC) {
                         riscv_mmio_info[MMIO_PLIC_IDX].addr = node->reg_addr;
                         riscv_mmio_info[MMIO_PLIC_IDX].size = node->reg_size;
                     }
 
-                    if (node->is_clint) {
+                    if (node->type == DTB_CLINT) {
                         riscv_mmio_info[MMIO_CLINT_IDX].addr = node->reg_addr;
                         riscv_mmio_info[MMIO_CLINT_IDX].size = node->reg_size;
                     }
+                
+                    
+                }
+
+                if (node->type == DTB_INITRD && node->reg_addr && node->reg_end && (node->reg_end > node->reg_addr)) {
+                    riscv_mmio_info[MMIO_INITRD_IDX].addr = node->reg_addr;
+                    riscv_mmio_info[MMIO_INITRD_IDX].size = (size_t)(node->reg_end - node->reg_addr);
+
+                    log_debug("%lx\n", riscv_mmio_info[MMIO_INITRD_IDX].addr);
+                    log_debug("%l\n", riscv_mmio_info[MMIO_INITRD_IDX].size);
                 }
 
                 dtb_stack_pop(&token_stack);
@@ -146,14 +168,22 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                     node->size_cells = be32_to_cpu(*(uint32_t*)value);
                 } else if (strcmp(name, "device_type") == 0) {
                     if (strcmp((char*)value, "memory") == 0)
-                        node->is_memory = 1;
+                        node->type = DTB_RAM;
                 } else if (strcmp(name, "compatible") == 0) {
                     if (dtb_compatible_contains(value, len, "ns16550a"))
-                        node->is_uart = 1;
+                        node->type = DTB_UART;
                     else if (dtb_compatible_contains(value, len, "sifive,plic-1.0.0"))
-                        node->is_plic = 1;
+                        node->type = DTB_PLIC;
                     else if (dtb_compatible_contains(value, len, "sifive,clint0"))
-                        node->is_clint = 1;
+                        node->type = DTB_PLIC;
+                } else if (node->name && strcmp(node->name, "chosen") == 0) {
+                    if (strcmp(name, "linux,initrd-start") == 0) {
+                        node->type = DTB_INITRD;
+                        node->reg_addr = dtb_read_uint(value, len);
+                    } else if (strcmp(name, "linux,initrd-end") == 0) {
+                        node->type = DTB_INITRD;
+                        node->reg_end = dtb_read_uint(value, len);
+                    }
                 } else if (strcmp(name, "reg") == 0) {
                     if (len % ((parent.address_cells + parent.size_cells) * 4) != 0)
                         return 0;
@@ -178,22 +208,22 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                         node->reg_size = size;
                         
                         memory_type_t type;
-                        if (node->is_memory) {
+                        if (node->type == DTB_RAM) {
                             type = MEM_USABLE;
 
                             riscv_mmio_info[MMIO_RAM_IDX].addr = (uintptr_t)address;
                             riscv_mmio_info[MMIO_RAM_IDX].size = (size_t)size;
                         } else if (parent.name && strcmp(parent.name, "reserved-memory") == 0) {
                             type = MEM_RESERVED;
-                        } else if (node->is_uart) {
+                        } else if (node->type == DTB_UART) {
                             riscv_mmio_info[MMIO_UART0_IDX].addr = (uintptr_t)address;
                             riscv_mmio_info[MMIO_UART0_IDX].size = (uintptr_t)size;
                             continue;
-                        } else if (node->is_plic) {
+                        } else if (node->type == DTB_PLIC) {
                             riscv_mmio_info[MMIO_PLIC_IDX].addr = (uintptr_t)address;
                             riscv_mmio_info[MMIO_PLIC_IDX].size = (uintptr_t)size;
                             continue;
-                        } else if (node->is_clint) {
+                        } else if (node->type == DTB_CLINT) {
                             riscv_mmio_info[MMIO_CLINT_IDX].addr = (uintptr_t)address;
                             riscv_mmio_info[MMIO_CLINT_IDX].size = (uintptr_t)size;
                             continue;

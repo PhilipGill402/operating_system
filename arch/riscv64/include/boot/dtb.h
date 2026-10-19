@@ -29,18 +29,23 @@ typedef struct __attribute__((packed)) dtb_tree {
     uint32_t size_dt_struct;
 } dtb_tree_t;
 
+typedef enum dtb_mem_type {
+    DTB_RAM,
+    DTB_UART,
+    DTB_PLIC,
+    DTB_CLINT,
+    DTB_INITRD
+} dtb_mem_type_t;
+
 typedef struct dtb_struct_node {
     char* name;
     uint32_t address_cells;
     uint32_t size_cells;
-    
-    uint8_t is_memory;
-    uint8_t is_uart;
-    uint8_t is_plic;
-    uint8_t is_clint;
+    dtb_mem_type_t type; 
 
     uint8_t seen_reg;
     uintptr_t reg_addr;
+    uintptr_t reg_end;
     size_t reg_size;
 } dtb_struct_node_t;
 

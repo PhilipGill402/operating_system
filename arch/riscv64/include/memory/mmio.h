@@ -9,11 +9,15 @@ typedef struct mem_range {
     size_t size;
 } mem_range_t;
 
-#define MMIO_RAM_IDX        0
-#define MMIO_UART0_IDX      1
-#define MMIO_PLIC_IDX       2
-#define MMIO_CLINT_IDX      3
-#define MMIO_NUM_REGIONS    4
+
+typedef enum mmio_region {
+    MMIO_RAM_IDX,
+    MMIO_UART0_IDX,
+    MMIO_PLIC_IDX,
+    MMIO_CLINT_IDX,
+    MMIO_INITRD_IDX,
+    MMIO_NUM_REGIONS
+} mmio_region_t;
 
 #define RAM_BASE     (riscv_mmio_info[MMIO_RAM_IDX].addr)
 #define RAM_SIZE     (riscv_mmio_info[MMIO_RAM_IDX].size)
@@ -24,9 +28,12 @@ typedef struct mem_range {
 #define PLIC_BASE    (riscv_mmio_info[MMIO_PLIC_IDX].addr)
 #define PLIC_SIZE    (riscv_mmio_info[MMIO_PLIC_IDX].size)
 
+#define INITRD_BASE  (riscv_mmio_info[MMIO_INITRD_IDX].addr)
+#define INITRD_SIZE  (riscv_mmio_info[MMIO_INITRD_IDX].size)
+
 #define CLINT_BASE   0x02000000UL
 #define CLINT_SIZE   0x00010000UL
 
-extern mem_range_t riscv_mmio_info[4];
+extern mem_range_t riscv_mmio_info[5];
 
 #endif
