@@ -66,7 +66,7 @@ double sqrt(double x){
     do{
         next_guess = prev_guess - (.5 * (prev_guess - (x / prev_guess)));
         prev_guess = next_guess;
-    } while (d_abs((next_guess*next_guess) - x) > EPSILON);
+    } while (abs((next_guess*next_guess) - x) > EPSILON);
 
     return next_guess;
 }

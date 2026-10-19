@@ -1,4 +1,5 @@
 #include "fs/fs.h"
+#include <helpers.h>
 
 uint8_t fs_poll(fs_node_t* node, uint32_t offset) {
     if (!node || !node->poll)
@@ -90,54 +91,15 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
     return node->finddir(node, name);
 }
 
-uint8_t fs_init(multiboot_info_t* mbi) {
-    if (!(mbi->flags & (1 << 3))) {
-        log_error("multiboot info not found\n");
-        return 0;
-    }
-
-    if (mbi->mods_count == 0) {
-        log_error("mods_count is 0\n");
-        return 0;
-    }
-    
-    uint32_t mods_start = mbi->mods_addr;
-    uint32_t mods_end = mbi->mods_addr + (mbi->mods_count * sizeof(multiboot_module_t));
-
-    uint32_t start = mods_start & ~(PAGE_SIZE - 1);
-    uint32_t end = (mods_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-    if (end > MULTIBOOT_VIRT_END) {
-        log_error("multiboot module table mapping too large\n");
-        return 0;
-    }
-
-    for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
-        if (!arch_page_map(arch_kernel_address_space(), MULTIBOOT_VIRT_START + offset, page, ARCH_PAGE_WRITE))
+uint8_t fs_init(uintptr_t initrd_addr, size_t initrd_size) {
+    uintptr_t start = ALIGN_DOWN(initrd_addr, PAGE_SIZE);
+    uintptr_t end = ALIGN_UP(initrd_addr + initrd_size, PAGE_SIZE);
+    uintptr_t virt = INITRD_VIRT_ADDRESS;
+    uintptr_t initrd_location = INITRD_VIRT_ADDRESS + (initrd_addr - start);
+    for (uintptr_t addr = start; addr < end && virt < INITRD_VIRT_END; addr += PAGE_SIZE, virt += PAGE_SIZE) {
+        if (!arch_page_map(arch_kernel_address_space(), virt, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
             return 0;
     }
-    
-    uint32_t mods_offset = mods_start & (PAGE_SIZE - 1);
-    multiboot_module_t* modules = (multiboot_module_t*)(MULTIBOOT_VIRT_START + mods_offset);
-    multiboot_module_t* initrd_mod = &modules[0];
-    
-    uint32_t mod_start = initrd_mod->mod_start;
-    uint32_t mod_end = initrd_mod->mod_end;
-
-    start = mod_start & ~(PAGE_SIZE - 1);
-    end = (mod_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-
-    if (end > INITRD_VIRT_END) {
-        log_error("initrd module mapping too large\n");
-        return 0;
-    }
-
-    for (uint32_t page = start, offset = 0; page < end; page += PAGE_SIZE, offset += PAGE_SIZE) {
-        if (!arch_page_map(arch_kernel_address_space(), INITRD_VIRT_ADDRESS + offset, page, ARCH_PAGE_WRITE))
-            return 0;
-    }
-
-    uint32_t initrd_location = INITRD_VIRT_ADDRESS + (mod_start & 0xFFF);
     
     fs_root = vfs_init();
     if (!fs_root) {

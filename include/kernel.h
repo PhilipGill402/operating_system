@@ -8,6 +8,7 @@
 
 typedef enum memory_type {
     MEM_USABLE,
+    MEM_FILESYSTEM,
     MEM_RESERVED
 } memory_type_t;
 

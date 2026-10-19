@@ -15,8 +15,8 @@ double sin(double x) {
     
 
     for (int i = 0; i < PRECISION; i++){
-        int sign = pow(-1.0f, (double)i);
-        double top = pow(x, (double)((2 * i) + 1));
+        int sign = powi(-1.0f, i);
+        double top = powi(x, ((2 * i) + 1));
         double bottom = factorial((2 * i) + 1);
 
         result += sign * (top / bottom);
@@ -44,8 +44,8 @@ double cos(double x) {
 
 
     for (int i = 0; i < PRECISION; i++){
-        int sign = pow(-1.0f, (double)i);
-        double top = pow(x, (double)(2 * i));
+        int sign = powi(-1.0f, (double)i);
+        double top = powi(x, (double)(2 * i));
         double bottom = factorial(2 * i);
 
         result += sign * (top / bottom);

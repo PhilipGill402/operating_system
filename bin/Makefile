@@ -2,7 +2,7 @@
 # Architecture and toolchain
 # =============================================================================
 
-ARCH ?= i686
+ARCH ?= riscv64
 TARGET := $(ARCH)-elf
 
 CC := $(TARGET)-gcc
@@ -21,6 +21,14 @@ OUTDIR := $(PROJECT_ROOT)/fs/bin
 BUILDDIR := $(PROJECT_ROOT)/build/$(ARCH)/user
 
 # =============================================================================
+# Runtime and libraries
+# =============================================================================
+
+CRT0 := $(SYSROOT)/usr/lib/crt0.o
+LIBC := $(SYSROOT)/usr/lib/libc.a
+LIBGFX := $(SYSROOT)/usr/lib/libgfx.a
+
+# =============================================================================
 # Compiler and linker flags
 # =============================================================================
 
@@ -33,23 +41,15 @@ CFLAGS := \
 	-O2 \
 	-Wall \
 	-Wextra \
-	-m32 \
 	-MMD \
-	-MP
+	-MP \
+	-march=rv64imac \
+	-mabi=lp64
 
 LDFLAGS := \
 	-nostdlib \
-	-nostartfiles \
-	-ffreestanding \
-	-m32
-
-# =============================================================================
-# Runtime and libraries
-# =============================================================================
-
-CRT0 := $(SYSROOT)/usr/lib/crt0.o
-LIBC := $(SYSROOT)/usr/lib/libc.a
-LIBGFX := $(SYSROOT)/usr/lib/libgfx.a
+	-march=rv64imac \
+	-mabi=lp64
 
 # =============================================================================
 # Source discovery
@@ -95,7 +95,11 @@ check-sysroot:
 # =============================================================================
 
 $(BUILDDIR)/%.o: $(SRC_DIR)/%.c | dirs
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) \
+		$(CPPFLAGS) \
+		$(CFLAGS) \
+		-c $< \
+		-o $@
 
 # =============================================================================
 # Link user programs

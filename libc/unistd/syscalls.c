@@ -84,7 +84,7 @@ int32_t kill(uint32_t pid, int32_t sig) {
 }
 
 void* mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t fd, uint32_t offset) {
-    return (void*)__sys6(SYS_MMAP, addr, length, prot, flags, fd, offset);
+    return (void*)__sys6(SYS_MMAP, (uintptr_t)addr, length, prot, flags, fd, offset);
 }
 
 int32_t munmap(void* addr, uint32_t length) {

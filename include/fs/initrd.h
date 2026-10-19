@@ -8,9 +8,6 @@
 #include "fs/fs_types.h"
 #include "memory/heap.h"
 
-#define INITRD_VIRT_ADDRESS     0xC1200000
-#define INITRD_VIRT_END         0xC2000000
-
 #define INITRD_MAGIC 0x52445449
 #define INITRD_NAME_MAX 64
 #define INITRD_INVALID_NODE 0xFFFFFFFF
@@ -41,6 +38,6 @@ extern initrd_superblock_t* superblock;
 extern initrd_node_t* node_table;
 extern uint32_t num_nodes;
 
-fs_node_t* initrd_init(uint32_t addr);
+fs_node_t* initrd_init(uintptr_t addr);
 
 #endif

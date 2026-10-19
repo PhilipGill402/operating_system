@@ -53,7 +53,7 @@ SYSROOT_STAMP := $(SYSROOT)/.libc-installed
 KERNEL_ELF := $(BUILD_DIR)/kernel.elf
 KERNEL_BIN := $(BUILD_DIR)/kernel.bin
 ISO := $(BUILD_DIR)/myos.iso
-FS := $(BUILD_DIR)/initrd.img
+INITRD_IMG := $(BUILD_DIR)/initrd.img
 
 # =============================================================================
 # Architecture configuration
@@ -308,9 +308,9 @@ libc: $(SYSROOT_STAMP)
 $(SYSROOT_STAMP): $(LIBC) $(CRT0) $(LIBC_HEADERS)
 	mkdir -p $(SYSROOT)/usr/include
 	mkdir -p $(SYSROOT)/usr/lib
-	cp -Ru $(LIBC_INC)/* $(SYSROOT)/usr/include/
-	cp -u $(LIBC) $(SYSROOT)/usr/lib/
-	cp -u $(CRT0) $(SYSROOT)/usr/lib/
+	cp -R $(LIBC_INC)/* $(SYSROOT)/usr/include/
+	cp $(LIBC) $(SYSROOT)/usr/lib/
+	cp $(CRT0) $(SYSROOT)/usr/lib/
 	touch $@
 
 $(LIBC) $(CRT0):
@@ -332,12 +332,12 @@ $(LIBGFX):
 user: libc
 	$(MAKE) -C $(USER_DIR) ARCH=$(ARCH)
 
-$(FS): user
+$(INITRD_IMG): user
 	@mkdir -p $(dir $@)
 	python3 initrd.py
 	@if [ -f initrd.img ]; then mv initrd.img $@; fi
 
-img: $(FS)
+img: $(INITRD_IMG)
 
 # =============================================================================
 # ISO
@@ -349,13 +349,13 @@ ifeq ($(BOOT_MODE),grub-iso)
 
 ISO_KERNEL_NAME ?= kernel.elf
 
-$(ISO): $(KERNEL_ELF) libc user $(FS)
+$(ISO): $(KERNEL_ELF) libc user $(INTIRD_IMG)
 	rm -rf $(ISO_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 
 	cp $(KERNEL_ELF) $(ISO_DIR)/boot/$(ISO_KERNEL_NAME)
 	cp grub.cfg $(ISO_DIR)/boot/grub/
-	cp $(FS) $(ISO_DIR)/boot/
+	cp $(INITRD_IMG) $(ISO_DIR)/boot/
 
 	i686-elf-grub-mkrescue -o $(ISO) $(ISO_DIR)
 

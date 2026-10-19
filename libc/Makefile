@@ -1,7 +1,6 @@
 # libc/Makefile
 
-ARCH ?= i686
-TARGET := $(ARCH)-elf
+TARGET := riscv64-elf
 
 CC := $(TARGET)-gcc
 AR := $(TARGET)-ar
@@ -25,9 +24,14 @@ CFLAGS := \
 	-O2 \
 	-Wall \
 	-Wextra \
-	-fomit-frame-pointer
+	-fomit-frame-pointer \
+	-march=rv64imac \
+	-mabi=lp64
 
-ASFLAGS := --32
+ASFLAGS := \
+	-march=rv64imac \
+	-mabi=lp64
+
 ARFLAGS := rcs
 
 C_SOURCES := $(shell find . -type f -name '*.c' \
@@ -46,7 +50,7 @@ $(LIBC): $(OBJECTS)
 
 $(CRT0): $(CRT0_SOURCE)
 	@mkdir -p $(dir $@)
-	$(CC) -m32 -ffreestanding -c $< -o $@
+	$(CC) $(ASFLAGS) -ffreestanding -c $< -o $@
 
 $(BUILD_DIR)/%.o: ./%.c
 	@mkdir -p $(dir $@)

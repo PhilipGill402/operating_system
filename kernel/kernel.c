@@ -30,20 +30,20 @@ void kernel_main(const kernel_boot_info_t* info) {
     input_buffer_alloc();
     log_debug("input buffer initialized\n");
     
-    //fs_init((multiboot_info_t*)info->boot_info);
-
-    /*
-    // GRUB multiboot supports use of the framebuffer
-    if (mbi->flags & (1 << 12)) {
-        framebuffer_init(mbi);
+    uintptr_t initrd_addr = 0;
+    size_t initrd_size = 0;
+    for (uint8_t i = 0; i < info->region_count; ++i) {
+        if (info->regions[i].type == MEM_FILESYSTEM) {
+            initrd_addr = info->regions[i].mem_addr;
+            initrd_size = info->regions[i].mem_size;
+        }
     }
-    */
 
-    //mouse_init();
+    fs_init(initrd_addr, initrd_size);
+    log_debug("file system initialized\n");
 
     scheduler_init();
-    
-    arch_enable_interrupts();
+    log_debug("scheduler initialized\n");
 
     fs_node_t* tty_elf = resolve_path("/bin/tty", fs_root);
     if (!tty_elf) {

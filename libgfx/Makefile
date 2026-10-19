@@ -1,6 +1,6 @@
 # libgfx/Makefile
 
-ARCH ?= i686
+ARCH ?= riscv64
 TARGET := $(ARCH)-elf
 
 CC := $(TARGET)-gcc
@@ -22,7 +22,9 @@ CFLAGS := \
 	-ffreestanding \
 	-O2 \
 	-Wall \
-	-Wextra
+	-Wextra \
+	-march=rv64imac \
+	-mabi=lp64
 
 ARFLAGS := rcs
 
@@ -42,7 +44,6 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-# Optional installation target for user-program linking.
 install: $(LIBGFX) $(HEADERS)
 	mkdir -p $(SYSROOT)/usr/lib
 	mkdir -p $(SYSROOT)/usr/include/gfx

@@ -192,7 +192,7 @@ fs_node_t* initrd_parent(fs_node_t* node) {
     return fs_node;
 }
 
-fs_node_t* initrd_init(uint32_t addr) {
+fs_node_t* initrd_init(uintptr_t addr) {
     // set and validate superblock 
     superblock = (initrd_superblock_t*)addr;
     

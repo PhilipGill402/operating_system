@@ -8,7 +8,6 @@
 
 #include <arch/memory/paging.h>
 
-#include "multiboot.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
 #include "fs/devfs/devfs.h"
@@ -21,7 +20,7 @@
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128
 
-uint8_t fs_init(multiboot_info_t* mbi);
+uint8_t fs_init(uintptr_t initrd_addr, size_t initrd_size);
 fs_node_t* resolve_path(const char* path, fs_node_t* cwd);
 fs_node_t* resolve_path_from(fs_node_t* start, const char* path);
 fs_node_t* fs_parent(fs_node_t* node);

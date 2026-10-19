@@ -1,13 +1,11 @@
 #include <unistd.h>
 
-#include <stdio.h>
-
 int32_t __sys0(uint32_t sys_num) {
     int32_t ret;
     asm volatile (
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(sys_num)
+        "ecall"
+        : "+r"(ret)
+        : "r"(sys_num)
         : "memory"
     );
     
@@ -23,9 +21,9 @@ int32_t __sys0(uint32_t sys_num) {
 int32_t __sys1(uint32_t sys_num, uint32_t arg1) {
     int32_t ret;
     asm volatile (
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(sys_num), "b"(arg1)
+        "ecall"
+        : "+r"(ret)
+        : "r"(sys_num), "r"(arg1)
         : "memory"
     );
 
@@ -41,9 +39,9 @@ int32_t __sys1(uint32_t sys_num, uint32_t arg1) {
 int32_t __sys2(uint32_t sys_num, uint32_t arg1, uint32_t arg2) {
     int32_t ret;
     asm volatile (
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(sys_num), "b"(arg1), "c"(arg2)
+        "ecall"
+        : "+r"(ret)
+        : "r"(sys_num), "r"(arg1), "r"(arg2)
         : "memory"
     );
 
@@ -58,9 +56,9 @@ int32_t __sys2(uint32_t sys_num, uint32_t arg1, uint32_t arg2) {
 int32_t __sys3(uint32_t sys_num, uint32_t arg1, uint32_t arg2, uint32_t arg3) {
     int32_t ret; 
     asm volatile(
-    "int $0x80"
-    : "=a"(ret)
-    : "a"(sys_num), "b"(arg1), "c"(arg2), "d"(arg3)
+    "ecall"
+    : "+r"(ret)
+    : "r"(sys_num), "r"(arg1), "r"(arg2), "r"(arg3)
     : "memory"
     );
 
@@ -76,13 +74,13 @@ int32_t __sys4(uint32_t sys_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, ui
     int32_t ret;
 
     asm volatile(
-        "int $0x80"
-        : "=a"(ret)
-        : "a"(sys_num),
-          "b"(arg1),
-          "c"(arg2),
-          "d"(arg3),
-          "S"(arg4)
+        "ecall"
+        : "+r"(ret)
+        : "r"(sys_num),
+          "r"(arg1),
+          "r"(arg2),
+          "r"(arg3),
+          "r"(arg4)
         : "memory"
     );
 
@@ -96,26 +94,25 @@ int32_t __sys4(uint32_t sys_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, ui
 
 int32_t __sys6(uint32_t sys_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, uint32_t arg4, uint32_t arg5, uint32_t arg6) {
     int32_t ret; 
-    register uint32_t r_eax asm("eax") = sys_num;
-    register uint32_t r_ebx asm("ebx") = arg1;
-    register uint32_t r_ecx asm("ecx") = arg2;
-    register uint32_t r_edx asm("edx") = arg3;
-    register uint32_t r_esi asm("esi") = arg4;
-    register uint32_t r_edi asm("edi") = arg5;
-    register uint32_t r_ebp asm("ebp") = arg6;
+    register uint32_t r_eax asm("a0") = sys_num;
+    register uint32_t r_ebx asm("a1") = arg1;
+    register uint32_t r_ecx asm("a2") = arg2;
+    register uint32_t r_edx asm("a3") = arg3;
+    register uint32_t r_esi asm("a4") = arg4;
+    register uint32_t r_edi asm("a5") = arg5;
+    register uint32_t r_ebp asm("a6") = arg6;
 
     asm volatile(
-        "int $0x80"
-        : "+a"(r_eax)
-        : "b"(r_ebx),
-          "c"(r_ecx),
-          "d"(r_edx),
-          "S"(r_esi),
-          "D"(r_edi),
+        "ecall"
+        : "+r"(r_eax)
+        : "r"(r_ebx),
+          "r"(r_ecx),
+          "r"(r_edx),
+          "r"(r_esi),
+          "r"(r_edi),
           "r"(r_ebp)
         : "memory"
     );
-
     ret = (int32_t)r_eax;
 
     if (ret < 0) {
