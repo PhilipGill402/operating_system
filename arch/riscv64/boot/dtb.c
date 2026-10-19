@@ -128,16 +128,17 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                         riscv_mmio_info[MMIO_CLINT_IDX].addr = node->reg_addr;
                         riscv_mmio_info[MMIO_CLINT_IDX].size = node->reg_size;
                     }
-                
-                    
                 }
 
                 if (node->type == DTB_INITRD && node->reg_addr && node->reg_end && (node->reg_end > node->reg_addr)) {
-                    riscv_mmio_info[MMIO_INITRD_IDX].addr = node->reg_addr;
-                    riscv_mmio_info[MMIO_INITRD_IDX].size = (size_t)(node->reg_end - node->reg_addr);
+                    info->regions[info->region_count].mem_addr = node->reg_addr;
+                    info->regions[info->region_count].mem_size = (size_t)(node->reg_end - node->reg_addr);
+                    info->regions[info->region_count].type = MEM_FILESYSTEM;
 
-                    log_debug("%lx\n", riscv_mmio_info[MMIO_INITRD_IDX].addr);
-                    log_debug("%l\n", riscv_mmio_info[MMIO_INITRD_IDX].size);
+                    info->region_count++;
+
+                    log_debug("%lx\n", info->regions[info->region_count].mem_addr);
+                    log_debug("%l\n", info->regions[info->region_count].mem_size);
                 }
 
                 dtb_stack_pop(&token_stack);

@@ -11,11 +11,10 @@ typedef struct mem_range {
 
 
 typedef enum mmio_region {
-    MMIO_RAM_IDX,
+    MMIO_RAM_IDX = 0,
     MMIO_UART0_IDX,
     MMIO_PLIC_IDX,
     MMIO_CLINT_IDX,
-    MMIO_INITRD_IDX,
     MMIO_NUM_REGIONS
 } mmio_region_t;
 
@@ -27,9 +26,6 @@ typedef enum mmio_region {
 
 #define PLIC_BASE    (riscv_mmio_info[MMIO_PLIC_IDX].addr)
 #define PLIC_SIZE    (riscv_mmio_info[MMIO_PLIC_IDX].size)
-
-#define INITRD_BASE  (riscv_mmio_info[MMIO_INITRD_IDX].addr)
-#define INITRD_SIZE  (riscv_mmio_info[MMIO_INITRD_IDX].size)
 
 #define CLINT_BASE   0x02000000UL
 #define CLINT_SIZE   0x00010000UL

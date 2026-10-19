@@ -30,6 +30,7 @@ typedef struct __attribute__((packed)) dtb_tree {
 } dtb_tree_t;
 
 typedef enum dtb_mem_type {
+    DTB_UNKNOWN = 0,
     DTB_RAM,
     DTB_UART,
     DTB_PLIC,

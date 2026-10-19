@@ -3,6 +3,8 @@
 #include <string.h>
 #include <helpers.h>
 
+#include <log.h>
+
 pmm_t pmm;
 
 static inline void bitmap_set(uintptr_t frame) {
@@ -89,7 +91,7 @@ void pmm_init(const kernel_boot_info_t* info) {
 
     // re-reserve any reserved pages just incase they were freed by the previous loop
     for (size_t i = 0; i < info->region_count; ++i) {
-        if (info->regions[i].type == MEM_RESERVED)
+        if (info->regions[i].type == MEM_RESERVED || info->regions[i].type == MEM_FILESYSTEM)
             pmm_reserve_phys_range(info->regions[i].mem_addr, info->regions[i].mem_size);
     }
     

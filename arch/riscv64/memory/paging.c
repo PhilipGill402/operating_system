@@ -40,7 +40,7 @@ static uintptr_t riscv_alloc_page_table() {
     uintptr_t page_table = pmm_alloc_frame();
     if (!page_table)
         return 0;
-    
+
     memset((void*)page_table, 0, PAGE_SIZE);
 
     return page_table;
