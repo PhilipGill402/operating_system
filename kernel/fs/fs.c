@@ -1,6 +1,8 @@
 #include "fs/fs.h"
 #include <helpers.h>
 
+#include <log.h>
+
 uint8_t fs_poll(fs_node_t* node, uint32_t offset) {
     if (!node || !node->poll)
         return POLLERR;

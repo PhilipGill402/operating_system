@@ -1,6 +1,8 @@
 #include "fs/devfs/dev_serial.h"
 #include <arch/drivers/uart.h>
 
+#include <log.h>
+
 static uint8_t poll_serial_data(dev_file_t* file, uint32_t offset) {
     (void)file;
     (void)offset;

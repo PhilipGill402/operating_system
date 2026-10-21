@@ -2,8 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-
-#include <stack.h>
+#include <stdlib.h>
 #include <log.h>
 
 #include <arch/boot/boot.h>
@@ -24,7 +23,8 @@
 #include "memory_mapping.h"
 
 void kernel_main(const kernel_boot_info_t* info) {
-    init_heap();
+    if (!init_heap())
+        panic("failed to initialize heap\n");
     log_debug("heap initialized\n");
 
     input_buffer_alloc();

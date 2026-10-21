@@ -32,6 +32,7 @@ uint8_t arch_address_space_activate(arch_address_space_t* address_space);
 // MEMORY PAGE OPERATIONS
 uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags);
 uintptr_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
+uintptr_t arch_virt_to_phys(arch_address_space_t* addr_space, uintptr_t virt);
 uintptr_t arch_phys_temp_map(uintptr_t phys);
 void arch_phys_temp_unmap(uintptr_t virt);
 

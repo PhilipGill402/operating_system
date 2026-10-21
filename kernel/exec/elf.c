@@ -5,7 +5,7 @@ static uint32_t align_up(uint32_t value, uint32_t align) {
     return (value + align - 1) & ~(align - 1);
 }
 
-uint8_t* elf_from_file(fs_node_t* elf, uint32_t* size) {
+uint8_t* elf_from_file(fs_node_t* elf, uint64_t* size) {
     uint8_t* buffer = kmalloc(elf->size);
     fs_read(elf, 0, elf->size, buffer);
     *size = elf->size;
@@ -19,12 +19,12 @@ uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
         return 0;
     }
 
-    if (size < sizeof(Elf32_Ehdr)) {
+    if (size < sizeof(Elf64_Ehdr)) {
         log_error("Elf not large enough for ELF header\n"); 
         return 0;
     }
     
-    Elf32_Ehdr* header = (Elf32_Ehdr*)elf; 
+    Elf64_Ehdr* header = (Elf64_Ehdr*)elf; 
 
     if (header->e_ident[0] != ELFMAG0) {
         log_error("magic validation failed\n"); 
@@ -40,8 +40,8 @@ uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
         return 0;
     }
 
-    if (header->e_ident[4] != ELFCLASS32) {
-        log_error("not 32 bit ELF\n");
+    if (header->e_ident[4] != ELFCLASS64) {
+        log_error("not 64 bit ELF\n");
         return 0;
     }
 
@@ -65,17 +65,17 @@ uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
         return 0;
     }
 
-    if (header->e_machine != EM_386) {
-        log_error("only 32 bit x86 machines supported\n");
+    if (header->e_machine != EM_RISCV) {
+        log_error("only riscv 64 bit machines supported\n");
         return 0;
     }
 
-    if (header->e_phoff == 0 || header->e_phnum <= 0 || header->e_phentsize != sizeof(Elf32_Phdr)) {
+    if (header->e_phoff == 0 || header->e_phnum <= 0 || header->e_phentsize != sizeof(Elf64_Phdr)) {
         log_error("malformed program header\n");
         return 0;
     }
 
-    if (header->e_phoff > size || header->e_phoff + (header->e_phnum * sizeof(Elf32_Phdr)) > size) {
+    if (header->e_phoff > size || header->e_phoff + (header->e_phnum * sizeof(Elf64_Phdr)) > size) {
         log_error("program headers too big\n");
         return 0;
     }
@@ -84,7 +84,7 @@ uint8_t elf_validate(const uint8_t* elf, uint32_t size) {
 }
 
 void elf_print_info(const uint8_t* elf) {
-    Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
+    Elf64_Ehdr* header = (Elf64_Ehdr*)elf;
 
     serial_printf("ELF Info\n");
     serial_printf("-----------\n");
@@ -106,17 +106,17 @@ void elf_print_info(const uint8_t* elf) {
     serial_printf("ehsize: %d\n", header->e_ehsize);
 }
 
-uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
-    Elf32_Ehdr* header = (Elf32_Ehdr*)elf;
+uint8_t elf_load(const uint8_t* elf, uint64_t size, process_t* process) {
+    Elf64_Ehdr* header = (Elf64_Ehdr*)elf;
     uint8_t count = 0;
-    uint32_t lowest_addr = 0xFFFFFFFF;
-    uint32_t highest_addr = 0;
+    uint64_t lowest_addr = 0xFFFFFFFFFFFFFFFF;
+    uint64_t highest_addr = 0;
 
-    for (uint32_t offset = header->e_phoff;
+    for (uint64_t offset = header->e_phoff;
          offset < header->e_phoff + header->e_phentsize * header->e_phnum;
          offset += header->e_phentsize) {
 
-        Elf32_Phdr* ph = (Elf32_Phdr*)((uint32_t)elf + offset);
+        Elf64_Phdr* ph = (Elf64_Phdr*)((uint64_t)elf + offset);
 
 
         if (ph->p_type != PT_LOAD) {
@@ -138,8 +138,8 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
             return 0;
         }
 
-        uint32_t seg_start = ph->p_vaddr;
-        uint32_t seg_end = ph->p_vaddr + ph->p_memsz;
+        uint64_t seg_start = ph->p_vaddr;
+        uint64_t seg_end = ph->p_vaddr + ph->p_memsz;
 
         if (seg_end > highest_addr) {
             highest_addr = seg_end;
@@ -149,16 +149,16 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
             lowest_addr = ph->p_vaddr;
         }
 
-        uint32_t page_start = seg_start & ~(PAGE_SIZE - 1);
-        uint32_t page_end = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+        uint64_t page_start = seg_start & ~(PAGE_SIZE - 1);
+        uint64_t page_end = (seg_end + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
 
-        for (uint32_t vaddr = page_start; vaddr < page_end; vaddr += PAGE_SIZE) {
-            uint32_t frame = pmm_alloc_frame();
+        for (uint64_t vaddr = page_start; vaddr < page_end; vaddr += PAGE_SIZE) {
+            uint64_t frame = pmm_alloc_frame();
             if (!frame) {
                 return 0;
             }
 
-            if (!arch_page_map(process->addr_space, vaddr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER)) {
+            if (!arch_page_map(process->addr_space, vaddr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER | ARCH_PAGE_EXECUTE | ARCH_PAGE_READ)) {
                 pmm_free_frame(frame);
                 return 0;
             }
@@ -171,25 +171,25 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
 
             memset(page, 0, PAGE_SIZE);
 
-            uint32_t copy_start = vaddr;
+            uint64_t copy_start = vaddr;
             if (copy_start < ph->p_vaddr) {
                 copy_start = ph->p_vaddr;
             }
 
-            uint32_t copy_end = vaddr + PAGE_SIZE;
+            uint64_t copy_end = vaddr + PAGE_SIZE;
             if (copy_end > ph->p_vaddr + ph->p_filesz) {
                 copy_end = ph->p_vaddr + ph->p_filesz;
             }
 
             if (copy_start < copy_end) {
-                uint32_t dst_off = copy_start - vaddr;
-                uint32_t src_off = ph->p_offset + (copy_start - ph->p_vaddr);
-                uint32_t nbytes = copy_end - copy_start;
+                uint64_t dst_off = copy_start - vaddr;
+                uint64_t src_off = ph->p_offset + (copy_start - ph->p_vaddr);
+                uint64_t nbytes = copy_end - copy_start;
 
                 memcpy(page + dst_off, elf + src_off, nbytes);
             }
 
-            arch_phys_temp_unmap((uintptr_t)frame);
+            arch_phys_temp_unmap((uintptr_t)page);
         }
 
         process->mem_ranges[count++] = (mem_range_t){ .start = page_start, .end = page_end };
@@ -204,7 +204,7 @@ uint8_t elf_load(const uint8_t* elf, uint32_t size, process_t* process) {
 uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* args) {
     if (!process || !elf) return 0;
     
-    uint32_t size = 0;
+    uint64_t size = 0;
     uint8_t* buffer = elf_from_file(elf, &size);
     
     if (!buffer) return 0;
@@ -235,7 +235,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         return 0;
     }
     
-    Elf32_Ehdr* header = (Elf32_Ehdr*)buffer;
+    Elf64_Ehdr* header = (Elf64_Ehdr*)buffer;
     process->entry = header->e_entry;
     
     if (!process_init_stack(process)) {
@@ -246,7 +246,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         return 0;
     }
     
-    uint32_t user_sp = process_add_argv_to_stack(process, args);
+    uint64_t user_sp = process_add_argv_to_stack(process, args);
         
     if (!process_init_heap(process)) {
         process->addr_space = old_addr_space;
@@ -265,7 +265,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
 }
 
 process_t* process_create_from_elf(fs_node_t* elf) {
-    uint32_t size;
+    uint64_t size;
     process_t* process = kzmalloc(sizeof(process_t));
 
     process_init_file_descriptors(process);
@@ -279,19 +279,17 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
 
-    Elf32_Ehdr* header = (Elf32_Ehdr*)buf;
-    uint32_t entry = header->e_entry;
+    Elf64_Ehdr* header = (Elf64_Ehdr*)buf;
+    uint64_t entry = header->e_entry;
     process->entry = header->e_entry;
     process->addr_space = arch_address_space_create();
     if (!process->addr_space) {
-        log_error("failed to init the address space"); 
+        log_error("failed to init the address space\n"); 
         kfree(buf);
         process_destroy(process);
         return NULL;
     }
 
-    arch_address_space_activate(process->addr_space);
-    
     if (!elf_load(buf, size, process)) {
         log_error("failed to load the elf\n"); 
         kfree(buf);
@@ -319,7 +317,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         }
     };
     
-    uint32_t user_sp = process_add_argv_to_stack(process, &args);
+    uint64_t user_sp = process_add_argv_to_stack(process, &args);
 
     if (!process_init_heap(process)) {
         log_error("failed to initialize the heap of the process\n");
@@ -328,7 +326,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         return NULL;
     }
 
-    process->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    process->kernel_stack_bottom = (uint64_t)kmalloc(KERNEL_STACK_SIZE);
     process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
     memset((void*)process->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
     
@@ -368,7 +366,7 @@ void elf_execute(fs_node_t* elf) {
     if (!process) {
         return;
     }
-
+    
     enqueue(&current_processes, &process);
 }
 

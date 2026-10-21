@@ -16,6 +16,9 @@
 
 #define KHEAP_CANARY 0xDEADBEEF
 
+// keep this for now
+#define MALLOC_DEBUG
+
 typedef uintptr_t word_t;
 
 typedef struct kblock_t {
@@ -53,7 +56,7 @@ void* krealloc(void* ptr, size_t size);
 
 bool heap_check(const char* where);
 
-void init_heap();
+uint8_t init_heap();
 
 #endif // !INCLUDE_HEAP_H_
 

@@ -111,25 +111,25 @@ typedef struct process {
     uint32_t pid;
     uint32_t ppid; 
     proc_state_t state;
-    uint32_t entry;
+    uintptr_t entry;
 
     wait_condition_t wait;
 
     int32_t exit_status;
     
-    uint32_t image_base;
-    uint32_t image_end;
+    uintptr_t image_base;
+    uintptr_t image_end;
     
-    uint32_t heap_start;
-    uint32_t heap_break;
-    uint32_t heap_mapped_end;
-    uint32_t heap_max_end;
+    uintptr_t heap_start;
+    uintptr_t heap_break;
+    uintptr_t heap_mapped_end;
+    uintptr_t heap_max_end;
 
-    uint32_t user_stack_top;
-    uint32_t user_stack_bottom;
+    uintptr_t user_stack_top;
+    uintptr_t user_stack_bottom;
 
-    uint32_t kernel_stack_top;
-    uint32_t kernel_stack_bottom;
+    uintptr_t kernel_stack_top;
+    uintptr_t kernel_stack_bottom;
     arch_context_t* context;
    
     arch_address_space_t* addr_space;
@@ -162,7 +162,7 @@ extern uint32_t num_processes;
 process_t* process_clone(process_t* process);
 void process_init_file_descriptors(process_t* process);
 uint32_t process_init_stack(process_t* process);
-uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
+uintptr_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
 uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);
 uint32_t process_create_page_directory();

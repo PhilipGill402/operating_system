@@ -1,5 +1,6 @@
 #include <arch/exec/proc.h>
 #include "exec/process.h"
+#include "memory/helpers.h"
 
 process_t* current_process = NULL;
 process_t* process_table[MAX_PROCESSES] = { 0 };
@@ -161,29 +162,36 @@ fail:
     return 0;
 }
 
-uint32_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
-    uint32_t sp = process->user_stack_top;
-    uint32_t argv_ptrs[32];
+uintptr_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
+    uintptr_t sp = process->user_stack_top;
+    uintptr_t argv_ptrs[32];
     
     for (int i = args->argc - 1; i >= 0; --i) {
         size_t len = strlen(args->argv[i]) + 1;
         sp -= len;
-        memcpy((void*)sp, args->argv[i], len);
+        if (!memory_copy_to_user((void*)sp, args->argv[i], len, process->addr_space))
+            return 0;
+
         argv_ptrs[i] = sp;
     }
 
     sp &= ~0xF;
 
-    sp -= sizeof(uint32_t);
-    *(uint32_t*)sp = 0;
+    sp -= sizeof(uintptr_t);
+    uint32_t zero = 0;
+    if (!memory_copy_to_user((void*)sp, &zero, sizeof(uintptr_t), process->addr_space))
+        return 0;
 
     for (int i = args->argc - 1; i >= 0; i--) {
-        sp -= sizeof(uint32_t);
-        *(uint32_t*)sp = argv_ptrs[i];
+        sp -= sizeof(uintptr_t);
+        if (!memory_copy_to_user((void*)sp, &argv_ptrs[i], sizeof(uintptr_t), process->addr_space))
+            return 0;
     }
 
-    sp -= sizeof(uint32_t);
-    *(uint32_t*)sp = args->argc;
+    sp -= sizeof(uintptr_t);
+    
+    if (!memory_copy_to_user((void*)sp, &args->argc, sizeof(uintptr_t), process->addr_space))
+        return 0;
 
     return sp;
 }

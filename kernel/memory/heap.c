@@ -105,11 +105,11 @@ void coalesce(kblock_t* block){
 }
 
 /* Main Functions */
-void init_heap(){
+uint8_t init_heap(){
     for (uint64_t addr = KHEAP_START; addr < KHEAP_END; addr += PAGE_SIZE) {
         uintptr_t frame = pmm_alloc_frame();
         if (!frame) {
-            return;
+            return 0;
         }
 
         arch_page_map(arch_kernel_address_space(), addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_READ);
@@ -126,6 +126,8 @@ void init_heap(){
     block->line = 0;
 
     write_canary(block);
+
+    return 1;
 }
 
 void* kmalloc(size_t size){

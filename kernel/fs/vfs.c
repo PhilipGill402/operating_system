@@ -1,5 +1,7 @@
 #include "fs/vfs.h"
 
+#include <log.h>
+
 mount_t mount_table[MAX_MOUNTS];
 uint8_t mount_count = 0;
 

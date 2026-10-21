@@ -175,6 +175,18 @@ uintptr_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt) {
     return phys;
 }
 
+uintptr_t arch_virt_to_phys(arch_address_space_t* addr_space, uintptr_t virt) {
+    uint64_t* pte = riscv_walk_page_table((uint64_t*)addr_space->root_pt, virt, 0);
+
+    if (!pte || !pte_valid(*pte))
+        return 0;
+
+    uintptr_t page_phys = PTE_PHYS(*pte);
+    uintptr_t offset = virt & (PAGE_SIZE - 1);
+
+    return page_phys + offset;
+}
+
 uintptr_t arch_phys_temp_map(uintptr_t phys) {
     uint8_t slot = temp_slot_alloc();
     if (slot >= NUM_TEMP_REGIONS)

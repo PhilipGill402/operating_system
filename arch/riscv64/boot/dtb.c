@@ -176,7 +176,7 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                     else if (dtb_compatible_contains(value, len, "sifive,plic-1.0.0"))
                         node->type = DTB_PLIC;
                     else if (dtb_compatible_contains(value, len, "sifive,clint0"))
-                        node->type = DTB_PLIC;
+                        node->type = DTB_CLINT;
                 } else if (node->name && strcmp(node->name, "chosen") == 0) {
                     if (strcmp(name, "linux,initrd-start") == 0) {
                         node->type = DTB_INITRD;

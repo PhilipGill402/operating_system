@@ -74,7 +74,8 @@ int main() {
         .prompt_width = 5
     }; 
 
-    serial_fd = open("/dev/serial", O_WRONLY, 0); 
+    serial_fd = open("/dev/serial", O_WRONLY, 0);
+    write(serial_fd, "hello", 6); 
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);
     uint32_t ptm_fd = open("/dev/ptm", O_RDWR, 0);
 

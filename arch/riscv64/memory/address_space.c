@@ -2,7 +2,10 @@
 #include "memory/paging.h"
 #include "memory/address_space_allocator.h"
 #include "memory/physical_allocator.h"
+#include "memory/mmio.h"
 #include <string.h>
+
+#include <log.h>
 
 static inline uint8_t pte_valid(uint64_t pte) {
     return (pte & PTE_V) != 0;
@@ -185,6 +188,34 @@ clone_cleanup:
     return NULL;
 }
 
+static uint8_t riscv_install_kernel_mappings(arch_address_space_t* space) {
+    // RAM
+    for (uintptr_t addr = RAM_BASE; addr < RAM_BASE + RAM_SIZE; addr += PAGE_SIZE) {
+        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE | ARCH_PAGE_EXECUTE))
+            return 0;
+    }
+
+    // UART
+    for (uintptr_t addr = UART0_BASE; addr < UART0_BASE + UART0_SIZE; addr += PAGE_SIZE) {
+        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
+            return 0;
+    }
+
+    // CLINT
+    for (uintptr_t addr = CLINT_BASE; addr < CLINT_BASE + CLINT_SIZE; addr += PAGE_SIZE) {
+        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
+            return 0;
+    }
+
+    // PLIC 
+    for (uintptr_t addr = PLIC_BASE; addr < PLIC_BASE + PLIC_SIZE; addr += PAGE_SIZE) {
+        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
+            return 0;
+    }
+
+    return 1;
+}
+
 arch_address_space_t* arch_kernel_address_space(void) {
     return &kernel_address_space;
 }
@@ -201,6 +232,13 @@ arch_address_space_t* arch_address_space_create(void) {
     }
     
     memset((void*)addr_space->root_pt, 0, PAGE_SIZE);
+    
+    if (!riscv_install_kernel_mappings(addr_space)) {
+        pmm_free_frame(addr_space->root_pt); 
+        address_space_free(addr_space);
+        return NULL;
+    }
+
 
     return addr_space;
 }
