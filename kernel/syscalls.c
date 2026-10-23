@@ -474,7 +474,7 @@ void* sys_mmap(void* addr, uint32_t length, int32_t prot, int32_t flags, int32_t
 
         void* tmp = (void*)arch_phys_temp_map(frame);
         memset(tmp, 0, PAGE_SIZE);
-        arch_phys_temp_unmap((uintptr_t)tmp);
+        arch_phys_temp_unmap(tmp);
     }
 
     area->next = proc->vmas;
@@ -650,7 +650,7 @@ void* sys_brk(void* new_addr) {
         memset(page, 0, PAGE_SIZE);
 
         current_process->heap_mapped_end += PAGE_SIZE;
-        arch_phys_temp_unmap((uintptr_t)page);
+        arch_phys_temp_unmap(page);
     }
     
     current_process->heap_break = addr;

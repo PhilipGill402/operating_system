@@ -1,6 +1,8 @@
 #include <arch/exec/proc.h>
 #include "exec/process.h"
 #include "memory/helpers.h"
+#include <arch/memory/memory_map.h>
+#include <stdlib.h>
 
 process_t* current_process = NULL;
 process_t* process_table[MAX_PROCESSES] = { 0 };
@@ -34,7 +36,7 @@ process_t* process_clone(process_t* process) {
         return NULL;
 
     
-    if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + KERNEL_STACK_SIZE) {
+    if (!process->kernel_stack_bottom || process->kernel_stack_top != process->kernel_stack_bottom + arch_kstack_size) {
         log_error("clone: bad parent kernel stack bounds\n");
         return NULL;
     }
@@ -62,14 +64,14 @@ process_t* process_clone(process_t* process) {
     new->open_fds = 0;
     
     // Init new kernel stack
-    new->kernel_stack_bottom = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    new->kernel_stack_bottom = (uintptr_t)kmalloc(arch_kstack_size);
     if (!new->kernel_stack_bottom) {
         kfree(new);
         return NULL;
     }
     
-    new->kernel_stack_top = new->kernel_stack_bottom + KERNEL_STACK_SIZE;
-    memset((void*)new->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
+    new->kernel_stack_top = new->kernel_stack_bottom + arch_kstack_size;
+    memset((void*)new->kernel_stack_bottom, 0, arch_kstack_size);
     
     // Init and copy over trapframe
     new->trapframe = arch_trapframe_init(new->user_stack_top, new->entry);
@@ -126,12 +128,12 @@ process_t* process_clone(process_t* process) {
     return new;
 }
 
-uint32_t process_init_stack(process_t* process) {
-    uint32_t stack_bottom = USER_STACK_BOTTOM; 
-    uint32_t stack_top = USER_STACK_TOP;
+uint8_t process_init_stack(process_t* process) {
+    uintptr_t stack_bottom = arch_user_stack_start; 
+    uintptr_t stack_top = arch_user_stack_end;
 
-    for (uint32_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
-        uint32_t frame = pmm_alloc_frame();
+    for (uintptr_t addr = stack_bottom; addr < stack_top; addr += PAGE_SIZE) {
+        uintptr_t frame = pmm_alloc_frame();
         if (!frame)
             goto fail;
 
@@ -144,7 +146,7 @@ uint32_t process_init_stack(process_t* process) {
 
         memset(page, 0, PAGE_SIZE);
 
-        arch_phys_temp_unmap((uintptr_t)page);
+        arch_phys_temp_unmap(page);
     }
 
     process->user_stack_top = stack_top;
@@ -197,23 +199,21 @@ uintptr_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
 }
 
 uint32_t process_init_heap(process_t* process) {
-    uint32_t heap_start = align_up(process->image_end, PAGE_SIZE);
-
     uint8_t frame_allocated = 0;
     uint8_t page_allocated = 0;
     uint8_t page_mapped = 0;
     
-    uint32_t frame = pmm_alloc_frame();
+    uintptr_t frame = pmm_alloc_frame();
     if (!frame)
         goto fail;
 
     frame_allocated = 1;
-
-    if (!arch_page_map(process->addr_space, heap_start, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
+    
+    if (!arch_page_map(process->addr_space, arch_user_heap_start, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
         goto fail;
 
     page_allocated = 1;
-
+    
     uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
     if (!page)
         goto fail;
@@ -222,24 +222,24 @@ uint32_t process_init_heap(process_t* process) {
 
     memset(page, 0, PAGE_SIZE);
 
-    process->heap_start = heap_start;
+    process->heap_start = arch_user_heap_start;
     process->heap_break = process->heap_start;
     process->heap_mapped_end = process->heap_start + PAGE_SIZE;
-    process->heap_max_end = heap_start + (16384 * PAGE_SIZE); // allow heap growth up to 64 MB
+    process->heap_max_end = arch_user_heap_end;
                                                               
     if (process->heap_max_end >= USER_MMAP_BASE)
         process->heap_max_end = USER_MMAP_BASE - 1;
     
-    arch_phys_temp_unmap((uintptr_t)page);
+    arch_phys_temp_unmap(page);
     
     return 1;
 
 fail:
     if (page_mapped)
-        arch_phys_temp_unmap((uintptr_t)page);
+        arch_phys_temp_unmap(page);
     
     if (page_allocated)
-        arch_page_unmap(process->addr_space, heap_start);
+        arch_page_unmap(process->addr_space, arch_user_heap_start);
     
     if (frame_allocated)
         pmm_free_frame(frame);
@@ -369,10 +369,8 @@ void process_child_entry(void) {
 }
 
 _Noreturn void process_first_entry(void) {
-    if (!current_process || !current_process->trapframe) {
-        log_error("cant enter null process or null trapframe\n");
-        arch_halt();
-    }
+    if (!current_process || !current_process->trapframe)
+        panic("can't enter null process or null trapframe\n");
 
     arch_return_to_user(current_process->trapframe, current_process->kernel_stack_top);
 }

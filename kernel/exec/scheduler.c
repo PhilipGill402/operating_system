@@ -4,6 +4,15 @@
 #include <arch/exec/user_mode.h>
 #include "exec/process.h"
 
+#include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
+
+extern void riscv_trap_entry(void);
+
+static inline void* phys_to_virt(uintptr_t phys) {
+    return (void*)(phys + arch_kernel_offset);
+}
+
 queue_t current_processes;
 
 static process_t* idle_process;
@@ -26,9 +35,9 @@ void scheduler_init(void) {
     memset(idle_process, 0, sizeof(process_t));
     idle_process->pid = UINT32_MAX;
     idle_process->state = PROC_READY;
-
-    idle_process->kernel_stack_bottom = (uintptr_t)kmalloc(KERNEL_STACK_SIZE);
-    idle_process->kernel_stack_top = idle_process->kernel_stack_bottom + KERNEL_STACK_SIZE;
+    
+    idle_process->kernel_stack_bottom = (uintptr_t)kmalloc(arch_kstack_size);
+    idle_process->kernel_stack_top = idle_process->kernel_stack_bottom + arch_kstack_size;
     
     idle_process->context = arch_context_init(idle_process->kernel_stack_top, idle_entry);
 }
@@ -99,7 +108,7 @@ void schedule_and_enter(void) {
     current_process = next;
     current_process->state = PROC_RUNNING;
     current_process->ticks_left = DEFAULT_MAX_TICKS;
-    
+
     arch_address_space_activate(current_process->addr_space);
     arch_return_to_user(current_process->trapframe, current_process->kernel_stack_top);
 }

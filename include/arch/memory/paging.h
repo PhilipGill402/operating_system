@@ -4,15 +4,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "memory_mapping.h"
-
 typedef struct arch_address_space arch_address_space_t;
 
-#define ARCH_PAGE_PRESENT   0x00001
-#define ARCH_PAGE_WRITE     0x00010
-#define ARCH_PAGE_READ      0x00100
-#define ARCH_PAGE_EXECUTE   0x01000
-#define ARCH_PAGE_USER      0x10000
+#define ARCH_PAGE_PRESENT   0x000001
+#define ARCH_PAGE_WRITE     0x000010
+#define ARCH_PAGE_READ      0x000100
+#define ARCH_PAGE_EXECUTE   0x001000
+#define ARCH_PAGE_USER      0x010000
+#define ARCH_PAGE_OWNED     0x100000
 
 #define NUM_TEMP_REGIONS    8
 
@@ -28,12 +27,14 @@ arch_address_space_t* arch_address_space_create(void);
 arch_address_space_t* arch_address_space_clone(arch_address_space_t* old);
 void arch_address_space_destroy(arch_address_space_t* address_space);
 uint8_t arch_address_space_activate(arch_address_space_t* address_space);
+uintptr_t arch_address_space_root(const arch_address_space_t* space);
+void arch_debug_mapping(arch_address_space_t* space, uintptr_t virt);
 
 // MEMORY PAGE OPERATIONS
 uint8_t arch_page_map(arch_address_space_t* space, uintptr_t virt, uintptr_t phys, uint64_t flags);
 uintptr_t arch_page_unmap(arch_address_space_t* space, uintptr_t virt);
 uintptr_t arch_virt_to_phys(arch_address_space_t* addr_space, uintptr_t virt);
-uintptr_t arch_phys_temp_map(uintptr_t phys);
-void arch_phys_temp_unmap(uintptr_t virt);
+void* arch_phys_temp_map(uintptr_t phys);
+void arch_phys_temp_unmap(void* virt);
 
 #endif // !INCLUDE_ARCH_MEMORY_PAGING_H_

@@ -3,12 +3,10 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <arch/memory/memory_map.h>
 #include "kernel.h"
 
-#define PAGE_SIZE 4096
 
-extern uint8_t kernel_start[];
-extern uint8_t kernel_end[];
 
 typedef struct {
     uint32_t* bitmap;          // 1 bit per 4 KiB frame

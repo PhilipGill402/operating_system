@@ -8,11 +8,10 @@
 #include <log.h>
 
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 #include "memory/physical_allocator.h"
-#include "memory_mapping.h"
 
 #define HEAP_ALIGN 8
-#define PAGE_SIZE 4096
 
 #define KHEAP_CANARY 0xDEADBEEF
 
@@ -33,7 +32,7 @@ typedef struct kblock_t {
 typedef struct heap_t {
     uint8_t* ptr;
     size_t size;
-    uint8_t* end;
+    uintptr_t end;
 } heap_t;
 
 void* kmalloc(size_t size);

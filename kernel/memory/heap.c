@@ -1,4 +1,5 @@
 #include "memory/heap.h"
+#include <helpers.h>
 
 #ifdef MALLOC_DEBUG
 #undef kmalloc
@@ -10,8 +11,34 @@ static heap_t heap;
 static uint32_t num_allocs = 0;
 static uint32_t num_frees = 0;
 
-static uint32_t align_up(uint32_t value, uint32_t align) {
-    return (value + align - 1) & ~(align - 1);
+static uint8_t grow_heap(size_t amount) {
+    if (amount == 0)
+        return 1;
+
+    amount = ALIGN_UP(amount, PAGE_SIZE);
+    uintptr_t old_end = heap.end;
+    uintptr_t new_end = heap.end + amount;
+
+    if (new_end < old_end)
+        return 0;
+
+    if (new_end > arch_kheap_end)
+        return 0;
+
+    for (uintptr_t virt = old_end; virt < new_end; virt += PAGE_SIZE) {
+        uintptr_t frame = pmm_alloc_frame();
+        if (!frame)
+            return 0;
+
+        if (!arch_page_map(arch_kernel_address_space(), virt, frame, ARCH_PAGE_READ | ARCH_PAGE_WRITE | ARCH_PAGE_OWNED)) {
+            pmm_free_frame(frame);
+            return 0;
+        }
+    }
+
+    heap.end = new_end;
+    heap.size += amount;
+    return 1;
 }
 
 static uint32_t* block_canary(kblock_t* block) {
@@ -27,7 +54,7 @@ static size_t block_payload_size(kblock_t* block) {
 }
 
 static bool ptr_in_heap(void* ptr) {
-    return (uint8_t*)ptr >= heap.ptr && (uint8_t*)ptr < heap.end;
+    return (uint8_t*)ptr >= heap.ptr && (uintptr_t)ptr < heap.end;
 }
 
 static void write_canary(kblock_t* block) {
@@ -59,7 +86,7 @@ static bool valid_block_basic(kblock_t* block) {
         return false;
     }
 
-    if ((uint8_t*)block + block->size > heap.end) {
+    if ((uintptr_t)block + block->size > heap.end) {
         log_error("heap: block extends past heap: block=%x size=%d heap_end=%x\n",
                   block, block->size, heap.end);
         return false;
@@ -84,7 +111,7 @@ kblock_t* get_next_block(kblock_t* block){
     uint8_t* current = (uint8_t*)block;
     uint8_t* next = current + block->size;
 
-    if (next >= heap.end){
+    if ((uintptr_t)next >= heap.end){
         return NULL;
     }
     
@@ -106,18 +133,17 @@ void coalesce(kblock_t* block){
 
 /* Main Functions */
 uint8_t init_heap(){
-    for (uint64_t addr = KHEAP_START; addr < KHEAP_END; addr += PAGE_SIZE) {
+    for (uint64_t addr = arch_kheap_start; addr < arch_kheap_start + arch_kheap_initial_size; addr += PAGE_SIZE) {
         uintptr_t frame = pmm_alloc_frame();
-        if (!frame) {
+        if (!frame)
             return 0;
-        }
 
         arch_page_map(arch_kernel_address_space(), addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_READ);
     }
 
-    heap.ptr = (uint8_t*)KHEAP_START;
-    heap.size = KHEAP_END - KHEAP_START;
-    heap.end = (uint8_t*)KHEAP_END; 
+    heap.ptr = (uint8_t*)arch_kheap_start;
+    heap.size = arch_kheap_initial_size;
+    heap.end = arch_kheap_start + arch_kheap_initial_size; 
 
     kblock_t* block = (kblock_t*)heap.ptr;
     block->size = heap.size;
@@ -132,18 +158,20 @@ uint8_t init_heap(){
 
 void* kmalloc(size_t size){
     //align to 8 byte increments
-    size_t total_size = align_up(sizeof(kblock_t) + size + sizeof(uint32_t), HEAP_ALIGN);
+    size_t total_size = ALIGN_UP(sizeof(kblock_t) + size + sizeof(uint32_t), HEAP_ALIGN);
     
+    log_debug("total size: %l\n", total_size);
     //makes sure the requested size is not bigger than the arena
-    if (total_size > (heap.size - sizeof(kblock_t))){
-        return NULL;
+    while (total_size > (heap.size - sizeof(kblock_t))){
+        if (!grow_heap(PAGE_SIZE)) 
+            return NULL;
     }
 
     //finds the first fit block 
     kblock_t* block = (kblock_t*)heap.ptr;
     
 
-    while ((uint8_t*)block < (uint8_t*)heap.end){
+    while ((uintptr_t)block < heap.end){
         //makes sure that the block is not allocated and has enough size 
         if (!block->allocated && block->size >= total_size){
             size_t unneeded = block->size - total_size;
@@ -235,7 +263,7 @@ bool heap_check(const char* where) {
     kblock_t* block = (kblock_t*)heap.ptr;
     kblock_t* prev = NULL;
 
-    while ((uint8_t*)block < heap.end) {
+    while ((uintptr_t)block < heap.end) {
         if (!ptr_in_heap(block)) {
             log_error("heap_check(%s): block outside heap: %x\n", where, block);
             return false;
@@ -258,7 +286,7 @@ bool heap_check(const char* where) {
             return false;
         }
 
-        if ((uint8_t*)block + block->size > heap.end) {
+        if ((uintptr_t)block + block->size > heap.end) {
             log_error("heap_check(%s): block runs past heap block=%x size=%d\n",
                       where, block, block->size);
             return false;
@@ -279,7 +307,7 @@ bool heap_check(const char* where) {
 
         uint8_t* next = (uint8_t*)block + block->size;
 
-        if (next == heap.end) {
+        if ((uintptr_t)next == heap.end) {
             return true;
         }
 
@@ -296,15 +324,8 @@ void heap_dump(void) {
     kblock_t* block = (kblock_t*)heap.ptr;
     uint32_t index = 0;
 
-    while ((uint8_t*)block < heap.end) {
-        log_debug("[%d] block=%x size=%d payload=%d allocated=%d file=%s line=%d\n",
-                  index,
-                  block,
-                  block->size,
-                  block_payload_size(block),
-                  block->allocated,
-                  block->file,
-                  block->line);
+    while ((uintptr_t)block < heap.end) {
+        log_debug("[%d] block=%x size=%d payload=%d allocated=%d file=%s line=%d\n", index, block, block->size, block_payload_size(block), block->allocated, block->file, block->line);
 
         block = (kblock_t*)((uint8_t*)block + block->size);
         index++;
@@ -324,17 +345,16 @@ void* kmalloc_debug(size_t size, const char* file, int line) {
      * Total block includes:
      * header + requested payload + canary
      */
-    size_t total_size = align_up(sizeof(kblock_t) + size + sizeof(uint32_t), 8);
+    size_t total_size = ALIGN_UP(sizeof(kblock_t) + size + sizeof(uint32_t), 8);
 
-    if (total_size > heap.size) {
-        log_error("kmalloc too large: size=%d total=%d at %s:%d\n",
-                  size, total_size, file, line);
-        return NULL;
+    while (total_size > heap.size) {
+        if (!grow_heap(PAGE_SIZE))
+            return NULL;
     }
 
     kblock_t* block = (kblock_t*)heap.ptr;
 
-    while ((uint8_t*)block < heap.end) {
+    while ((uintptr_t)block < heap.end) {
         if (!valid_block_basic(block)) {
             log_error("kmalloc: heap corrupted while allocating size=%d at %s:%d\n",
                       size, file, line);

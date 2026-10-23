@@ -8,10 +8,10 @@
 #include <log.h>
 
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 
 #include "multiboot.h"
 #include "memory/heap.h"
-#include "memory_mapping.h"
 
 #define FB_BLACK        0x00000000
 #define FB_WHITE        0x00FFFFFF
@@ -33,7 +33,9 @@
 #define FB_BROWN        0x00A52A2A
 #define FB_PINK         0x00FFC0CB
 
-
+// keep these a 0 for now until i support the framebuffer again
+#define FRAMEBUFFER_VIRT        0
+#define FB_SHARED_KERNEL_VADDR  0
 
 typedef struct {
     uint8_t bpp;
@@ -51,7 +53,7 @@ typedef struct fb_shared_buffer {
     uint32_t bpp;
     uint32_t size;
 
-    uint32_t kernel_vaddr;
+    uintptr_t kernel_vaddr;
 
     uint32_t* frames;
     uint32_t frame_count;

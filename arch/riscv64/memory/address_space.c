@@ -15,11 +15,14 @@ static inline uint8_t pte_leaf(uint64_t pte) {
     return (pte & (PTE_R | PTE_W | PTE_X)) != 0;
 }
 
+static inline void* phys_to_virt(uintptr_t phys) {
+    return (void*)(phys + arch_kernel_offset);
+}
 
-
-static void riscv_page_table_free(uint64_t* root_pt) {
-    for (uint16_t i = 0; i < 512; i++) {
-        uint64_t pte2 = root_pt[i];
+static void riscv_page_table_free(uintptr_t root_pt) {
+    uint64_t* root = phys_to_virt(root_pt);
+    for (uint16_t i = 0; i < 256; i++) {
+        uint64_t pte2 = root[i];
 
         if (!pte_valid(pte2))
             continue;
@@ -28,12 +31,12 @@ static void riscv_page_table_free(uint64_t* root_pt) {
             if (pte2 & PTE_OWNED)
                 pmm_free_frame(PTE_PHYS(pte2));
             
-            root_pt[i] = 0;        
+            root[i] = 0;        
             continue;
         }
         
         uintptr_t pt1_phys = PTE_PHYS(pte2);
-        uint64_t* pt1 = (uint64_t*)pt1_phys;
+        uint64_t* pt1 = phys_to_virt(pt1_phys);
         for (uint16_t j = 0; j < 512; j++) {
             uint64_t pte1 = pt1[j];
 
@@ -49,7 +52,7 @@ static void riscv_page_table_free(uint64_t* root_pt) {
             }
             
             uintptr_t pt0_phys = PTE_PHYS(pte1);
-            uint64_t* pt0 = (uint64_t*)pt0_phys;
+            uint64_t* pt0 = (uint64_t*)phys_to_virt(pt0_phys);
             for (uint16_t k = 0; k < 512; k++) {
                 uint64_t pte0 = pt0[k];
 
@@ -70,18 +73,22 @@ static void riscv_page_table_free(uint64_t* root_pt) {
         }
         
         pmm_free_frame(pt1_phys);
-        root_pt[i] = 0;
-    } 
+        root[i] = 0;
+    }
+
+    pmm_free_frame(root_pt);
 }
 
-static uint64_t* riscv_page_table_clone(uint64_t* src_pt) {
-    uint64_t* dst_pt = (uint64_t*)pmm_alloc_frame();
+static uintptr_t riscv_page_table_clone(uintptr_t src_pt) {
+    uintptr_t dst_pt = pmm_alloc_frame();
     if (!dst_pt)
-        return NULL;
-    memset(dst_pt, 0, PAGE_SIZE);
-
+        return 0;
+    uint64_t* dst = phys_to_virt(dst_pt);
+    memset(dst, 0, PAGE_SIZE);
+    
+    uint64_t* src = phys_to_virt(src_pt);
     for (uint16_t i = 0; i < 512; i++) {
-        uint64_t pte2 = src_pt[i];
+        uint64_t pte2 = src[i];
 
         if (!pte_valid(pte2))
             continue;
@@ -97,25 +104,26 @@ static uint64_t* riscv_page_table_clone(uint64_t* src_pt) {
                 uintptr_t old_phys = PTE_PHYS(pte2);
 
                 // TODO: this should copy 1 GiB 
-                memcpy((void*)new_phys, (void*)old_phys, PAGE_SIZE);
+                memcpy(phys_to_virt(new_phys), phys_to_virt(old_phys), PAGE_SIZE);
 
-                dst_pt[i] = new_pte;
+                dst[i] = new_pte;
             } else {
-                dst_pt[i] = pte2;
+                dst[i] = pte2;
             }
                 
             continue;
         }
         
-        uint64_t* dst_pt1 = (uint64_t*)pmm_alloc_frame();
+        uintptr_t dst_pt1 = pmm_alloc_frame();
         if (!dst_pt1)
             goto clone_cleanup;
-        memset(dst_pt1, 0, PAGE_SIZE);
-        dst_pt[i] = (((uintptr_t)dst_pt1 >> 12) << 10) | PTE_V;
 
+        uint64_t* dst_pt1_virt = phys_to_virt(dst_pt1);
+        memset(dst_pt1_virt, 0, PAGE_SIZE);
+        dst[i] = (((uintptr_t)dst_pt1 >> 12) << 10) | PTE_V;
 
         uintptr_t pt1_phys = PTE_PHYS(pte2);
-        uint64_t* pt1 = (uint64_t*)pt1_phys;
+        uint64_t* pt1 = phys_to_virt(pt1_phys);
         for (uint16_t j = 0; j < 512; j++) {
             uint64_t pte1 = pt1[j];
 
@@ -133,24 +141,26 @@ static uint64_t* riscv_page_table_clone(uint64_t* src_pt) {
                     uintptr_t old_phys = PTE_PHYS(pte1);
 
                     // TODO: this should copy 2MiB pages 
-                    memcpy((void*)new_phys, (void*)old_phys, PAGE_SIZE);
+                    memcpy(phys_to_virt(new_phys), phys_to_virt(old_phys), PAGE_SIZE);
 
-                    dst_pt1[j] = new_pte;
+                    dst_pt1_virt[j] = new_pte;
                 } else {
-                    dst_pt1[j] = pte1;
+                    dst_pt1_virt[j] = pte1;
                 }
 
                 continue;
             }
 
-            uint64_t* dst_pt0 = (uint64_t*)pmm_alloc_frame();
+            uintptr_t dst_pt0 = pmm_alloc_frame();
             if (!dst_pt0)
                 goto clone_cleanup;
-            memset(dst_pt0, 0, PAGE_SIZE);
-            dst_pt1[j] = (((uintptr_t)dst_pt0 >> 12) << 10) | PTE_V;
+            uint64_t* dst_pt0_virt = phys_to_virt(dst_pt0);
+
+            memset(dst_pt0_virt, 0, PAGE_SIZE);
+            dst_pt1_virt[j] = (((uintptr_t)dst_pt0 >> 12) << 10) | PTE_V;
             
             uintptr_t pt0_phys = PTE_PHYS(pte1);
-            uint64_t* pt0 = (uint64_t*)pt0_phys;
+            uint64_t* pt0 = (uint64_t*)phys_to_virt(pt0_phys);
             for (uint16_t k = 0; k < 512; k++) {
                 uint64_t pte0 = pt0[k];
 
@@ -167,11 +177,11 @@ static uint64_t* riscv_page_table_clone(uint64_t* src_pt) {
                         uint64_t new_pte = ((new_phys >> 12) << 10) | flags;
                         uintptr_t old_phys = PTE_PHYS(pte0);
 
-                        memcpy((void*)new_phys, (void*)old_phys, PAGE_SIZE);
+                        memcpy(phys_to_virt(new_phys), phys_to_virt(old_phys), PAGE_SIZE);
 
-                        dst_pt0[k] = new_pte;
+                        dst_pt0_virt[k] = new_pte;
                     } else {
-                        dst_pt0[k] = pte0;
+                        dst_pt0_virt[k] = pte0;
                     }
 
                     continue;
@@ -183,35 +193,16 @@ static uint64_t* riscv_page_table_clone(uint64_t* src_pt) {
     return dst_pt;
 
 clone_cleanup:
-    riscv_page_table_free((uint64_t*)dst_pt);
-    pmm_free_frame((uintptr_t)dst_pt);
-    return NULL;
+    riscv_page_table_free(dst_pt);
+    return 0;
 }
 
 static uint8_t riscv_install_kernel_mappings(arch_address_space_t* space) {
-    // RAM
-    for (uintptr_t addr = RAM_BASE; addr < RAM_BASE + RAM_SIZE; addr += PAGE_SIZE) {
-        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE | ARCH_PAGE_EXECUTE))
-            return 0;
-    }
-
-    // UART
-    for (uintptr_t addr = UART0_BASE; addr < UART0_BASE + UART0_SIZE; addr += PAGE_SIZE) {
-        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
-            return 0;
-    }
-
-    // CLINT
-    for (uintptr_t addr = CLINT_BASE; addr < CLINT_BASE + CLINT_SIZE; addr += PAGE_SIZE) {
-        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
-            return 0;
-    }
-
-    // PLIC 
-    for (uintptr_t addr = PLIC_BASE; addr < PLIC_BASE + PLIC_SIZE; addr += PAGE_SIZE) {
-        if (!arch_page_map(space, addr, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
-            return 0;
-    }
+    arch_address_space_t* kernel_space = arch_kernel_address_space();
+    uint64_t* dst = phys_to_virt(space->root_pt);
+    uint64_t* kernel_root = phys_to_virt(kernel_space->root_pt);
+    for (uint16_t i = 256; i < 512; ++i)
+        dst[i] = kernel_root[i];
 
     return 1;
 }
@@ -231,7 +222,7 @@ arch_address_space_t* arch_address_space_create(void) {
         return NULL;
     }
     
-    memset((void*)addr_space->root_pt, 0, PAGE_SIZE);
+    memset(phys_to_virt(addr_space->root_pt), 0, PAGE_SIZE);
     
     if (!riscv_install_kernel_mappings(addr_space)) {
         pmm_free_frame(addr_space->root_pt); 
@@ -251,13 +242,13 @@ arch_address_space_t* arch_address_space_clone(arch_address_space_t* old) {
     if (!addr_space)
         return NULL;
 
-    uint64_t* new_pt = riscv_page_table_clone((uint64_t*)old->root_pt);
+    uintptr_t new_pt = riscv_page_table_clone(old->root_pt);
     if (!new_pt) {
         address_space_free(addr_space);
         return NULL;
     }
 
-    addr_space->root_pt = (uintptr_t)new_pt;
+    addr_space->root_pt = new_pt;
 
     return addr_space;
 }
@@ -266,7 +257,7 @@ void arch_address_space_destroy(arch_address_space_t* address_space) {
     if (!address_space)
         return;
 
-    riscv_page_table_free((uint64_t*)address_space->root_pt);
+    riscv_page_table_free(address_space->root_pt);
     pmm_free_frame(address_space->root_pt);
     address_space_free(address_space);
 }

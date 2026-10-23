@@ -136,9 +136,6 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                     info->regions[info->region_count].type = MEM_FILESYSTEM;
 
                     info->region_count++;
-
-                    log_debug("%lx\n", info->regions[info->region_count].mem_addr);
-                    log_debug("%l\n", info->regions[info->region_count].mem_size);
                 }
 
                 dtb_stack_pop(&token_stack);

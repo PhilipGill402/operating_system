@@ -7,6 +7,7 @@
 #include <log.h>
 
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 
 #include "memory/heap.h"
 #include "fs/fs_types.h"
@@ -15,7 +16,6 @@
 #include "fs/ramfs.h"
 #include "fs/vfs.h"
 #include "fs/initrd.h"
-#include "memory_mapping.h"
 
 #define MAX_PATH_LENGTH 256
 #define MAX_FDS 128

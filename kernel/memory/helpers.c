@@ -1,6 +1,11 @@
 #include "memory/helpers.h"
+#include <arch/memory/memory_map.h>
 #include <helpers.h>
 #include <string.h>
+
+void* phys_to_virt(uintptr_t phys) {
+    return (void*)(phys + arch_kernel_offset);
+}
 
 uint8_t memory_copy_to_user(void* dst, void* src, size_t size, arch_address_space_t* addr_space) {
     uintptr_t phys_addr = arch_virt_to_phys(addr_space, (uintptr_t)dst);
@@ -18,7 +23,7 @@ uint8_t memory_copy_to_user(void* dst, void* src, size_t size, arch_address_spac
 
     memcpy(page + offset, src, size);
 
-    arch_phys_temp_unmap((uintptr_t)page);
+    arch_phys_temp_unmap(page);
 
     return 1;
 }

@@ -7,12 +7,12 @@
 
 #include <arch/asm/helpers.h>
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 #include <arch/exec/user_mode.h>
 #include <arch/asm/helpers.h>
 #include "memory/physical_allocator.h"
 #include "memory/heap.h"
 #include "fs/fs_types.h"
-#include "memory_mapping.h"
 
 // forward declaration to avoid circular dependency
 fs_node_t* resolve_path(const char* path, fs_node_t* cwd);
@@ -20,7 +20,6 @@ fs_node_t* resolve_path(const char* path, fs_node_t* cwd);
 #define MAX_FDS 128
 #define MAX_ARGV 32
 
-#define PAGE_SIZE 4096
 #define DEFAULT_MAX_TICKS 10
 
 #define USER_NULL_GUARD      0x00000000
@@ -161,7 +160,7 @@ extern uint32_t num_processes;
 
 process_t* process_clone(process_t* process);
 void process_init_file_descriptors(process_t* process);
-uint32_t process_init_stack(process_t* process);
+uint8_t process_init_stack(process_t* process);
 uintptr_t process_add_argv_to_stack(process_t* process, cmd_args_t* args);
 uint32_t process_init_heap(process_t* process);
 void process_destroy(process_t* process);

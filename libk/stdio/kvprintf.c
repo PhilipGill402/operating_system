@@ -102,12 +102,12 @@ static void uint64_to_hex(uint64_t num, char* str) {
     str[0] = '0';
     str[1] = 'x';
 
-    for (int i = 0; i < 8; i++) {
-        uint8_t digit = (num >> (28 - 4 * i)) & 0xF;
+    for (int i = 0; i < 16; i++) {
+        uint8_t digit = (num >> (60 - 4 * i)) & 0xF;
         str[2 + i] = hex_digits[digit];
     }
 
-    str[19] = '\0';
+    str[18] = '\0';
 }
 
 int kvprintf(void (*putc)(char c, void* ctx), void* ctx, const char* format, va_list args) {

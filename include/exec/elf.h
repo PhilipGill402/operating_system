@@ -120,7 +120,7 @@ uint8_t elf_load(const uint8_t* elf, uint64_t size, process_t* process);
 uint8_t elf_validate(const uint8_t* elf, uint32_t size);
 void elf_print_info(const uint8_t* elf);
 void elf_load_segments(uint8_t* elf, size_t size);
-void elf_execute(fs_node_t* elf);
+uint8_t elf_execute(fs_node_t* elf);
 process_t* process_create_from_elf(fs_node_t* elf);
 uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* args);
 

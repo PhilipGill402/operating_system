@@ -13,6 +13,7 @@
 
 #include <arch/exec/proc.h>
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 
 #include "memory/physical_allocator.h"
 #include "io/framebuffer.h"
@@ -22,7 +23,7 @@
 #include "timer.h"
 #include "fs/fs.h"
 
-#define PAGE_SIZE 4096
+#define USER_FB_VADDR 0
 
 #define SYS_READ        0
 #define SYS_WRITE       1

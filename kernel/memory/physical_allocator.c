@@ -71,7 +71,10 @@ void pmm_init(const kernel_boot_info_t* info) {
     uint64_t page_count = (highest_addr - lowest_addr) / PAGE_SIZE;
     
     // place bitmap right after kernel
-    pmm.bitmap = (uint32_t*)ALIGN_UP((uintptr_t)kernel_end, PAGE_SIZE);
+    uintptr_t kernel_phys_end = (uintptr_t)arch_kernel_end - arch_kernel_offset;
+    uintptr_t bitmap_phys = ALIGN_UP((uintptr_t)kernel_phys_end, PAGE_SIZE);
+    uintptr_t bitmap_virt = bitmap_phys + arch_kernel_offset;
+    pmm.bitmap = (uint32_t*)bitmap_virt;
     pmm.phys_base = lowest_addr;
     pmm.total_frames = page_count;
     pmm.used_frames = page_count;
@@ -79,6 +82,7 @@ void pmm_init(const kernel_boot_info_t* info) {
     pmm.search_hint = 0;
 
     uint64_t bitmap_size = DIV_CEIL(pmm.total_frames, 8);
+    
     memset(pmm.bitmap, 0xFFFFFFFF, bitmap_size);
     
     // set all usable memory pages as free
@@ -96,8 +100,8 @@ void pmm_init(const kernel_boot_info_t* info) {
     }
     
     // reserve all kernel used pages
-    pmm_reserve_phys_range((uintptr_t)kernel_start, (uintptr_t)kernel_end - (uintptr_t)kernel_start);   // reserve kernel
-    pmm_reserve_phys_range((uintptr_t)pmm.bitmap, bitmap_size);                                         // reserve bitmap
+    pmm_reserve_phys_range(arch_phys_map_start, (uintptr_t)kernel_phys_end - arch_phys_map_start);   // reserve kernel
+    pmm_reserve_phys_range((uintptr_t)bitmap_phys, bitmap_size);                                         // reserve bitmap
 }
 
 uintptr_t pmm_alloc_frame(void)  {          // returns physical address

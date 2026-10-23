@@ -21,7 +21,7 @@ static int32_t get_meminfo_data(proc_file_t* proc, uint8_t* buffer, uint32_t off
     uint64_t total_kb = frame_to_kb(pmm.total_frames);
     uint64_t used_kb = frame_to_kb(pmm.used_frames);
     uint64_t free_kb = frame_to_kb(pmm.free_frames);
-    uint64_t heap_size = bytes_to_kb(KHEAP_END - KHEAP_START);
+    uint64_t heap_size = bytes_to_kb(arch_kheap_size);
      
     char intern_buffer[256];
     uint32_t bytes_written = snprintf(intern_buffer, 256, fmt, total_kb, free_kb, used_kb, 4, heap_size);

@@ -1,5 +1,6 @@
 #include "fs/fs.h"
 #include <helpers.h>
+#include "memory/helpers.h"
 
 #include <log.h>
 
@@ -94,15 +95,6 @@ fs_node_t* fs_finddir(fs_node_t* node, char* name) {
 }
 
 uint8_t fs_init(uintptr_t initrd_addr, size_t initrd_size) {
-    uintptr_t start = ALIGN_DOWN(initrd_addr, PAGE_SIZE);
-    uintptr_t end = ALIGN_UP(initrd_addr + initrd_size, PAGE_SIZE);
-    uintptr_t virt = INITRD_VIRT_ADDRESS;
-    uintptr_t initrd_location = INITRD_VIRT_ADDRESS + (initrd_addr - start);
-    for (uintptr_t addr = start; addr < end && virt < INITRD_VIRT_END; addr += PAGE_SIZE, virt += PAGE_SIZE) {
-        if (!arch_page_map(arch_kernel_address_space(), virt, addr, ARCH_PAGE_READ | ARCH_PAGE_WRITE))
-            return 0;
-    }
-    
     fs_root = vfs_init();
     if (!fs_root) {
         log_error("vfs_init failed\n");
@@ -111,7 +103,7 @@ uint8_t fs_init(uintptr_t initrd_addr, size_t initrd_size) {
 
     fs_cwd = fs_root;
     
-    fs_node_t* initrd_root = initrd_init(initrd_location);
+    fs_node_t* initrd_root = initrd_init(initrd_addr);
     if (!initrd_root) {
         log_error("initrd_init failed\n");
         return 0;

@@ -9,7 +9,7 @@ uint8_t* elf_from_file(fs_node_t* elf, uint64_t* size) {
     uint8_t* buffer = kmalloc(elf->size);
     fs_read(elf, 0, elf->size, buffer);
     *size = elf->size;
-
+    
     return buffer;
 }
 
@@ -155,16 +155,19 @@ uint8_t elf_load(const uint8_t* elf, uint64_t size, process_t* process) {
         for (uint64_t vaddr = page_start; vaddr < page_end; vaddr += PAGE_SIZE) {
             uint64_t frame = pmm_alloc_frame();
             if (!frame) {
+                log_error("couldn't allocate frame\n"); 
                 return 0;
             }
 
             if (!arch_page_map(process->addr_space, vaddr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER | ARCH_PAGE_EXECUTE | ARCH_PAGE_READ)) {
+                log_error("couldn't map page\n");
                 pmm_free_frame(frame);
                 return 0;
             }
 
             uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
             if (!page) {
+                log_error("couldn't temp map the page\n");
                 pmm_free_frame(frame);
                 return 0;
             }
@@ -189,7 +192,7 @@ uint8_t elf_load(const uint8_t* elf, uint64_t size, process_t* process) {
                 memcpy(page + dst_off, elf + src_off, nbytes);
             }
 
-            arch_phys_temp_unmap((uintptr_t)page);
+            arch_phys_temp_unmap(page);
         }
 
         process->mem_ranges[count++] = (mem_range_t){ .start = page_start, .end = page_end };
@@ -207,7 +210,8 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
     uint64_t size = 0;
     uint8_t* buffer = elf_from_file(elf, &size);
     
-    if (!buffer) return 0;
+    if (!buffer)
+        return 0;
     
     if (!elf_validate(buffer, size)) {
         kfree(buffer);
@@ -224,7 +228,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         arch_address_space_destroy(new_addr_space);
         return 0;
     }
-
+    
     arch_address_space_activate(process->addr_space);
 
     if (!elf_load(buffer, size, process)) {
@@ -234,7 +238,7 @@ uint32_t process_exec_from_elf(process_t* process, fs_node_t* elf, cmd_args_t* a
         arch_address_space_destroy(new_addr_space);
         return 0;
     }
-    
+
     Elf64_Ehdr* header = (Elf64_Ehdr*)buffer;
     process->entry = header->e_entry;
     
@@ -325,10 +329,10 @@ process_t* process_create_from_elf(fs_node_t* elf) {
         process_destroy(process);
         return NULL;
     }
-
-    process->kernel_stack_bottom = (uint64_t)kmalloc(KERNEL_STACK_SIZE);
-    process->kernel_stack_top = process->kernel_stack_bottom + KERNEL_STACK_SIZE;
-    memset((void*)process->kernel_stack_bottom, 0, KERNEL_STACK_SIZE);
+    
+    process->kernel_stack_bottom = (uintptr_t)kmalloc(arch_kstack_size);
+    process->kernel_stack_top = process->kernel_stack_bottom + arch_kstack_size;
+    memset((void*)process->kernel_stack_bottom, 0, arch_kstack_size);
     
     process->trapframe = arch_trapframe_init(user_sp, process->entry);
     if (!process->trapframe) {
@@ -360,13 +364,15 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     return process;
 }
 
-void elf_execute(fs_node_t* elf) {
+uint8_t elf_execute(fs_node_t* elf) {
     process_t* process = process_create_from_elf(elf);
 
     if (!process) {
-        return;
+        return 0;
     }
     
     enqueue(&current_processes, &process);
+    
+    return 1;
 }
 

@@ -1,4 +1,5 @@
 #include "fs/initrd.h"
+#include "memory/helpers.h"
 
 initrd_superblock_t* superblock;
 initrd_node_t* node_table;
@@ -25,7 +26,7 @@ int32_t initrd_writefile(fs_node_t* node, char* buffer, uint32_t offset, uint32_
     if (offset + size > node->size) 
         write_size = node->size - offset;
     
-    void* dst = (void*)((uint32_t)superblock + file->data_offset + offset);
+    void* dst = (void*)((uintptr_t)superblock + file->data_offset + offset);
     memcpy(dst, buffer, write_size);
 
     return write_size;
@@ -99,8 +100,9 @@ int32_t initrd_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* bu
         log_error("can't read a directory\n");
         return 0;
     }
+
+    uint8_t* file = (uint8_t*)((uintptr_t)superblock + initrd_node->data_offset + offset);
     
-    uint8_t* file = (uint8_t*)((uint32_t)superblock + initrd_node->data_offset + offset);
     memcpy(buffer, file, bytes_to_read);
     
     return bytes_to_read;
@@ -193,8 +195,9 @@ fs_node_t* initrd_parent(fs_node_t* node) {
 }
 
 fs_node_t* initrd_init(uintptr_t addr) {
+    uintptr_t virt = (uintptr_t)phys_to_virt(addr);
     // set and validate superblock 
-    superblock = (initrd_superblock_t*)addr;
+    superblock = (initrd_superblock_t*)virt;
     
     if (superblock->magic != INITRD_MAGIC) {
         log_error("image file not in specified format\n"); 
@@ -207,7 +210,7 @@ fs_node_t* initrd_init(uintptr_t addr) {
     }
     
     // set node table and transfer initial node table to a heap based one
-    initrd_node_t* init_node_table = (initrd_node_t*)(addr + superblock->nodes_offset);
+    initrd_node_t* init_node_table = (initrd_node_t*)(virt + superblock->nodes_offset);
     node_table = kmalloc(100*sizeof(initrd_node_t));
     
     for (uint32_t i = 0; i < superblock->node_count; i++) {

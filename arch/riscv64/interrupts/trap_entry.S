@@ -7,18 +7,37 @@
 
 riscv_trap_entry:
     .cfi_startproc
-# TODO: switch to kernel stack
+    
+    csrrw sp, sscratch, sp
 
-# save registers
+    beqz sp, .from_kernel
+
+.from_user:
     addi sp, sp, -288
 
     sd ra, 0(sp)
     sd t0, 32(sp)
 
-# save original stack pointer
+    csrr t0, sscratch
+    sd t0, 8(sp)
+
+    csrw sscratch, zero
+
+    j .finish_saving
+
+.from_kernel:
+    csrr sp, sscratch
+    csrw sscratch, zero
+
+    addi sp, sp, -288
+
+    sd ra, 0(sp)
+    sd t0, 32(sp)
+
     addi t0, sp, 288
     sd t0, 8(sp)
 
+.finish_saving:
     sd gp, 16(sp)
     sd tp, 24(sp)
 
@@ -112,11 +131,27 @@ riscv_trap_entry:
     ld a5, 224(sp)
     ld a6, 232(sp)
     ld a7, 240(sp)
+    
+    ld t0, 256(sp)
 
-# restore t0 last, since we've been using it as scratch
+    andi t0, t0, 0x100
+    bnez t0, .return_kernel
+
+.return_user:
+    addi t0, sp, 288
+    csrw sscratch, t0
+
     ld t0, 32(sp)
 
-# restore original stack pointer last
+    ld sp, 8(sp)
+
+    sret
+
+.return_kernel:
+    csrw sscratch, zero
+
+    ld t0, 32(sp)
+
     ld sp, 8(sp)
 
     sret

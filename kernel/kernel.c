@@ -8,6 +8,7 @@
 #include <arch/boot/boot.h>
 #include <arch/asm/helpers.h>
 #include <arch/memory/paging.h>
+#include <arch/memory/memory_map.h>
 #include <arch/cpu/cpu_info.h>
 
 #include "kernel.h"
@@ -20,7 +21,6 @@
 #include "fs/fs.h"
 #include "exec/scheduler.h"
 #include "exec/elf.h"
-#include "memory_mapping.h"
 
 void kernel_main(const kernel_boot_info_t* info) {
     if (!init_heap())
@@ -39,18 +39,21 @@ void kernel_main(const kernel_boot_info_t* info) {
         }
     }
 
-    fs_init(initrd_addr, initrd_size);
+    if (!fs_init(initrd_addr, initrd_size))
+        panic("failed to initialize file system\n");
     log_debug("file system initialized\n");
 
     scheduler_init();
     log_debug("scheduler initialized\n");
 
-    fs_node_t* tty_elf = resolve_path("/bin/tty", fs_root);
+    fs_node_t* tty_elf = resolve_path("/bin/test", fs_root);
     if (!tty_elf) {
         log_error("Couldn't load init file\n"); 
     } else {
         log_debug("loading init file\n"); 
-        elf_execute(tty_elf);
+        if (!elf_execute(tty_elf))
+            panic("failed to execute elf\n");
+
         schedule_and_enter();
     }
     
