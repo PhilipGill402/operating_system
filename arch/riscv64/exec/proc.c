@@ -52,7 +52,7 @@ void arch_trapframe_set_ret(arch_trapframe_t* tf, uint32_t ret) {
     tf->a0 = ret;
 }
 
-uint32_t arch_trapframe_get_arg(arch_trapframe_t* tf, uint32_t idx) {
+uint64_t arch_trapframe_get_arg(arch_trapframe_t* tf, uint32_t idx) {
     switch(idx) {
         case 1: return tf->a0;
         case 2: return tf->a1;

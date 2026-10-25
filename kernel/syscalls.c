@@ -1,4 +1,5 @@
 #include "syscalls.h"
+#include "memory/helpers.h"
 
 static char* trim_path(const char* path) {
     uint32_t last_slash = -1;
@@ -699,8 +700,12 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
         return ENOENT;
     
     //str[count] = '\0';
+    
+    uint8_t buffer[256];
+    if (!memory_copy_from_user(buffer, str, count, current_process->addr_space))
+        return EFAULT;
 
-    uint32_t bytes_written = fs_writefile(file, str, current_process->fds[fd]->offset, count);
+    uint32_t bytes_written = fs_writefile(file, buffer, current_process->fds[fd]->offset, count);
     current_process->fds[fd]->offset += bytes_written;
 
     return bytes_written;

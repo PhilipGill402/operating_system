@@ -16,6 +16,11 @@ _start:
     #
     #   main(argc, argv)
 
+    .option push
+    .option norelax
+    la gp, __global_pointer$
+    .option pop
+
     ld a0, 0(sp)    # a0 = argc 
     addi a1, sp, 8  # a1 = argv
 
