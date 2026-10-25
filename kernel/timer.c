@@ -10,7 +10,8 @@ void timer_callback(arch_trapframe_t* tf) {
         return;
     }
 
-    arch_trapframe_copy(current_process->trapframe, tf); 
+    if (arch_trapframe_from_user(tf) && current_process->trapframe) 
+        arch_trapframe_copy(current_process->trapframe, tf); 
     
     if (current_process->ticks_left > 0 && current_process->state == PROC_RUNNING) {
         current_process->ticks_left--;

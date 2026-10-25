@@ -40,6 +40,7 @@ void scheduler_init(void) {
     idle_process->kernel_stack_top = idle_process->kernel_stack_bottom + arch_kstack_size;
     
     idle_process->context = arch_context_init(idle_process->kernel_stack_top, idle_entry);
+    idle_process->addr_space = arch_kernel_address_space();
 }
 
 void check_pending_signals(process_t* proc) {
@@ -101,6 +102,7 @@ void schedule_and_enter(void) {
          
     if (!next) {
         // switch to idle process
+        arch_address_space_activate(idle_process->addr_space); 
         arch_context_switch(current_process->context, idle_process->context);
         return;
     }
@@ -136,7 +138,9 @@ void schedule(void) {
             return;
         }
         // TODO: implement idle task
-        current_process = idle_process; 
+        current_process = idle_process;
+        
+        arch_address_space_activate(idle_process->addr_space);
         arch_context_switch(outgoing->context, idle_process->context);
         return;
     }
@@ -144,7 +148,7 @@ void schedule(void) {
     current_process = incoming;
     incoming->state = PROC_RUNNING;
     incoming->ticks_left = DEFAULT_MAX_TICKS;
-
+    
     arch_address_space_activate(incoming->addr_space);
     arch_context_switch(outgoing->context, incoming->context);
 }
