@@ -25,7 +25,7 @@ const size_t arch_temp_map_size = TEMP_MAP_SIZE;
 const uintptr_t arch_temp_map_end = TEMP_MAP_END;
 
 const uintptr_t arch_phys_map_start = PHYS_MAP_BASE;
-const size_t arch_phys_map_size = TEMP_MAP_SIZE;
+const size_t arch_phys_map_size = PHYS_MAP_SIZE;
 const uintptr_t arch_phys_map_end = PHYS_MAP_END;
 
 const uintptr_t arch_kstack_region_start = KSTACK_REGION_START;

@@ -18,8 +18,6 @@
 #define PTE_OWNED       (1ULL << 8)
 #define PTE_PHYS(pte)   ((pte >> 10) << 12)
 
-#define TEMP_MAP_BASE  0xFFFFFFC000000000ULL
-
 typedef struct arch_address_space {
     uint64_t root_pt;
 } arch_address_space_t;

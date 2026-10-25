@@ -2,6 +2,7 @@
 #include "memory/paging.h"
 #include "memory/physical_allocator.h"
 #include "memory/temp_map_allocator.h"
+#include "memory/memory_layout.h"
 #include "memory/mmio.h"
 #include <string.h>
 #include <helpers.h>
@@ -146,7 +147,7 @@ uint8_t riscv_paging_init() {
         }
 
         for (uint64_t addr = start; addr < end; addr += PAGE_SIZE) {
-            if (!arch_page_map(&kernel_address_space, addr, addr, flags)) {
+            if (!arch_page_map(&kernel_address_space, addr + KERNEL_MMIO_BASE, addr, flags)) {
                 return 0;
             }
         }

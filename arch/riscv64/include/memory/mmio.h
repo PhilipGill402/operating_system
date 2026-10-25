@@ -3,11 +3,12 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "memory/memory_layout.h"
 
 typedef struct mem_range {
     uintptr_t addr;
     size_t size;
-} mem_range_t;
+} riscv_mem_range_t;
 
 
 typedef enum mmio_region {
@@ -23,13 +24,16 @@ typedef enum mmio_region {
 
 #define UART0_BASE   (riscv_mmio_info[MMIO_UART0_IDX].addr)
 #define UART0_SIZE   (riscv_mmio_info[MMIO_UART0_IDX].size)
+#define UART_ADDR    (UART0_BASE + KERNEL_MMIO_BASE)
 
 #define PLIC_BASE    (riscv_mmio_info[MMIO_PLIC_IDX].addr)
 #define PLIC_SIZE    (riscv_mmio_info[MMIO_PLIC_IDX].size)
+#define PLIC_ADDR    (PLIC_BASE + KERNEL_MMIO_BASE)
 
 #define CLINT_BASE   0x02000000UL
 #define CLINT_SIZE   0x00010000UL
+#define CLINT_ADDR   (CLINT_BASE + KERNEL_MMIO_BASE)
 
-extern mem_range_t riscv_mmio_info[5];
+extern riscv_mem_range_t riscv_mmio_info[5];
 
 #endif

@@ -245,7 +245,6 @@ uint8_t dtb_parse_struct(dtb_tree_t* dtb, kernel_boot_info_t* info) {
                 } else if (strcmp(name, "timebase-frequency") == 0) {
                     timebase_frequency = be32_to_cpu(*(uint32_t*)value);
                     info->timer_frequency = timebase_frequency;
-                    log_debug("timebase-frequency=%l\n", timebase_frequency);
                 }
 
                 struct_ptr += len;

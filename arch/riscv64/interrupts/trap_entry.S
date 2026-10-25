@@ -84,7 +84,12 @@ riscv_trap_entry:
     sd t0, 272(sp)
 
 # 280(sp) is padding
-    
+   
+# set kernel gp
+    .option push
+    .option norelax
+    la gp, __global_pointer$
+    .option pop
     
 # call C handler
     mv a0, sp

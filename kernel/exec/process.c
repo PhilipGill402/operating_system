@@ -137,7 +137,7 @@ uint8_t process_init_stack(process_t* process) {
         if (!frame)
             goto fail;
 
-        if (!arch_page_map(process->addr_space, addr, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
+        if (!arch_page_map(process->addr_space, addr, frame, ARCH_PAGE_READ | ARCH_PAGE_WRITE | ARCH_PAGE_USER))
             goto fail;
 
         uint8_t* page = (uint8_t*)arch_phys_temp_map(frame);
@@ -180,7 +180,7 @@ uintptr_t process_add_argv_to_stack(process_t* process, cmd_args_t* args) {
     sp &= ~0xF;
 
     sp -= sizeof(uintptr_t);
-    uint32_t zero = 0;
+    uintptr_t zero = 0;
     if (!memory_copy_to_user((void*)sp, &zero, sizeof(uintptr_t), process->addr_space))
         return 0;
 
@@ -209,7 +209,7 @@ uint32_t process_init_heap(process_t* process) {
 
     frame_allocated = 1;
     
-    if (!arch_page_map(process->addr_space, arch_user_heap_start, frame, ARCH_PAGE_WRITE | ARCH_PAGE_USER))
+    if (!arch_page_map(process->addr_space, arch_user_heap_start, frame, ARCH_PAGE_READ | ARCH_PAGE_WRITE | ARCH_PAGE_USER))
         goto fail;
 
     page_allocated = 1;

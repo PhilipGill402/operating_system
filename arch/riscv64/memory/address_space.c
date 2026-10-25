@@ -87,7 +87,7 @@ static uintptr_t riscv_page_table_clone(uintptr_t src_pt) {
     memset(dst, 0, PAGE_SIZE);
     
     uint64_t* src = phys_to_virt(src_pt);
-    for (uint16_t i = 0; i < 512; i++) {
+    for (uint16_t i = 0; i < 256; i++) {
         uint64_t pte2 = src[i];
 
         if (!pte_valid(pte2))
@@ -250,6 +250,12 @@ arch_address_space_t* arch_address_space_clone(arch_address_space_t* old) {
 
     addr_space->root_pt = new_pt;
 
+    if (!riscv_install_kernel_mappings(addr_space)) {
+        riscv_page_table_free(addr_space->root_pt); 
+        address_space_free(addr_space);
+        return NULL;
+    }
+
     return addr_space;
 }
 
@@ -258,7 +264,6 @@ void arch_address_space_destroy(arch_address_space_t* address_space) {
         return;
 
     riscv_page_table_free(address_space->root_pt);
-    pmm_free_frame(address_space->root_pt);
     address_space_free(address_space);
 }
 

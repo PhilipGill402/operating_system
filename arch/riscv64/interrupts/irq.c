@@ -34,6 +34,7 @@ void riscv_irq_init(void) {
             arch_halt();
         }
     }
+    
     // initialize PLIC
     riscv_plic_init();
 

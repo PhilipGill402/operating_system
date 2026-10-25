@@ -39,6 +39,7 @@ CFLAGS := \
 	-std=gnu99 \
 	-ffreestanding \
 	-O2 \
+	-g \
 	-Wall \
 	-Wextra \
 	-MMD \

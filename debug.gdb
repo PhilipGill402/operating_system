@@ -1,5 +1,6 @@
 file build/riscv64/kernel.elf
-target remot :1234
+target remote :1234
+add-symbol-file fs/bin/test
 
 define regs
     info registers
