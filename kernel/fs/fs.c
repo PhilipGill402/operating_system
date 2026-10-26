@@ -203,10 +203,9 @@ fs_node_t* resolve_path(const char* path, fs_node_t* cwd) {
         log_error("path is null\n"); 
         return NULL;
     } 
-        
-    if (path[0] == '/') {
+    
+    if (path[0] == '/')
         return resolve_path_from(fs_root, path);
-    }
     
     return resolve_path_from(cwd, path);
 }

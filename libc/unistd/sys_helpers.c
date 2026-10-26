@@ -54,13 +54,19 @@ int32_t __sys2(uint64_t sys_num, uint64_t arg1, uint64_t arg2) {
 }
 
 int32_t __sys3(uint64_t sys_num, uint64_t arg1, uint64_t arg2, uint64_t arg3) {
-    int32_t ret; 
+    register uint64_t a0 asm("a0") = sys_num;
+    register uint64_t a1 asm("a1") = arg1;
+    register uint64_t a2 asm("a2") = arg2;
+    register uint64_t a3 asm("a3") = arg3;
+
     asm volatile(
-    "ecall"
-    : "+r"(ret)
-    : "r"(sys_num), "r"(arg1), "r"(arg2), "r"(arg3)
-    : "memory"
+        "ecall"
+        : "+r"(a0)
+        : "r"(a1), "r"(a2), "r"(a3)
+        : "memory"
     );
+
+    int32_t ret = (int32_t)a0;
 
     if (ret < 0) {
         errno = -ret;

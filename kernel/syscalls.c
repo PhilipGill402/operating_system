@@ -572,10 +572,16 @@ int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
 }
 
 int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
-    fs_node_t* file = resolve_path(path, current_process->cwd);
+    char kpath[256];
+    memory_copy_from_user(kpath, path, 256, current_process->addr_space);
+    log_debug("%s\n", kpath);
+    
+    fs_node_t* file = resolve_path(kpath, current_process->cwd);
+
+    log_debug("%s\n", file->name);
     
     if (!file && flags & O_CREAT) {
-        char* trim = trim_path(path);
+        char* trim = trim_path(kpath);
         fs_node_t* dir;
         char* file_name;
 
@@ -583,14 +589,14 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
         if (!trim) {
             dir = fs_node_clone(current_process->cwd);
             
-            file_name = kmalloc(strlen(path) + 1); 
-            strcpy(file_name, path);
+            file_name = kmalloc(strlen(kpath) + 1); 
+            strcpy(file_name, kpath);
         } else {
             dir = resolve_path(trim, current_process->cwd);
             if (!dir)
                 return ENOENT;
         
-            file_name = get_file_name(path);
+            file_name = get_file_name(kpath);
         } 
         
         
@@ -623,6 +629,7 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     else if (flags & O_APPEND)
         file_desc->offset = file->size;
     
+    log_debug("FD: %d\n", fd);
     current_process->fds[fd] = file_desc;
 
     return fd;
@@ -694,7 +701,9 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (fd >= MAX_FDS || !current_process->fds[fd])
         return EBADF;
     
+    log_debug("%d\n", fd);
     fs_node_t* file = current_process->fds[fd]->node;
+    log_debug("%s\n", file->name);
     
     if (!file)
         return ENOENT;
@@ -725,7 +734,11 @@ int32_t sys_fork() {
 }
 
 int32_t sys_execve(const char* file_name, const char* argv[]) {
-    fs_node_t* elf = resolve_path(file_name, current_process->cwd); 
+    char kfile_name[256];
+    if (!memory_copy_from_user(kfile_name, file_name, 256, current_process->addr_space))
+        return EFAULT;
+
+    fs_node_t* elf = resolve_path(kfile_name, current_process->cwd); 
     
     if (!elf) return ENOENT;
 
@@ -798,8 +811,8 @@ int32_t sys_getcwd(char* buffer, size_t size) {
     
     fs_node_t* path[10];
     int idx = 0;
-
-    buffer[0] = '\0';
+    char kbuffer[256]; 
+    kbuffer[0] = '\0';
 
     while (start) {
         if (idx >= 10)
@@ -826,8 +839,8 @@ int32_t sys_getcwd(char* buffer, size_t size) {
         if (i == idx - 1) {
             // root
             if (used + 1 >= size) return ERANGE;
-            buffer[used++] = '/';
-            buffer[used] = '\0';
+            kbuffer[used++] = '/';
+            kbuffer[used] = '\0';
             continue;
         }
 
@@ -836,13 +849,16 @@ int32_t sys_getcwd(char* buffer, size_t size) {
         if (used + len + 1 >= size) return ERANGE;  // +1 for possible slash or null
 
         if (used > 1) {
-            buffer[used++] = '/';
+            kbuffer[used++] = '/';
         }
 
-        memcpy(buffer + used, name, len);
+        memcpy(kbuffer + used, name, len);
         used += len;
-        buffer[used] = '\0';
+        kbuffer[used] = '\0';
     }
+
+    if (!memory_copy_to_user(buffer, kbuffer, strnlen(kbuffer, 256), current_process->addr_space))
+        return EFAULT;
 
     return used;
 }
