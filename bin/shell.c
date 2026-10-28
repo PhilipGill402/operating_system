@@ -24,8 +24,17 @@ static int read_line(char* buffer, uint32_t max_len) {
     while (len < max_len - 1) {
         char c;
         int32_t n = read(0, &c, 1);
-        if (n <= 0)
-            continue;
+        if (n < 0) {
+            if (errno == EINTR || errno == EAGAIN)
+                continue;
+
+            perror("read");
+            return -1;
+        }
+
+        if (n == 0) {
+            return -1;
+        }
 
         if (c == '\r') {
             continue;
@@ -78,7 +87,7 @@ int main() {
     serial_fd = open("/dev/serial", O_WRONLY, 0);
     char buffer[MAX_BUFFER_LENGTH];
     char cwd[MAX_BUFFER_LENGTH];
-    
+    printf("hello\n");
     while (1) {
         char* user_argv[10] = { 0 };
         errno = 0; 
@@ -86,7 +95,7 @@ int main() {
         if (ret == -1) {
             perror("getcwd");
         }
-
+         
         printf("%s >> ", cwd);
         cwd[0] = '\0';
         

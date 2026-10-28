@@ -147,36 +147,41 @@ static vm_area_t* vma_remove_exact(process_t* proc, uint32_t start, uint32_t end
 int32_t sys_poll(pollfd_t* fds, uint32_t nfds) {
     if (!fds)
         return EFAULT;
+
+    pollfd_t kfds[nfds];
+    memory_copy_from_user(kfds, fds, nfds * sizeof(pollfd_t), current_process->addr_space);
     
     while (1) {
         int32_t num_events = 0;
 
         for (uint32_t i = 0; i < nfds; i++) {
-            uint32_t fd = fds[i].fd;
+            uint32_t fd = kfds[i].fd;
 
             if (fd >= MAX_FDS) {
-                fds[i].revents = 0;
+                kfds[i].revents = 0;
                 continue;
             }
 
             file_desc_t* file_desc = current_process->fds[fd];
 
             uint8_t poll = fs_poll(file_desc->node, file_desc->offset);
-
-            if (poll != 0)
+            kfds[i].revents = kfds[i].events & poll;
+            
+            if (kfds[i].revents != 0)
                 num_events++;
 
-            fds[i].revents = fds[i].events & poll;
         }
 
-        if (num_events > 0)
+        if (num_events > 0) {
+            memory_copy_to_user(fds, kfds, nfds * sizeof(pollfd_t), current_process->addr_space);
             return num_events;
+        }
 
         current_process->wait.type = WAIT_POLL;
-        current_process->wait.poll.fds = fds;
+        current_process->wait.poll.fds = kfds;
         current_process->wait.poll.nfds = nfds;
         current_process->state = PROC_BLOCKED;
-        
+
         schedule();
 
         current_process->wait.type = WAIT_NONE;
@@ -1013,9 +1018,8 @@ void syscall_handler(arch_trapframe_t* tf) {
             );
             break;
     }
-    
-    arch_trapframe_set_ret(tf, ret);
 
+    arch_trapframe_set_ret(caller->trapframe, ret);
     check_pending_signals(caller);
     
     return;

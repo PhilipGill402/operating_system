@@ -28,6 +28,7 @@ static int32_t read_input_data(dev_file_t* file, uint8_t* buffer, uint32_t offse
             return buf_offset;
 
         char c = input_buffer_read_char();
+        log_debug("%c\n", c);
 
         memcpy(buffer + buf_offset, &c, sizeof(char));
         buf_offset += sizeof(char);

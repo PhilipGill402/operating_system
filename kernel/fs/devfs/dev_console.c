@@ -1,6 +1,5 @@
 #include "fs/devfs/dev_console.h"
-
-#include <log.h>
+#include <arch/drivers/uart.h>
 
 uint8_t poll_console_data(dev_file_t* file, uint32_t offset) {
     if (!file)
@@ -21,7 +20,7 @@ int32_t write_console_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, u
     (void)offset;
     
     for (uint32_t i = 0; i < size; i++)
-        log_debug("%c\n", buffer[i]);
+        uart_write_char(buffer[i], NULL); 
 
     return (int32_t)size;
 }

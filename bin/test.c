@@ -12,11 +12,16 @@ int main() {
     if (child_pid == 0) {
         // close all i/o file descriptors to replace with dev/pts for shell
         int pts = open("/dev/pts", O_RDWR, 0);
-
-        dup2(pts, 0); 
-        dup2(pts, 1);
-        dup2(pts, 2);
-
+        if (pts < 0) {
+            perror("open");
+            exit(1);
+        }
+        
+        if (dup2(pts, 0) < 0 || dup2(pts, 1) < 0 || dup2(pts, 2) < 0) {
+            perror("dup2");
+            exit(1);
+        }
+         
         errno = 0; 
         int ret = execve("/bin/shell", NULL);
         
@@ -62,7 +67,6 @@ int main() {
         
         if (polls[1].revents & POLLIN) {
             uint32_t bytes_read = read(ptm_fd, bytes, sizeof(bytes) - 1);
-            
             if (bytes_read > 0) {
                 for (int32_t i = 0; i < bytes_read; i++) {
                     printf("%c", (char)bytes[i]);

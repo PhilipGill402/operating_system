@@ -33,6 +33,7 @@ void scheduler_init(void) {
     
     idle_process = kmalloc(sizeof(process_t));
     memset(idle_process, 0, sizeof(process_t));
+    strcpy(idle_process->name, "idle");
     idle_process->pid = UINT32_MAX;
     idle_process->state = PROC_READY;
     
@@ -123,11 +124,13 @@ void schedule(void) {
         return;
     }
 
-    if (outgoing->state == PROC_RUNNING)
-        outgoing->state = PROC_READY;
+    if (outgoing != idle_process) {
+        if (outgoing->state == PROC_RUNNING)
+            outgoing->state = PROC_READY;
 
-    if (outgoing->state == PROC_READY)
-        enqueue(&current_processes, &outgoing);
+        if (outgoing->state == PROC_READY)
+            enqueue(&current_processes, &outgoing);
+    }
     
     process_wake_blocked();
     process_t* incoming = dequeue_ready();
@@ -170,7 +173,6 @@ static uint8_t process_is_blocked_ready(process_t* proc) {
                 return 1;
 
             uint32_t events = fs_poll(desc->node, desc->offset);
-
             return (events & proc->wait.fd.events) != 0;
         }
 

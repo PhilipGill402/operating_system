@@ -342,7 +342,7 @@ process_t* process_create_from_elf(fs_node_t* elf) {
     }
 
     process->context = arch_context_init(process->kernel_stack_top, process_first_entry);
-         
+    
     process->pid = num_processes++;
     process->ticks_left = DEFAULT_MAX_TICKS;
     process->state = PROC_READY;
