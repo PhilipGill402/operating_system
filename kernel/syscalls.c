@@ -574,12 +574,8 @@ int32_t sys_getdents(uint32_t fd, sys_dirent_t* dents, uint32_t count) {
 int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     char kpath[256];
     memory_copy_from_user(kpath, path, 256, current_process->addr_space);
-    log_debug("%s\n", kpath);
     
     fs_node_t* file = resolve_path(kpath, current_process->cwd);
-
-    log_debug("%s\n", file->name);
-    
     if (!file && flags & O_CREAT) {
         char* trim = trim_path(kpath);
         fs_node_t* dir;
@@ -629,7 +625,6 @@ int32_t sys_open(const char* path, uint32_t flags, sys_mode_t mode) {
     else if (flags & O_APPEND)
         file_desc->offset = file->size;
     
-    log_debug("FD: %d\n", fd);
     current_process->fds[fd] = file_desc;
 
     return fd;
@@ -701,10 +696,7 @@ int32_t sys_write(uint32_t fd, char* str, size_t count) {
     if (fd >= MAX_FDS || !current_process->fds[fd])
         return EBADF;
     
-    log_debug("%d\n", fd);
     fs_node_t* file = current_process->fds[fd]->node;
-    log_debug("%s\n", file->name);
-    
     if (!file)
         return ENOENT;
     

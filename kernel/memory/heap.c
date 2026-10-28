@@ -160,7 +160,6 @@ void* kmalloc(size_t size){
     //align to 8 byte increments
     size_t total_size = ALIGN_UP(sizeof(kblock_t) + size + sizeof(uint32_t), HEAP_ALIGN);
     
-    log_debug("total size: %l\n", total_size);
     //makes sure the requested size is not bigger than the arena
     while (total_size > (heap.size - sizeof(kblock_t))){
         if (!grow_heap(PAGE_SIZE)) 
@@ -234,7 +233,6 @@ void kfree(void* ptr) {
 }
 
 void* kzmalloc(size_t size) {
-    log_debug("kzmalloc\n"); 
     void* ptr = kmalloc(size);
     
     if (!ptr) {

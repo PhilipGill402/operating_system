@@ -11,7 +11,6 @@ static uint8_t poll_serial_data(dev_file_t* file, uint32_t offset) {
 }
 
 static int32_t write_serial_data(dev_file_t* file, uint8_t* buffer, uint32_t offset, uint32_t size) {
-    log_debug("made it\n");
     (void)offset; 
 
     if (!file || !buffer)

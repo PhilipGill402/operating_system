@@ -16,7 +16,7 @@
 #define KHEAP_CANARY 0xDEADBEEF
 
 // keep this for now
-#define MALLOC_DEBUG
+//#define MALLOC_DEBUG
 
 typedef uintptr_t word_t;
 

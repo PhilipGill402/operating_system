@@ -5,8 +5,6 @@
 
 int main() {
     uint32_t serial_fd = open("/dev/serial", O_WRONLY, 0);
-    printf("SERIAL: %d", serial_fd);
-    write(serial_fd, "hello", 6); 
     uint32_t input_fd = open("/dev/input", O_RDONLY, 0);
     uint32_t ptm_fd = open("/dev/ptm", O_RDWR, 0);
 
